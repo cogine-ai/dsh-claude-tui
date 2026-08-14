@@ -104,11 +104,20 @@ corepack pnpm check
 
 ## 路线图
 
+**现在 — v0.1.0 Release Hardening**
+
+- 保证从干净 checkout 构建出可发布、可运行的 npm 包；
+- 以 `npx dsh-claude-tui` 完成安装与启动，不再要求用户手动安装 Harness 或 profile；
+- 验证首次初始化、重复启动幂等性，以及 tarball 安装后的真实运行路径。
+
+完整范围和发布门槛见 [v0.1.0 Release Hardening 计划](./docs/release-hardening-v0.1.0.md)。
+
+**下一步 — v0.1.0 之后**
+
 - 更丰富的附件与补全界面；
 - 更完整的 Session 管理和重命名流程；
 - 更多 plan、todo 与后台任务状态；
-- 覆盖更多终端模拟器与操作系统；
-- 提供 checkout 安装以外的正式发布包。
+- 覆盖更多终端模拟器与操作系统。
 
 欢迎提交 issue 和聚焦的 pull request。涉及视觉一致性的修改，应附带独立捕获的参考证据，或明确记录 Harness 语义边界。
 
