@@ -1,7 +1,7 @@
 /** Real pi-tui application behavior over a fake Agent and ANSI terminal. */
 import { readFileSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Agent, ModelSelection, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
 import { Inbox } from '@deepseek-ai/dsh-agent'
 import {
   CallId,
@@ -28,7 +28,32 @@ interface Bench {
   terminal: HeadlessTerminal
   followups: UserMessage[]
   exitCodes: number[]
+  setStatus(status: Agent['status']): void
   askQuestions(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer>
+}
+
+interface ModelFixture {
+  readonly selection: ModelSelectionRef
+  defaultSelection: ModelSelection
+  readonly catalogModels: string[]
+  readonly efforts: Record<string, Array<{ id: string; name: string }>>
+  readonly savedDefaults: ModelSelection[]
+}
+
+interface CredentialFixture {
+  info: {
+    configured: boolean
+    source?: string
+    writable: boolean
+  }
+  readonly writes: Array<{ ref: string; value: string }>
+  setError?: (value: string) => Error
+}
+
+interface BenchOptions {
+  readonly models?: ModelFixture
+  readonly credentials?: CredentialFixture
+  readonly seed?: (session: Session) => void
 }
 
 const contexts: Context[] = []
@@ -37,7 +62,12 @@ afterEach(async () => {
 })
 
 /** Assemble only the services the terminal directly consumes. */
-function bench(columns = 90, rows = 28, now: () => number = () => 1_000): Bench {
+function bench(
+  columns = 90,
+  rows = 28,
+  now: () => number = () => 1_000,
+  options: BenchOptions = {},
+): Bench {
   const ctx = new Context()
   contexts.push(ctx)
   let questionProvider: UserQuestionProvider | undefined
@@ -51,6 +81,75 @@ function bench(columns = 90, rows = 28, now: () => number = () => 1_000): Bench 
       return () => { questionProvider = undefined }
     },
   } as never)
+  if (options.models !== undefined || options.credentials !== undefined) {
+    ctx.provide('llm', {
+      listProviders: () => [{ id: 'deepseek-official', name: 'DeepSeek' }],
+      listConfigurableProviders: () => options.credentials === undefined
+        ? []
+        : [{
+            provider: 'deepseek-official',
+            displayName: 'DeepSeek',
+            settingsNs: 'llm-deepseek',
+            settingsPath: [],
+          }],
+      listModels: async () => (options.models?.catalogModels ?? [
+        'deepseek-v4-flash',
+        'deepseek-v4-pro',
+      ]).map(model => ({
+          provider: 'deepseek-official',
+          id: model,
+          name: model === 'deepseek-v4-flash'
+            ? 'DeepSeek V4 Flash'
+            : model === 'deepseek-v4-pro'
+              ? 'DeepSeek V4 Pro'
+              : model,
+          description: model === 'deepseek-v4-flash'
+            ? 'Fast coding model'
+            : model === 'deepseek-v4-pro'
+              ? 'More capable coding model'
+              : 'Exact DSH route outside the advertised catalog',
+        })),
+      resolveModelInfo: async (_provider: string, model: string) => ({
+        provider: 'deepseek-official',
+        id: model,
+        name: model === 'deepseek-v4-flash'
+          ? 'DeepSeek V4 Flash'
+          : model === 'deepseek-v4-pro'
+            ? 'DeepSeek V4 Pro'
+            : model,
+        reasoning: {
+          efforts: options.models?.efforts[model] ?? [],
+          defaultEffort: 'high',
+        },
+      }),
+    } as never)
+  }
+  if (options.models !== undefined) {
+    ctx.provide('agentDefaultModel', {
+      currentSelection: () => ({
+        ...options.models!.defaultSelection,
+      }),
+      saveSelection: async (selection: ModelSelection) => {
+        options.models?.savedDefaults.push({ ...selection })
+        if (options.models !== undefined) options.models.defaultSelection = { ...selection }
+      },
+    } as never)
+  }
+  if (options.credentials !== undefined) {
+    ctx.provide('settings', {
+      get: () => ({ apiKeyEnv: 'DEEPSEEK_API_KEY' }),
+    } as never)
+    ctx.provide('credentials', {
+      describe: async () => ({ ...options.credentials!.info }),
+      set: async (ref: string, value: string) => {
+        if (options.credentials!.setError !== undefined) throw options.credentials!.setError(value)
+        options.credentials!.writes.push({ ref, value })
+        options.credentials!.info = { configured: true, source: 'file', writable: true }
+      },
+      unset: async () => {},
+      resolve: async () => undefined,
+    } as never)
+  }
 
   const session = Session.create(SessionId('terminal-test'), undefined, {
     version: 0,
@@ -58,6 +157,7 @@ function bench(columns = 90, rows = 28, now: () => number = () => 1_000): Bench 
     createdAt: 1,
     cwd: '/workspace/project',
   })
+  options.seed?.(session)
   const followups: UserMessage[] = []
   let status: Agent['status'] = 'idle'
   const agent = {} as Agent
@@ -82,20 +182,62 @@ function bench(columns = 90, rows = 28, now: () => number = () => 1_000): Bench 
   const exitCodes: number[] = []
   const app = new ClaudeTuiApplication(ctx, agent, resolveConfig({ color: false }), {
     terminal,
-    exit: (code) => { exitCodes.push(code) },
+    exit: (code: number) => { exitCodes.push(code) },
     now,
-  })
+    ...(options.models === undefined ? {} : { modelSelection: options.models.selection }),
+  } as never)
   return {
     ctx,
     app,
     terminal,
     followups,
     exitCodes,
+    setStatus: nextStatus => { status = nextStatus },
     askQuestions: request => {
       if (questionProvider === undefined) throw new Error('question provider is not registered')
       return questionProvider.ask(request)
     },
   }
+}
+
+function modelFixture(): ModelFixture {
+  return {
+    selection: {
+      current: {
+        provider: 'deepseek-official',
+        model: 'deepseek-v4-flash',
+        reasoningEffort: 'high' as never,
+      },
+      assembled: undefined,
+    },
+    defaultSelection: {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+      reasoningEffort: 'high' as never,
+    },
+    catalogModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+    efforts: {
+      'deepseek-v4-flash': [
+        { id: 'off', name: 'Off' },
+        { id: 'high', name: 'High' },
+      ],
+      'deepseek-v4-pro': [
+        { id: 'high', name: 'High' },
+        { id: 'max', name: 'Max' },
+      ],
+      'deepseek-v4-legacy': [
+        { id: 'high', name: 'High' },
+        { id: 'max', name: 'Max' },
+      ],
+    },
+    savedDefaults: [],
+  }
+}
+
+function credentialFixture(
+  info: CredentialFixture['info'] = { configured: false, writable: true },
+): CredentialFixture {
+  return { info, writes: [] }
 }
 
 interface ReferenceFrame {
@@ -467,6 +609,320 @@ describe('ClaudeTuiApplication', () => {
     await test.terminal.settle()
 
     expect(test.terminal.text()).toContain('transcript expanded')
+
+    await test.app.dispose()
+  })
+
+  it('opens the live DSH model catalog with Alt+P and keeps the prompt draft', async () => {
+    const models = modelFixture()
+    models.selection.assembled = {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+      reasoningEffort: 'high' as never,
+    }
+    const test = bench(90, 28, () => 1_000, { models })
+    await test.app.start()
+    for (const character of 'keep this draft') test.terminal.send(character)
+
+    test.terminal.send('\u001Bp')
+    await test.terminal.settle()
+
+    const lines = test.terminal.lines()
+    const flash = lines.find(line => line.includes('DeepSeek V4 Flash'))
+    expect(test.terminal.text()).toContain('Select model')
+    expect(test.terminal.text()).toContain('DeepSeek V4 Pro')
+    expect(test.terminal.text()).not.toContain('OpenAI')
+    expect(flash).toContain('current')
+    expect(flash).toContain('default')
+
+    test.terminal.send('\u001B[B')
+    test.terminal.send('\u001B[C')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(models.selection.current).toEqual({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+      reasoningEffort: 'max',
+    })
+    expect(models.savedDefaults).toEqual([])
+    expect(models.selection.assembled).toEqual({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-flash',
+      reasoningEffort: 'high',
+    })
+    expect(test.terminal.text()).toContain('keep this draft')
+
+    await test.app.dispose()
+  })
+
+  it('uses d in /model to switch the current Agent and save the DSH default', async () => {
+    const models = modelFixture()
+    const test = bench(90, 28, () => 1_000, { models })
+    await test.app.start()
+    for (const character of '/model') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    test.terminal.send('\u001B[B')
+    test.terminal.send('d')
+    await test.terminal.settle()
+
+    expect(models.selection.current).toEqual({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+    })
+    expect(models.savedDefaults).toEqual([{
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+    }])
+
+    await test.app.dispose()
+  })
+
+  it('shows a model-switch notice while an Agent is running in plan mode', async () => {
+    const models = modelFixture()
+    const test = bench(100, 30, () => 1_000, {
+      models,
+      seed: session => {
+        const sessionWithPlanEvents = session as unknown as {
+          append(type: string, data: unknown): unknown
+        }
+        sessionWithPlanEvents.append('plan/mode', { active: true })
+      },
+    })
+    test.setStatus('running')
+    await test.app.start()
+
+    test.terminal.send('\u001Bp')
+    await test.terminal.settle()
+    test.terminal.send('\u001B[B')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('plan mode on')
+    expect(test.terminal.text()).toContain(
+      'Using deepseek-official/deepseek-v4-pro from the next model request',
+    )
+
+    await test.app.dispose()
+  })
+
+  it('uses the DSH-saved effort when selecting a non-current default model', async () => {
+    const models = modelFixture()
+    models.defaultSelection = {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+      reasoningEffort: 'max' as never,
+    }
+    const test = bench(90, 28, () => 1_000, { models })
+    await test.app.start()
+    test.terminal.send('\u001Bp')
+    await test.terminal.settle()
+
+    const defaultRow = test.terminal.lines().find(line => line.includes('DeepSeek V4 Pro'))
+    expect(defaultRow).toContain('default')
+    test.terminal.send('\u001B[B')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(models.selection.current).toEqual({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+      reasoningEffort: 'max',
+    })
+
+    await test.app.dispose()
+  })
+
+  it('keeps an unadvertised current route and refreshes an open picker on DSH topology changes', async () => {
+    const models = modelFixture()
+    models.catalogModels.splice(0, models.catalogModels.length, 'deepseek-v4-flash')
+    models.selection.current = {
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-legacy',
+      reasoningEffort: 'high' as never,
+    }
+    const test = bench(90, 28, () => 1_000, { models })
+    await test.app.start()
+    test.terminal.send('\u001Bp')
+    await test.terminal.settle()
+
+    const legacy = test.terminal.lines().find(line => (
+      line.includes('deepseek-v4-legacy') && line.includes('not advertised')
+    ))
+    expect(legacy).toContain('current')
+    expect(legacy).toContain('not advertised')
+    expect(test.terminal.text()).not.toContain('DeepSeek V4 Pro')
+
+    models.catalogModels.push('deepseek-v4-pro')
+    test.ctx.emit('llm/adapters-updated')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('DeepSeek V4 Pro')
+
+    test.terminal.send('\u001B[A')
+    test.terminal.send('\u001B[C')
+    models.efforts['deepseek-v4-pro'] = [{ id: 'high', name: 'High' }]
+    test.ctx.emit('llm/adapters-updated')
+    await test.terminal.settle()
+    expect(test.terminal.text()).not.toContain('Max')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(models.selection.current).toEqual({
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+    })
+
+    await test.app.dispose()
+  })
+
+  it('confirms a route change after prior assistant output before mutating DSH selection', async () => {
+    const models = modelFixture()
+    const test = bench(90, 28, () => 1_000, {
+      models,
+      seed: (session) => {
+        session.append('turn/start', { turn: 1 })
+        session.append('user/message', createUserMessage({
+          content: [{ type: 'text', text: 'Use the original model.' }],
+          source: { kind: 'user' },
+        }), { surfaceOp: 'append' })
+        session.append('assistant/message', {
+          turn: 1,
+          step: 1,
+          message: createAssistantMessage({
+            content: [{ type: 'text', text: 'Original response.' }],
+            source: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+          }),
+        }, { surfaceOp: 'append' })
+        session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+      },
+    })
+    await test.app.start()
+
+    test.terminal.send('\u001Bp')
+    await test.terminal.settle()
+    test.terminal.send('\u001B[B')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('Switch model for the next request?')
+    expect(models.selection.current?.model).toBe('deepseek-v4-flash')
+
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(models.selection.current?.model).toBe('deepseek-v4-pro')
+
+    await test.app.dispose()
+  })
+
+  it('lists DSH provider credential state and never renders a replacement API key', async () => {
+    const credentials = credentialFixture({ configured: true, source: 'file', writable: true })
+    const test = bench(90, 28, () => 1_000, { credentials })
+    await test.app.start()
+    for (const character of '/provider') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('Configure provider')
+    expect(test.terminal.text()).toContain('DeepSeek')
+    expect(test.terminal.text()).toContain('configured · file')
+
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    const secret = 'sk-super-secret'
+    for (const character of secret) test.terminal.send(character)
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('••••')
+    expect(test.terminal.text()).not.toContain(secret)
+
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(credentials.writes).toEqual([{ ref: 'DEEPSEEK_API_KEY', value: secret }])
+    expect(test.terminal.text()).not.toContain(secret)
+    expect(JSON.stringify(test.app.agent.session.events)).not.toContain(secret)
+
+    await test.app.dispose()
+  })
+
+  it('collects the sole missing DSH credential before submitting an initial prompt', async () => {
+    const credentials = credentialFixture()
+    const test = bench(90, 28, () => 1_000, { credentials })
+    await test.app.start('run after setup')
+    await test.terminal.settle()
+
+    expect(test.followups).toEqual([])
+    expect(test.terminal.text()).toContain('Connect DeepSeek')
+    expect(test.terminal.text()).toContain('DEEPSEEK_API_KEY')
+
+    const secret = 'sk-first-run'
+    for (const character of secret) test.terminal.send(character)
+    await test.terminal.settle()
+    expect(test.terminal.text()).not.toContain(secret)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(credentials.writes).toEqual([{ ref: 'DEEPSEEK_API_KEY', value: secret }])
+    expect(test.followups[0]?.content).toEqual([{ type: 'text', text: 'run after setup' }])
+    expect(test.terminal.text()).not.toContain(secret)
+    expect(JSON.stringify(test.app.agent.session.events)).not.toContain(secret)
+
+    await test.app.dispose()
+  })
+
+  it('keeps an initial prompt as a draft when first-run credential setup is cancelled', async () => {
+    const credentials = credentialFixture()
+    const test = bench(90, 28, () => 1_000, { credentials })
+    await test.app.start('keep this queued prompt')
+    await test.terminal.settle()
+
+    test.terminal.send('\u001B')
+    await test.terminal.settle()
+
+    expect(credentials.writes).toEqual([])
+    expect(test.followups).toEqual([])
+    expect(test.terminal.text()).toContain('keep this queued prompt')
+
+    await test.app.dispose()
+  })
+
+  it('treats an environment-supplied DSH credential as configured and read-only', async () => {
+    const credentials = credentialFixture({ configured: true, source: 'env', writable: false })
+    const test = bench(90, 28, () => 1_000, { credentials })
+    await test.app.start()
+    for (const character of '/provider') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('configured · env · read-only')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('managed outside this TUI')
+    expect(credentials.writes).toEqual([])
+
+    await test.app.dispose()
+  })
+
+  it('redacts an API key even if a DSH credential provider includes it in an error', async () => {
+    const credentials = credentialFixture({ configured: true, source: 'file', writable: true })
+    credentials.setError = value => new Error(`provider rejected key prefix ${value.slice(0, 8)}`)
+    const test = bench(90, 28, () => 1_000, { credentials })
+    await test.app.start()
+    for (const character of '/provider') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    const secret = 'sk-never-render-this'
+    for (const character of secret) test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('Error details are hidden')
+    expect(test.terminal.text()).toContain('to protect the key')
+    expect(test.terminal.text()).not.toContain(secret)
+    expect(test.terminal.text()).not.toContain(secret.slice(0, 8))
+    expect(credentials.writes).toEqual([])
 
     await test.app.dispose()
   })

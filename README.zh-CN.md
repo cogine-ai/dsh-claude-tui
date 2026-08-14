@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="41 terminal tests" src="https://img.shields.io/badge/terminal_tests-41%2F41-4eba65?style=flat-square" />
+  <img alt="53 tests" src="https://img.shields.io/badge/tests-53%2F53-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -61,6 +61,8 @@ DSH_TOOLS_MODE=code dsh --profile claude-tui
 | 主界面 | normal-buffer 回滚、Claude 橙色图标、响应式 Header、编辑器和状态栏 |
 | 输入 | 多行编辑、提交/steer、中断、反向历史搜索 |
 | 补全 | 斜杠命令和有边界的 `@` 工作区文件补全 |
+| 模型 | 从 DSH 实时读取 provider/model 与准确 effort，支持当前 Agent 切换和保存 DSH 默认值 |
+| Provider | 展示 DSH 凭据来源/可写性，掩码录入 API Key，并提供窄范围首次启动引导 |
 | 对话记录 | 用户、助手、reasoning、工具调用/结果、usage、请求和 turn 结果 |
 | 协议 | 接入真实 Harness 审批与结构化用户问题 provider |
 | Agent | 前台/后台子代理状态、可展开结果和活动 Agent roster |
@@ -75,15 +77,18 @@ DSH_TOOLS_MODE=code dsh --profile claude-tui
 | `Esc` / `Ctrl+C` | 中断当前 turn |
 | `Ctrl+R` | 搜索历史 prompt |
 | `Ctrl+O` | 展开或收起工具详情 |
+| `Option+P` / `Alt+P` | 打开 DSH 实时模型选择器 |
 | `Left Arrow` | 显示或隐藏活动 Agent roster |
 | `Ctrl+D` | 空输入时连续按两次，安全退出 |
+
+也可以用 `/model` 打开模型选择器，用 `/provider` 查看或更新 DSH 暴露的 provider 凭据。模型名、effort、默认模型、凭据引用、来源优先级和可写性都不由 TUI 写死。具体边界见[模型与 Provider 交互设计](./docs/model-provider-interactions.md)。
 
 ## 高保真验证
 
 以 true-color xterm-compatible PTY 中的 Claude Code `2.1.227` 为基线：
 
 - **23** 个参考帧，**21** 个自动视觉/语义锚点；
-- **41/41** 个终端测试，覆盖 `80x24`、`100x30`；
+- **53/53** 个测试，包含 `80x24`、`100x30` 的终端行为；
 - 真实 Harness 运行覆盖审批、问题及前台/后台子代理；
 - 唯一主动差异：增加一行顶部留白，避免图标裁切。
 

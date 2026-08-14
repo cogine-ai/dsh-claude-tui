@@ -15,7 +15,7 @@ npx dsh-claude-tui
 
 No separately installed `dsh` command, repository checkout, pnpm installation, or manual profile setup may be required. Provider credentials are still required before a real model request.
 
-This milestone defers new visual surfaces and interaction features until after `v0.1.0`. The release sequence remains:
+This milestone also includes the bounded model/provider surfaces approved for first-run usability: the Claude-shaped interaction is [documented separately](./model-provider-interactions.md), while all catalog, default, effort, and credential semantics remain DSH-owned. Further visual surfaces and interaction features remain deferred until after `v0.1.0`. The release sequence remains:
 
 ```text
 Release hardening -> npm 0.1.0 -> GitHub Release/GIF -> public launch -> feedback-led iteration
@@ -44,7 +44,9 @@ The package must expose an executable through `package.json#bin`. That launcher 
 - forward CLI arguments such as `--resume` and `--model`, the current working directory, environment, interactive stdio, exit codes, and termination signals;
 - apply bundle-required defaults without overriding an explicit user environment;
 - keep `--help` and `--version` side-effect free;
-- avoid copying, printing, or persisting provider credentials;
+- never independently copy, print, or persist provider credentials; only an explicit masked TUI action may pass a value to DSH's credential service;
+- preserve prompt drafts across model/provider overlays and mask API-key input from terminal output and Session history;
+- read provider/model/effort/default/credential state from the corresponding DSH services instead of shipping a fixed catalog;
 - never perform an independent self-update or mutate unrelated Harness plugins.
 
 ### 3. Packed end-to-end qualification

@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="41 terminal tests" src="https://img.shields.io/badge/terminal_tests-41%2F41-4eba65?style=flat-square" />
+  <img alt="53 tests" src="https://img.shields.io/badge/tests-53%2F53-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -61,6 +61,8 @@ Sending a real model request requires the credentials for the Harness model prov
 | Main shell | normal-buffer scrollback, Claude orange logo, responsive header, editor, status footer |
 | Prompt | multiline editing, submit/steer, cancellation, reverse history search |
 | Completion | slash commands and bounded `@` workspace file mentions |
+| Models | live DSH provider/model catalog, exact advertised effort levels, current-Agent and saved-default selection |
+| Providers | live DSH credential source/writability state, masked API-key entry, narrow first-run setup |
 | Transcript | user, assistant, reasoning, tool call/result, usage, request and turn outcomes |
 | Protocols | real Harness approval and structured-question providers |
 | Agents | foreground/background subagent states, expandable output, active-agent roster |
@@ -75,15 +77,18 @@ Useful controls:
 | `Esc` / `Ctrl+C` | interrupt a running turn |
 | `Ctrl+R` | search prompt history |
 | `Ctrl+O` | expand or compact tool details |
+| `Option+P` / `Alt+P` | open the live DSH model picker |
 | `Left Arrow` | hide or show the active-agent roster |
 | `Ctrl+D` | press twice on an empty prompt to exit cleanly |
+
+Use `/model` for the same model picker and `/provider` to inspect or update credentials exposed by DSH. Model names, effort levels, defaults, credential references, source priority, and writability are never hardcoded by this TUI. See the [model/provider interaction boundary](./docs/model-provider-interactions.md).
 
 ## Fidelity
 
 Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
 
 - **23** reference frames and **21** automated visual/semantic anchors.
-- **41/41** terminal tests at `80x24` and `100x30`.
+- **53/53** tests, including terminal behavior at `80x24` and `100x30`.
 - Real Harness runs for approvals, questions, and foreground/background subagents.
 - One intentional difference: a blank top row prevents logo clipping.
 
