@@ -52,7 +52,7 @@ dsh plugin --profile claude-tui add "$PWD"
 DSH_TOOLS_MODE=code dsh --profile claude-tui
 ```
 
-只打开并体验 TUI 不需要 Claude API key。真正向模型发送请求时，需要配置所选 Harness 模型提供方的凭证。
+真正向模型发送请求时，需要配置所选 Harness 模型提供方的凭证。
 
 ## 已实现
 

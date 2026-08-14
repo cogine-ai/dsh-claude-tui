@@ -52,7 +52,7 @@ dsh plugin --profile claude-tui add "$PWD"
 DSH_TOOLS_MODE=code dsh --profile claude-tui
 ```
 
-Opening and exploring the TUI does not require a Claude API key. Sending a real model request requires the credentials for the Harness model provider you select.
+Sending a real model request requires the credentials for the Harness model provider you select.
 
 ## What already works
 
