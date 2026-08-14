@@ -1,0 +1,387 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "Claude Code",
+    "version": "2.1.227",
+    "command": "claude",
+    "args": [
+      "--settings",
+      "{}",
+      "--setting-sources",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--tools",
+      "",
+      "--permission-mode",
+      "manual",
+      "--resume"
+    ],
+    "cwd": "/Users/kiedis/Coding/examples/deepseek-harness"
+  },
+  "scenario": "session-picker-list",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "rawSha256": "3458e2852049413de422467dc055e333b27b8a5e9cd703651b322654fe866993",
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 2,
+      "row": 8
+    },
+    "lines": [
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  Resume session",
+        "runs": [
+          {
+            "from": 2,
+            "to": 8,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 9,
+            "to": 16,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ╭──────────────────────────────────────────────────────────────────────────╮",
+        "runs": [
+          {
+            "from": 2,
+            "to": 78,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  │ ⌕ Search…                                                                │",
+        "runs": [
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 4,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 13,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 77,
+            "to": 78,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ╰──────────────────────────────────────────────────────────────────────────╯",
+        "runs": [
+          {
+            "from": 2,
+            "to": 78,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "    deepseek-harness",
+        "runs": [
+          {
+            "from": 4,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "  ❯ Review the session picker implementation",
+        "runs": [
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 4,
+            "to": 10,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 14,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 15,
+            "to": 22,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 23,
+            "to": 29,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 30,
+            "to": 44,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "    2 seconds ago · main · 494 bytes",
+        "runs": [
+          {
+            "from": 4,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 13,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 14,
+            "to": 17,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 18,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 20,
+            "to": 24,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 25,
+            "to": 26,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 27,
+            "to": 30,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 31,
+            "to": 36,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "    Ctrl+A to show all projects · Ctrl+B to only show current branch · Space ",
+        "runs": [
+          {
+            "from": 4,
+            "to": 10,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 13,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 14,
+            "to": 18,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 22,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 23,
+            "to": 31,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 32,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 34,
+            "to": 48,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 49,
+            "to": 77,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "    to preview · Ctrl+R to rename · Type to search · Esc to cancel",
+        "runs": [
+          {
+            "from": 4,
+            "to": 66,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,525 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "Claude Code",
+    "version": "2.1.227",
+    "command": "claude",
+    "args": [
+      "--settings",
+      "{}",
+      "--setting-sources",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--tools",
+      "AskUserQuestion",
+      "--permission-mode",
+      "manual"
+    ],
+    "cwd": "/Users/kiedis/Coding/examples/deepseek-harness",
+    "transport": "loopback-reference-api"
+  },
+  "scenario": "user-question",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "rawSha256": "a76af6a1d829e68220035065bef0c473fe086143254dc766121fc5099e3e56c9",
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 0,
+      "row": 11
+    },
+    "lines": [
+      {
+        "text": " ▐▛███▜▌   Claude Code v2.1.227",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 7,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 7,
+            "to": 8,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 17,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 18,
+            "to": 22,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 23,
+            "to": 31,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "▝▜█████▛▘  Opus 5 (1M context) · API Usage Billing",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 7,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 7,
+            "to": 9,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 15,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 16,
+            "to": 17,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 18,
+            "to": 21,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 22,
+            "to": 30,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 31,
+            "to": 32,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 33,
+            "to": 36,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 37,
+            "to": 42,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 43,
+            "to": 50,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  ▘▘ ▝▝    ~/Coding/examples/deepseek-harness",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 4,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 5,
+            "to": 7,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 45,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "❯ Ask one deterministic reference question.                                     ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#505050",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 43,
+            "fg": "#ffffff",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 43,
+            "to": 80,
+            "fg": "default",
+            "bg": "#373737",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " ☐ Reference ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 13,
+            "fg": "#000000",
+            "bg": "#b1b9f9",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "Which reference option should be used?",
+        "runs": [
+          {
+            "from": 0,
+            "to": 38,
+            "fg": "#ffffff",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "❯ 1. Alpha",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 4,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 5,
+            "to": 10,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "     Use the first deterministic option.",
+        "runs": [
+          {
+            "from": 5,
+            "to": 18,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 40,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  2. Beta",
+        "runs": [
+          {
+            "from": 2,
+            "to": 4,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "     Use the second deterministic option.",
+        "runs": [
+          {
+            "from": 5,
+            "to": 8,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 9,
+            "to": 12,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 13,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 20,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 34,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  3. Type something.",
+        "runs": [
+          {
+            "from": 2,
+            "to": 4,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 5,
+            "to": 9,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 10,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  4. Chat about this",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "Enter to select · ↑/↓ to navigate · Esc to cancel",
+        "runs": [
+          {
+            "from": 0,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 8,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 9,
+            "to": 15,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 16,
+            "to": 17,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 18,
+            "to": 21,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 22,
+            "to": 24,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 25,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 34,
+            "to": 35,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 36,
+            "to": 39,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 40,
+            "to": 42,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 43,
+            "to": 49,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,570 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "Claude Code",
+    "version": "2.1.227",
+    "command": "/Users/kiedis/.nvm/versions/node/v22.16.0/bin/claude",
+    "args": [
+      "--settings",
+      "{}",
+      "--setting-sources",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--tools",
+      "Agent",
+      "--permission-mode",
+      "manual"
+    ],
+    "cwd": "/Users/kiedis/Coding/cdworkspace/dsh-claude-tui",
+    "transport": "loopback-reference-api"
+  },
+  "scenario": "subagent-foreground-complete",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "rawSha256": "07399107191fc9ba2dd12f0cfc7c276a90322500badc76ed8fd9be4b135f24ad",
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 2,
+      "row": 19
+    },
+    "lines": [
+      {
+        "text": "│                  ▝▜█████▛▘                  │ Check the Claude Code changel… │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 21,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 26,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 28,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 53,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 54,
+            "to": 57,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 58,
+            "to": 64,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 65,
+            "to": 69,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 70,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                    ▘▘ ▝▝                    │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 23,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 24,
+            "to": 26,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                                             │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│   Opus 5 (1M context) · API Usage Billing   │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 4,
+            "to": 8,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 9,
+            "to": 10,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 14,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 15,
+            "to": 23,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 24,
+            "to": 25,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 29,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 30,
+            "to": 35,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 36,
+            "to": 43,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│     ~/Coding/cdworkspace/dsh-claude-tui     │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "╰──────────────────────────────────────────────────────────────────────────────╯",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "❯ Delegate one deterministic reference task.                                    ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#505050",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 44,
+            "fg": "#ffffff",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 44,
+            "to": 80,
+            "fg": "default",
+            "bg": "#373737",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "⏺ Agent(Inspect reference)",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#4eba65",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 7,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ⎿  Done (0 tool uses · 82 tokens · 0s)",
+        "runs": [
+          {
+            "from": 0,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  (ctrl+o to expand)",
+        "runs": [
+          {
+            "from": 0,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "⏺ The subagent reference completed.",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#ffffff",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "✻ Churned for 1s",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 16,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "❯  ",
+        "runs": [
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "inverse"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  ⏸ manual mode on · ? for shortcuts · ← for agents           ● high · /effort",
+        "runs": [
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 4,
+            "to": 10,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 15,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 16,
+            "to": 18,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 51,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 62,
+            "to": 63,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 64,
+            "to": 68,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 69,
+            "to": 70,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 71,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

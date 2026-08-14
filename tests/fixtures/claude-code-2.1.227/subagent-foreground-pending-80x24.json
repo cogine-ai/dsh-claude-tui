@@ -1,0 +1,724 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "Claude Code",
+    "version": "2.1.227",
+    "command": "/Users/kiedis/.nvm/versions/node/v22.16.0/bin/claude",
+    "args": [
+      "--settings",
+      "{}",
+      "--setting-sources",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--tools",
+      "Agent",
+      "--permission-mode",
+      "manual"
+    ],
+    "cwd": "/Users/kiedis/Coding/cdworkspace/dsh-claude-tui",
+    "transport": "loopback-reference-api"
+  },
+  "scenario": "subagent-foreground-pending",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "rawSha256": "41701630d227249cce588b324afd4da4f478b4f025fe911f34394c517ca85be5",
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 2,
+      "row": 16
+    },
+    "lines": [
+      {
+        "text": "│                  ▝▜█████▛▘                  │ Check the Claude Code changel… │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 21,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 26,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 28,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 53,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 54,
+            "to": 57,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 58,
+            "to": 64,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 65,
+            "to": 69,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 70,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                    ▘▘ ▝▝                    │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 23,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 24,
+            "to": 26,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                                             │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│   Opus 5 (1M context) · API Usage Billing   │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 4,
+            "to": 8,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 9,
+            "to": 10,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 14,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 15,
+            "to": 23,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 24,
+            "to": 25,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 29,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 30,
+            "to": 35,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 36,
+            "to": 43,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│     ~/Coding/cdworkspace/dsh-claude-tui     │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "╰──────────────────────────────────────────────────────────────────────────────╯",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "❯ Delegate one deterministic reference task.                                    ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#505050",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 44,
+            "fg": "#ffffff",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 44,
+            "to": 80,
+            "fg": "default",
+            "bg": "#373737",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "  Agent(Inspect reference)",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 7,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ⎿  Initializing…",
+        "runs": [
+          {
+            "from": 0,
+            "to": 18,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "✽ Thinking… (0s · ↓ 23 tokens)",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 11,
+            "fg": "#e49070",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 12,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 12,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 20,
+            "to": 30,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "❯  ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "inverse"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  ⏸ manual mode on · esc to interrupt · ← for agents · ↓ to manage",
+        "runs": [
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 4,
+            "to": 10,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 15,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 16,
+            "to": 18,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 24,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 25,
+            "to": 27,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 28,
+            "to": 37,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 38,
+            "to": 39,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 40,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 42,
+            "to": 45,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 52,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 53,
+            "to": 54,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 55,
+            "to": 56,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 57,
+            "to": 59,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 60,
+            "to": 66,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "                                                              ● high · /effort",
+        "runs": [
+          {
+            "from": 62,
+            "to": 63,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 64,
+            "to": 68,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 69,
+            "to": 70,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 71,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "  ⏺ main",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 4,
+            "to": 8,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ◯ general-purpose  Inspect reference                          0s · ↑ 65 tokens",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 4,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 28,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 29,
+            "to": 38,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 64,
+            "to": 80,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

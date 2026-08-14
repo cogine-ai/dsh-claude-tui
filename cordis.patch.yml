@@ -1,0 +1,31 @@
+# Claude-like full-screen terminal surface over the shared dsh-base bundle.
+
+- id: system-prompt
+  config:
+    persona: >-
+      You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+
+- id: hmr
+  disabled: true
+
+- id: tools
+  config:
+    mode: !!js process.env.DSH_TOOLS_MODE
+
+- insert:
+    # Code Mode is a core execution capability, not a Web component.
+    - id: code-runtime
+      name: '@deepseek-ai/dsh-code-runtime-worker-thread'
+
+    - id: claude-tui-startup
+      name: dsh-claude-tui/startup
+
+    - id: claude-tui
+      name: dsh-claude-tui
+      inject: [claudeTuiStartup]
+      config:
+        title: DeepSeek Harness - Claude TUI
+        color: true
+        showReasoning: true
+        maxTranscriptRows: 5000
+        maxToolOutputLines: 8

@@ -1,0 +1,366 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "Claude Code",
+    "version": "2.1.227",
+    "command": "claude",
+    "args": [
+      "--settings",
+      "{}",
+      "--setting-sources",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--tools",
+      "",
+      "--permission-mode",
+      "manual",
+      "--resume"
+    ],
+    "cwd": "/Users/kiedis/Coding/examples/deepseek-harness"
+  },
+  "scenario": "session-picker-empty",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "rawSha256": "14f285bed24774fc5eadca125a9181aca5123d35d36d33a15ce36e99e0278e58",
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 0,
+      "row": 23
+    },
+    "lines": [
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  Resume session",
+        "runs": [
+          {
+            "from": 2,
+            "to": 8,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 9,
+            "to": 16,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ╭──────────────────────────────────────────────────────────────────────────╮",
+        "runs": [
+          {
+            "from": 2,
+            "to": 78,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  │ ⌕ Search…                                                                │",
+        "runs": [
+          {
+            "from": 2,
+            "to": 3,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 4,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 13,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 77,
+            "to": 78,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ╰──────────────────────────────────────────────────────────────────────────╯",
+        "runs": [
+          {
+            "from": 2,
+            "to": 78,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "    deepseek-harness",
+        "runs": [
+          {
+            "from": 4,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "   No conversations found in this project.",
+        "runs": [
+          {
+            "from": 3,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 20,
+            "to": 25,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 28,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 29,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 34,
+            "to": 42,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "   Ctrl+A to show all projects",
+        "runs": [
+          {
+            "from": 3,
+            "to": 9,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 10,
+            "to": 12,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 13,
+            "to": 17,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 18,
+            "to": 21,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 22,
+            "to": 30,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "    Ctrl+A to show all projects · Ctrl+B to only show current branch · Type to",
+        "runs": [
+          {
+            "from": 4,
+            "to": 10,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 13,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 14,
+            "to": 18,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 22,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 23,
+            "to": 31,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 32,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 34,
+            "to": 48,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 49,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "    search · Esc to cancel",
+        "runs": [
+          {
+            "from": 4,
+            "to": 26,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}
