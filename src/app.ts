@@ -10,7 +10,7 @@ import {
   type TuiInputListenerResult,
 } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Agent, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import type { AskUserQuestionRequest } from '@deepseek-ai/dsh-user-questions'
@@ -18,6 +18,15 @@ import type {} from '@deepseek-ai/dsh-subagent'
 import type { ResolvedConfig } from './config.ts'
 import { ModalQueue, askApproval, askUserQuestions } from './dialogs.ts'
 import type { ListWorkspaceEntries, WorkspaceEntry } from './files.ts'
+import { confirmModelSwitch, loadModelCatalog, showModelPicker } from './model-picker.ts'
+import {
+  loadProviderCatalog,
+  showApiKeyInput,
+  showProviderInfo,
+  showProviderPicker,
+  soleMissingCredential,
+  type ProviderEntry,
+} from './providers.ts'
 import { ClaudePromptEditorComponent, HeaderComponent, PromptContextComponent } from './surface.ts'
 import { displayText } from './text.ts'
 import { createPalette, editorTheme } from './theme.ts'
@@ -38,6 +47,8 @@ export interface ClaudeTuiRuntime {
   now?(): number
   /** Read-only workspace index used by the file-mention completion surface. */
   listWorkspaceEntries?: ListWorkspaceEntries
+  /** Agent-scoped DSH selection; the loop snapshots it for the next model request. */
+  modelSelection?: ModelSelectionRef
 }
 
 /** Inline reverse-search state matching Claude Code's prompt-history surface. */
@@ -139,10 +150,11 @@ export class ClaudeTuiApplication {
       const slashMenu = this.slashMenuView()
       const fileMenu = this.fileMentionView()
       const historyMatch = this.selectedHistory()
+      const selectedModel = this.runtime.modelSelection?.current
       return {
         status: this.agent.status,
-        provider: this.transcript.provider ?? this.agent.options.provider,
-        model: this.transcript.model ?? this.agent.options.model,
+        provider: selectedModel?.provider ?? this.transcript.provider ?? this.agent.options.provider,
+        model: selectedModel?.model ?? this.transcript.model ?? this.agent.options.model,
         transcriptExpanded: this.transcriptView.transcriptExpanded,
         reasoningVisible: this.transcriptView.reasoningVisible,
         usage: this.transcript.usage,
@@ -172,7 +184,12 @@ export class ClaudeTuiApplication {
       title: safeTitle,
       sessionId: displayText(String(agent.id)),
       cwd: displayText(agent.session.header.cwd ?? process.cwd()),
-      model: displayText(`${agent.options.provider}/${agent.options.model}`),
+      model: () => {
+        const selected = this.runtime.modelSelection?.current
+        return displayText(selected === undefined
+          ? `${agent.options.provider}/${agent.options.model}`
+          : `${selected.provider}/${selected.model}`)
+      },
     }, this.palette))
     this.tui.addChild(new Spacer(2))
     this.tui.addChild(this.transcriptView)
@@ -200,7 +217,7 @@ export class ClaudeTuiApplication {
       this.loadWorkspaceEntries()
       this.runtime.terminal.setTitle(displayText(this.config.title))
       this.runtime.terminal.setProgress(this.agent.status === 'running')
-      if (initialPrompt !== undefined && initialPrompt.trim() !== '') this.submit(initialPrompt)
+      void this.beginStartup(initialPrompt)
     } catch (error: unknown) {
       await this.dispose()
       throw error
@@ -375,6 +392,8 @@ export class ClaudeTuiApplication {
         const registered = this.ctx.commands.list(this.agent)
           .map(item => `/${item.name} — ${item.description}`)
         this.transcript.addNotice([
+          '/model — select a live DSH model for this session',
+          '/provider — inspect or update DSH provider credentials',
           '/transcript — expand or compact tool details',
           '/reasoning — show or hide reasoning blocks',
           '/exit — leave after the active turn settles',
@@ -389,6 +408,12 @@ export class ClaudeTuiApplication {
       case 'reasoning':
         this.transcriptView.toggleReasoning()
         this.tui.requestRender()
+        return true
+      case 'model':
+        this.openModelPicker()
+        return true
+      case 'provider':
+        this.openProviderPicker()
         return true
       default:
         return false
@@ -423,6 +448,10 @@ export class ClaudeTuiApplication {
     if (this.closed || isKeyRelease(data)) return undefined
     if (this.historySearch !== undefined) return this.handleHistorySearchInput(data)
     if (this.tui.hasOverlay()) return undefined
+    if (matchesKey(data, Key.alt('p'))) {
+      this.openModelPicker()
+      return { consume: true }
+    }
     if (matchesKey(data, Key.ctrl('r'))) {
       this.startHistorySearch()
       return { consume: true }
@@ -486,6 +515,8 @@ export class ClaudeTuiApplication {
       { name: 'transcript', description: 'Expand or compact tool transcript details' },
       { name: 'reasoning', description: 'Show or hide model reasoning blocks' },
       { name: 'exit', description: 'Flush the session and leave the terminal' },
+      { name: 'model', description: 'Select a live DSH model for this session' },
+      { name: 'provider', description: 'Inspect or update DSH provider credentials' },
       ...this.ctx.commands.list(this.agent).map(item => ({
         name: item.name,
         description: item.description,
@@ -688,6 +719,174 @@ export class ClaudeTuiApplication {
   private toggleTranscript(): void {
     this.transcriptView.toggleTranscript()
     this.tui.requestRender()
+  }
+
+  /** Open the Claude-shaped picker over DSH-owned routes, efforts, and defaults. */
+  private openModelPicker(): void {
+    const selection = this.runtime.modelSelection
+    if (selection === undefined) {
+      this.transcript.addNotice('This entry point did not expose a DSH model selection.', 'warning')
+      this.tui.requestRender()
+      return
+    }
+    void this.modalQueue.run(async () => {
+      const result = await showModelPicker(
+        this.tui,
+        this.palette,
+        async () => {
+          const current = selection.current
+          if (current === undefined) throw new Error('The current DSH model selection is unavailable')
+          const defaultModel = this.ctx.get('agentDefaultModel')
+          return loadModelCatalog(
+            this.ctx,
+            current,
+            defaultModel?.currentSelection() ?? current,
+            this.interactionAbort.signal,
+          )
+        },
+        refresh => this.ctx.on('llm/adapters-updated', refresh),
+        this.interactionAbort.signal,
+      )
+      if (result === undefined || this.closed) return
+      const previous = selection.current
+      const routeChanged = previous === undefined
+        || previous.provider !== result.selection.provider
+        || previous.model !== result.selection.model
+      const hasAssistantOutput = this.transcript.items.some(item => item.kind === 'assistant')
+      if (routeChanged && hasAssistantOutput) {
+        const confirmed = await confirmModelSwitch(
+          this.tui,
+          this.palette,
+          result.selection,
+          this.interactionAbort.signal,
+        )
+        if (!confirmed || this.closed) return
+      }
+
+      selection.current = result.selection
+      const route = `${displayText(result.selection.provider)}/${displayText(result.selection.model)}`
+      if (!result.saveDefault) {
+        this.promptNotice = `Using ${route} from the next model request`
+        this.tui.requestRender()
+        return
+      }
+      const defaultModel = this.ctx.get('agentDefaultModel')
+      if (defaultModel === undefined) {
+        this.promptNotice = `Using ${route}; DSH default service is unavailable`
+        this.tui.requestRender()
+        return
+      }
+      try {
+        await defaultModel.saveSelection(result.selection)
+        if (!this.closed) this.promptNotice = `Using ${route}; saved as DSH default`
+      } catch (error: unknown) {
+        if (!this.closed) {
+          this.promptNotice = `Using ${route}; default was not saved: ${errorChain(error)}`
+        }
+      }
+      if (!this.closed) this.tui.requestRender()
+    }).catch((error: unknown) => {
+      if (this.closed || this.interactionAbort.signal.aborted) return
+      this.transcript.addNotice(`Unable to select model: ${errorChain(error)}`, 'error')
+      this.tui.requestRender()
+    })
+  }
+
+  /** Gate an invocation prompt only when DSH proves one writable credential is the sole missing route. */
+  private async beginStartup(initialPrompt: string | undefined): Promise<void> {
+    const prompt = initialPrompt?.trim() === '' ? undefined : initialPrompt
+    if (
+      this.ctx.get('llm') === undefined
+      || this.ctx.get('settings') === undefined
+      || this.ctx.get('credentials') === undefined
+    ) {
+      if (prompt !== undefined) this.submit(prompt)
+      return
+    }
+    try {
+      const target = soleMissingCredential(await loadProviderCatalog(this.ctx))
+      if (target === undefined || this.closed) {
+        if (prompt !== undefined && !this.closed) this.submit(prompt)
+        return
+      }
+      const configured = await this.modalQueue.run(() => this.configureProvider(target, true))
+      if (this.closed) return
+      if (configured) {
+        if (prompt !== undefined) this.submit(prompt)
+      } else if (prompt !== undefined) {
+        this.editor.setText(prompt)
+        this.tui.requestRender()
+      }
+    } catch (error: unknown) {
+      if (this.closed || this.interactionAbort.signal.aborted) return
+      this.transcript.addNotice(`Unable to inspect provider credentials: ${errorChain(error)}`, 'warning')
+      if (prompt !== undefined) this.submit(prompt)
+      this.tui.requestRender()
+    }
+  }
+
+  /** Open the provider chooser; its rows are projections of DSH service metadata. */
+  private openProviderPicker(): void {
+    void this.modalQueue.run(async () => {
+      const entry = await showProviderPicker(
+        this.tui,
+        this.palette,
+        () => loadProviderCatalog(this.ctx),
+        (refresh) => {
+          const disposers = [
+            this.ctx.on('llm/adapters-updated', refresh),
+            this.ctx.on('credentials/updated', () => { refresh() }),
+            this.ctx.on('settings/updated', () => { refresh() }),
+          ]
+          return () => { for (const dispose of disposers.reverse()) dispose() }
+        },
+        this.interactionAbort.signal,
+      )
+      if (entry !== undefined && !this.closed) await this.configureProvider(entry, false)
+    }).catch((error: unknown) => {
+      if (this.closed || this.interactionAbort.signal.aborted) return
+      this.transcript.addNotice(`Unable to configure provider: ${errorChain(error)}`, 'error')
+      this.tui.requestRender()
+    })
+  }
+
+  /** Edit one DSH credential only when its provider reports this source as writable. */
+  private async configureProvider(entry: ProviderEntry, onboarding: boolean): Promise<boolean> {
+    const authentication = entry.authentication
+    if (authentication.kind !== 'credential' || !authentication.info.writable) {
+      await showProviderInfo(this.tui, this.palette, entry, this.interactionAbort.signal)
+      return authentication.kind === 'managed'
+        || (authentication.kind === 'credential' && authentication.info.configured)
+    }
+    const value = await showApiKeyInput(
+      this.tui,
+      this.palette,
+      entry,
+      authentication.ref,
+      onboarding || !authentication.info.configured,
+      this.interactionAbort.signal,
+    )
+    if (value === undefined) return false
+    if (value === '') return authentication.info.configured
+    const credentials = this.ctx.get('credentials')
+    if (credentials === undefined) return false
+    try {
+      await credentials.set(authentication.ref, value)
+      if (!this.closed) {
+        this.promptNotice = `${displayText(entry.name)} credential saved by DSH`
+        this.tui.requestRender()
+      }
+      return true
+    } catch {
+      if (!this.closed) {
+        this.transcript.addNotice(
+          `Unable to save ${displayText(entry.name)} credential; DSH rejected the update. Error details are hidden to protect the key.`,
+          'error',
+        )
+        this.tui.requestRender()
+      }
+      return false
+    }
   }
 
   /** Match Claude Code's cancel, clear, then double-interrupt exit behavior. */

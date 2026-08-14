@@ -4,6 +4,7 @@ import { ProcessTerminal, type Terminal } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
 import {
   installModelSelection,
+  type Agent,
   type AgentHandle,
   type ModelSelection,
   type ModelSelectionRef,
@@ -38,7 +39,10 @@ export const inject = [
   'sessions',
   'sessionQuery',
   'commands',
+  'credentials',
   'approval',
+  'llm',
+  'settings',
   'userQuestions',
   'claudeTuiStartup',
 ]
@@ -91,28 +95,32 @@ function initialSelection(
 function selectionSetup(
   defaults: ModelSelection,
   override: ModelSelection | undefined,
-): (agentCtx: Context) => void {
-  return (agentCtx) => {
-    const agent = agentCtx.agent
-    if (agent === undefined) throw new Error('claude-tui: Agent setup has no scoped Agent')
-    let picked = override
-    const selection: ModelSelectionRef = {
-      get current(): ModelSelection {
-        if (picked !== undefined) return picked
-        const logged = agent.session.requestHeader()?.config
-        if (logged === undefined) return defaults
-        return {
-          provider: logged.provider,
-          model: logged.model,
-          ...logged.reasoningEffort === undefined ? {} : { reasoningEffort: logged.reasoningEffort },
-        }
-      },
-      set current(next: ModelSelection | undefined) {
-        picked = next
-      },
-      assembled: undefined,
-    }
-    installModelSelection(agentCtx, selection)
+): { setup(agentCtx: Context): void; selection: ModelSelectionRef } {
+  let agent: Agent | undefined
+  let picked = override
+  const selection: ModelSelectionRef = {
+    get current(): ModelSelection {
+      if (picked !== undefined) return picked
+      const logged = agent?.session.requestHeader()?.config
+      if (logged === undefined) return defaults
+      return {
+        provider: logged.provider,
+        model: logged.model,
+        ...logged.reasoningEffort === undefined ? {} : { reasoningEffort: logged.reasoningEffort },
+      }
+    },
+    set current(next: ModelSelection | undefined) {
+      picked = next
+    },
+    assembled: undefined,
+  }
+  return {
+    selection,
+    setup(agentCtx: Context): void {
+      agent = agentCtx.agent
+      if (agent === undefined) throw new Error('claude-tui: Agent setup has no scoped Agent')
+      installModelSelection(agentCtx, selection)
+    },
   }
 }
 
@@ -151,7 +159,7 @@ async function boot(
 
   const defaults = defaultModel.currentSelection()
   const selected = initialSelection(defaults, startup)
-  const setup = selectionSetup(defaults, selected.override)
+  const modelRuntime = selectionSetup(defaults, selected.override)
   const agentOptions = { provider: selected.initial.provider, model: selected.initial.model }
   const resolved = resolveConfig(config)
   const appConfig: ResolvedConfig = {
@@ -182,13 +190,13 @@ async function boot(
           sessionId: SessionId(startup.sessionId ?? `session-${randomUUID()}`),
           meta: { cwd: internals.cwd() },
           agentOptions,
-          setup,
+          setup: modelRuntime.setup,
           signal,
         })
       : await agents.resume({
           resumeSessionId: SessionId(resumeSessionId),
           agentOptions,
-          setup,
+          setup: modelRuntime.setup,
           signal,
         })
     if (signal.aborted) {
@@ -204,6 +212,7 @@ async function boot(
     let exitRequested = false
     const app = new ClaudeTuiApplication(ctx, handle.agent, appConfig, {
       terminal,
+      modelSelection: modelRuntime.selection,
       listWorkspaceEntries: listLocalWorkspaceEntries,
       exit: async (code) => {
         if (exitRequested) return

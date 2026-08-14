@@ -19,7 +19,7 @@ export interface HeaderValues {
   title: string
   sessionId: string
   cwd: string
-  model: string
+  model: string | (() => string)
 }
 
 /** Compact Claude-like application header. */
@@ -36,7 +36,8 @@ export class HeaderComponent implements Component {
       this.palette.brand('  ▘▘ ▝▝  '),
     ]
     const first = `${logo[0]}   ${this.palette.bold(this.values.title)}`
-    const second = `${logo[1]}  ${this.palette.dim(`${this.values.model} · ${this.values.sessionId}`)}`
+    const model = typeof this.values.model === 'function' ? this.values.model() : this.values.model
+    const second = `${logo[1]}  ${this.palette.dim(`${model} · ${this.values.sessionId}`)}`
     const thirdLeft = `${logo[2]}  ${this.palette.dim(this.values.cwd)}`
     const third = safeWidth < 48
       ? thirdLeft
@@ -159,7 +160,7 @@ export class PromptContextComponent implements Component {
         truncateToWidth(`${' '.repeat(Math.max(0, safeWidth - visibleWidth(modes) - 2))}${this.palette.dim(modes)}`, safeWidth, '…'),
       ]
     }
-    if (state.notice !== undefined) {
+    if (state.notice !== undefined && state.status !== 'running') {
       const left = this.palette.dim(`  ${displayText(state.notice)}`)
       const right = this.palette.dim(route)
       const modes = [
@@ -181,7 +182,7 @@ export class PromptContextComponent implements Component {
     }
     const active = state.activeAgents ?? []
     const left = state.status === 'running'
-      ? `${this.palette.warning('  ✻ Working · Esc to interrupt')}${active.length === 0 ? '' : this.palette.dim(' · ← for agents')}`
+      ? `${this.palette.warning('  ✻ Working · Esc to interrupt')}${active.length === 0 ? '' : this.palette.dim(' · ← for agents')}${state.notice === undefined ? '' : this.palette.dim(` · ${displayText(state.notice)}`)}`
       : this.palette.dim(`  ⏸ ${route} · ? for shortcuts · ← for agents`)
     const modes = [
       tokens,
