@@ -78,32 +78,20 @@ DSH_TOOLS_MODE=code dsh --profile claude-tui
 | `Left Arrow` | 显示或隐藏活动 Agent roster |
 | `Ctrl+D` | 空输入时连续按两次，安全退出 |
 
-## 高保真是怎么验证的
+## 高保真验证
 
-视觉基线来自运行在 true-color xterm-compatible PTY 中的 Claude Code `2.1.227`。候选 TUI 经过真实 `pi-tui` ANSI 渲染，再进入与参考流相同的终端 cell 模型进行比较。
+以 true-color xterm-compatible PTY 中的 Claude Code `2.1.227` 为基线：
 
-当前资格证据：
+- **23** 个参考帧，**21** 个自动视觉/语义锚点；
+- **41/41** 个终端测试，覆盖 `80x24`、`100x30`；
+- 真实 Harness 运行覆盖审批、问题及前台/后台子代理；
+- 唯一主动差异：增加一行顶部留白，避免图标裁切。
 
-- **23** 个独立捕获的 Claude Code 参考帧；
-- **21** 个自动视觉/语义对比锚点；
-- **41/41** 个终端语义测试通过；
-- 已验证 `80x24`、`100x30` 两种尺寸；
-- 审批、用户问题、前台/后台子代理均有真实 Harness 运行证明；
-- 唯一主动增加的主界面几何差异，是避免终端顶部裁切图标的一行安全留白。
-
-完整证据和边界见 [Claude Code 2.1.227 视觉资格报告](./docs/visual-qualification-2.1.227.md)。
+[完整资格报告](./docs/visual-qualification-2.1.227.md)
 
 ## 兼容边界
 
-“高保真”指已观测到的 `2.1.227` 终端契约，不代表 Anthropic 私有模型行为，也不承诺自动兼容未来 Claude Code 版本。
-
-以下差异是有意且诚实的：
-
-- 展示 Harness 的 provider、model、session 和路径，不伪装 Claude 账户状态；
-- Harness 没有对应的持久化授权结果，因此不提供虚假的 “always allow”；
-- 用真实可用的 `← for agents` 替代不可用的 Claude 后台 Agent 管理器；
-- 不编造 Harness 没有暴露的 Claude 私有 token/耗时指标；
-- 命令目录来自 Harness，而不是复制 Claude Code 的私有目录。
+仅覆盖已观测到的 Claude Code `2.1.227` TUI。运行数据和能力以 Harness 为准，不模拟其未提供的 Claude 私有状态；新版本需重新验证。
 
 ## 开发与验证
 

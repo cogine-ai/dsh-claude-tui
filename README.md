@@ -78,20 +78,16 @@ Useful controls:
 | `Left Arrow` | hide or show the active-agent roster |
 | `Ctrl+D` | press twice on an empty prompt to exit cleanly |
 
-## Fidelity is measured
+## Fidelity
 
-The visual baseline is Claude Code `2.1.227` running in a true-color xterm-compatible PTY. The candidate TUI is rendered through the real `pi-tui` ANSI path into the same cell model used to normalize the reference stream.
+Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
 
-Current qualification:
+- **23** reference frames and **21** automated visual/semantic anchors.
+- **41/41** terminal tests at `80x24` and `100x30`.
+- Real Harness runs for approvals, questions, and foreground/background subagents.
+- One intentional difference: a blank top row prevents logo clipping.
 
-- **23** independently captured Claude Code reference frames.
-- **21** active automated visual/semantic comparison anchors.
-- **41/41** terminal-semantic tests passing.
-- **2 widths** qualified (`80x24` and `100x30`).
-- Real Harness runs for approvals, user questions, and foreground/background subagents.
-- One intentional shell difference: a blank top safety row prevents terminal chrome from clipping the logo.
-
-Read the evidence and exact boundaries in [Claude Code 2.1.227 visual qualification](./docs/visual-qualification-2.1.227.md).
+[Full qualification report](./docs/visual-qualification-2.1.227.md)
 
 ## Architecture
 
@@ -109,19 +105,9 @@ Read the evidence and exact boundaries in [Claude Code 2.1.227 visual qualificat
 
 The plugin waits for Loader settlement, binds every event to the exact root Agent, delegates unknown slash commands to Harness, and reverses registrations before restoring raw terminal state.
 
-## Compatibility boundary
+## Compatibility
 
-“High fidelity” applies to the observed `2.1.227` terminal contract—not Anthropic's private model behavior or every future Claude Code release.
-
-Deliberately truthful differences include:
-
-- Harness provider/model/session/path data replaces Claude account and billing state.
-- Durable “always allow” is disabled because Harness has no equivalent grant outcome.
-- `← for agents` replaces Claude's unavailable background-agent manager affordance.
-- Private Claude subagent token/time metrics are not invented.
-- The command catalog is Harness-owned rather than copied from Claude Code.
-
-Compatibility is version-pinned. A later Claude Code or Harness release requires a new capture and qualification pass.
+Targets the observed Claude Code `2.1.227` TUI only. Harness remains the source of truth for runtime data and capabilities; unsupported Claude-only states are not simulated. New versions require requalification.
 
 ## Development
 
