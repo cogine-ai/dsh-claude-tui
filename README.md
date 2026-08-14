@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="52 tests" src="https://img.shields.io/badge/tests-52%2F52-4eba65?style=flat-square" />
+  <img alt="53 tests" src="https://img.shields.io/badge/tests-53%2F53-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -88,7 +88,7 @@ Use `/model` for the same model picker and `/provider` to inspect or update cred
 Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
 
 - **23** reference frames and **21** automated visual/semantic anchors.
-- **52/52** tests, including terminal behavior at `80x24` and `100x30`.
+- **53/53** tests, including terminal behavior at `80x24` and `100x30`.
 - Real Harness runs for approvals, questions, and foreground/background subagents.
 - One intentional difference: a blank top row prevents logo clipping.
 

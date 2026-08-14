@@ -28,6 +28,7 @@ interface Bench {
   terminal: HeadlessTerminal
   followups: UserMessage[]
   exitCodes: number[]
+  setStatus(status: Agent['status']): void
   askQuestions(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer>
 }
 
@@ -191,6 +192,7 @@ function bench(
     terminal,
     followups,
     exitCodes,
+    setStatus: nextStatus => { status = nextStatus },
     askQuestions: request => {
       if (questionProvider === undefined) throw new Error('question provider is not registered')
       return questionProvider.ask(request)
@@ -674,6 +676,34 @@ describe('ClaudeTuiApplication', () => {
       provider: 'deepseek-official',
       model: 'deepseek-v4-pro',
     }])
+
+    await test.app.dispose()
+  })
+
+  it('shows a model-switch notice while an Agent is running in plan mode', async () => {
+    const models = modelFixture()
+    const test = bench(100, 30, () => 1_000, {
+      models,
+      seed: session => {
+        const sessionWithPlanEvents = session as unknown as {
+          append(type: string, data: unknown): unknown
+        }
+        sessionWithPlanEvents.append('plan/mode', { active: true })
+      },
+    })
+    test.setStatus('running')
+    await test.app.start()
+
+    test.terminal.send('\u001Bp')
+    await test.terminal.settle()
+    test.terminal.send('\u001B[B')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('plan mode on')
+    expect(test.terminal.text()).toContain(
+      'Using deepseek-official/deepseek-v4-pro from the next model request',
+    )
 
     await test.app.dispose()
   })

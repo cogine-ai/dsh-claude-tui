@@ -175,9 +175,12 @@ export class PromptContextComponent implements Component {
     if (state.planModeActive) {
       const left = `  ${this.palette.plan('⏸ plan mode on')}${this.palette.dim(' · /plan off to leave · ← for agents')}`
       const right = this.palette.dim(route)
+      const detail = state.notice === undefined
+        ? `${' '.repeat(Math.max(0, safeWidth - visibleWidth(right)))}${right}`
+        : joinSides(this.palette.dim(`  ${displayText(state.notice)}`), right, safeWidth)
       return [
         truncateToWidth(left, safeWidth, '…'),
-        truncateToWidth(`${' '.repeat(Math.max(0, safeWidth - visibleWidth(right)))}${right}`, safeWidth, '…'),
+        truncateToWidth(detail, safeWidth, '…'),
       ]
     }
     const active = state.activeAgents ?? []

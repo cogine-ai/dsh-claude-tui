@@ -53,7 +53,7 @@ An effort left untouched on an ordinary different model remains absent in the se
 
 At startup, automatic credential onboarding is intentionally narrow: it opens only when no active route is known usable and exactly one missing credential is writable. A successful save happens before an invocation-supplied initial prompt is submitted. Cancelling keeps that prompt as an editable draft. This avoids silently sending a real request that DSH already says cannot authenticate.
 
-API-key input accepts printable non-space ASCII after trimming, rejects quoted values and pasted `NAME=value` lines, and mirrors the DSH Web validation boundary. This is format validation, not a connectivity test; the next real model request remains the authoritative provider check.
+API-key input accepts printable non-space ASCII after trimming, rejects quoted values, and mirrors the DSH Web heuristic for uppercase environment-assignment pastes: `NAME=value` is rejected when the first character after `=` is not another `=`, while `KEY=` and `KEY==` remain valid opaque-key shapes. This is format validation, not a connectivity test; the next real model request remains the authoritative provider check.
 
 ## Non-goals
 

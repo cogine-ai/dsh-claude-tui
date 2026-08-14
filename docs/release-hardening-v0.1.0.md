@@ -15,7 +15,7 @@ npx dsh-claude-tui
 
 No separately installed `dsh` command, repository checkout, pnpm installation, or manual profile setup may be required. Provider credentials are still required before a real model request.
 
-This milestone also includes the bounded model/provider surfaces approved for first-run usability: the Claude-shaped interaction is documented separately, while all catalog, default, effort, and credential semantics remain DSH-owned. Further visual surfaces and interaction features remain deferred until after `v0.1.0`. The release sequence remains:
+This milestone also includes the bounded model/provider surfaces approved for first-run usability: the Claude-shaped interaction is [documented separately](./model-provider-interactions.md), while all catalog, default, effort, and credential semantics remain DSH-owned. Further visual surfaces and interaction features remain deferred until after `v0.1.0`. The release sequence remains:
 
 ```text
 Release hardening -> npm 0.1.0 -> GitHub Release/GIF -> public launch -> feedback-led iteration

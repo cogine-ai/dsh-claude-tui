@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="52 tests" src="https://img.shields.io/badge/tests-52%2F52-4eba65?style=flat-square" />
+  <img alt="53 tests" src="https://img.shields.io/badge/tests-53%2F53-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -88,7 +88,7 @@ DSH_TOOLS_MODE=code dsh --profile claude-tui
 以 true-color xterm-compatible PTY 中的 Claude Code `2.1.227` 为基线：
 
 - **23** 个参考帧，**21** 个自动视觉/语义锚点；
-- **52/52** 个测试，包含 `80x24`、`100x30` 的终端行为；
+- **53/53** 个测试，包含 `80x24`、`100x30` 的终端行为；
 - 真实 Harness 运行覆盖审批、问题及前台/后台子代理；
 - 唯一主动差异：增加一行顶部留白，避免图标裁切。
 

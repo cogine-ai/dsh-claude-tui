@@ -12,7 +12,11 @@ import {
 } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ModelSelection } from '@deepseek-ai/dsh-agent'
-import { errorChain, type LlmReasoningEffortInfo } from '@deepseek-ai/dsh-llm'
+import {
+  errorChain,
+  type LlmReasoningEffortInfo,
+  type ReasoningEffortId,
+} from '@deepseek-ai/dsh-llm'
 import { displayText } from './text.ts'
 import type { Palette } from './theme.ts'
 
@@ -26,7 +30,7 @@ export interface ModelPickerEntry {
   readonly advertised: boolean
   readonly metadataResolved: boolean
   readonly efforts: readonly LlmReasoningEffortInfo[]
-  readonly defaultEffort?: string
+  readonly defaultEffort?: ReasoningEffortId
 }
 
 /** Fresh registry projection used by one picker render. */
@@ -135,7 +139,7 @@ class ModelPickerDialog implements Component, Focusable {
   onCancel?: () => void
   private catalog: ModelCatalog | undefined
   private selected = 0
-  private readonly pickedEfforts = new Map<string, string | undefined>()
+  private readonly pickedEfforts = new Map<string, ReasoningEffortId | undefined>()
   private loading = true
   private failure: string | undefined
 
@@ -309,7 +313,7 @@ class ModelPickerDialog implements Component, Focusable {
       selection: {
         provider: entry.provider,
         model: entry.model,
-        ...(effort === undefined ? {} : { reasoningEffort: effort as never }),
+        ...(effort === undefined ? {} : { reasoningEffort: effort }),
       },
       saveDefault,
     })
@@ -323,7 +327,10 @@ class ModelPickerDialog implements Component, Focusable {
     return `${entry.provider}\u0000${entry.model}`
   }
 
-  private compatibleEffort(entry: ModelPickerEntry, effort: string | undefined): string | undefined {
+  private compatibleEffort(
+    entry: ModelPickerEntry,
+    effort: ReasoningEffortId | undefined,
+  ): ReasoningEffortId | undefined {
     if (effort === undefined || !entry.metadataResolved) return effort
     return entry.efforts.some(candidate => candidate.id === effort) ? effort : undefined
   }
