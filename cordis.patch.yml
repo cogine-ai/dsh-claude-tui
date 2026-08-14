@@ -17,6 +17,11 @@
     - id: code-runtime
       name: '@deepseek-ai/dsh-code-runtime-worker-thread'
 
+    # The base bundle provides the question service; this consumer exposes it
+    # to the model so the TUI's registered provider is reachable end to end.
+    - id: tool-ask-user
+      name: '@deepseek-ai/dsh-tool-ask-user'
+
     - id: claude-tui-startup
       name: dsh-claude-tui/startup
 
