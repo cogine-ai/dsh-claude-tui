@@ -128,11 +128,20 @@ Dynamic capture scenarios use an isolated Claude config, a dummy key, and a loop
 
 ## Roadmap
 
+**Now — v0.1.0 Release Hardening**
+
+- ship a publishable package from a clean checkout;
+- make `npx dsh-claude-tui` the complete install-and-launch path;
+- qualify first-run setup, repeat-run idempotence, and packed-tarball execution.
+
+The milestone and its release gates are tracked in the [v0.1.0 Release Hardening plan](./docs/release-hardening-v0.1.0.md).
+
+**Next — after v0.1.0**
+
 - richer attachment and completion surfaces;
 - broader session management and rename flows;
 - additional plan, todo, and background-job states;
-- more terminal emulators and operating-system qualification;
-- release packaging beyond installation from a checkout.
+- more terminal emulators and operating-system qualification.
 
 Issues and focused pull requests are welcome. Visual-parity changes should include an independently captured reference or an explicit, documented Harness-semantic boundary.
 
