@@ -4,6 +4,7 @@
 - Owner: maintainers
 - Confidence: high
 - Package: [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0)
+- GitHub Release: [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0)
 - Approved: 2026-08-15
 - Published: 2026-08-15
 
@@ -20,7 +21,7 @@ No separately installed `dsh` command, repository checkout, pnpm installation, o
 This milestone also includes the bounded model/provider surfaces approved for first-run usability: the Claude-shaped interaction is [documented separately](./model-provider-interactions.md), while all catalog, default, effort, and credential semantics remain DSH-owned. Further visual surfaces and interaction features remain deferred until after `v0.1.0`. The release sequence remains:
 
 ```text
-Release hardening ✓ -> merge to main ✓ -> publish from the exact merged main commit ✓ -> verify registry metadata and a clean npx launch ✓ -> GitHub Release/GIF -> public launch -> feedback-led iteration
+Release hardening ✓ -> merge to main ✓ -> publish from the exact merged main commit ✓ -> verify registry metadata and a clean npx launch ✓ -> GitHub Release ✓ -> GIF/public launch -> feedback-led iteration
 ```
 
 ## Release gates
@@ -97,4 +98,4 @@ The public registry reports `gitHead` `21679afe9a65bef44d2ccc11aa2ecca52215a218`
 
 - Before: release packaging beyond checkout installation was an undifferentiated future item.
 - After: `v0.1.0 Release Hardening` made `npx dsh-claude-tui` a blocking release promise with explicit first-run, repeat-run, safety, and packed-artifact gates.
-- Released: the pinned artifact passed the four-version CI matrix, production dependency audit, publish dry-run, packed real-API smoke, registry metadata verification, and clean public-`npx` launch required for npm publication.
+- Released: the pinned artifact passed the four-version CI matrix, production dependency audit, publish dry-run, packed real-API smoke, registry metadata verification, clean public-`npx` launch, and exact-commit GitHub Release required for the public `v0.1.0` baseline.
