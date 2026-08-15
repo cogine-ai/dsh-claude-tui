@@ -6,7 +6,7 @@ import {
   wrapTextWithAnsi,
   type Component,
 } from '@earendil-works/pi-tui'
-import type { TokenUsage } from '@deepseek-ai/dsh-llm'
+import { isTokenDelta, type TokenUsage } from '@deepseek-ai/dsh-llm'
 import {
   isReplacementSurfaceEvent,
   type SessionEvent,
@@ -76,6 +76,12 @@ export interface UsageTotals {
   cacheWriteTokens: number
 }
 
+/** Timing for the most recently completed model response. */
+export interface ResponsePerformance {
+  timeToFirstTokenMs: number | undefined
+  outputTokensPerSecond: number | undefined
+}
+
 /** Mutable projection of one append-only Session log. */
 export class TranscriptModel {
   readonly items: TranscriptItem[] = []
@@ -85,11 +91,18 @@ export class TranscriptModel {
     cacheReadTokens: 0,
     cacheWriteTokens: 0,
   }
+  readonly performance: ResponsePerformance = {
+    timeToFirstTokenMs: undefined,
+    outputTokensPerSecond: undefined,
+  }
   provider: string | undefined
   model: string | undefined
   private readonly assistantByStep = new Map<string, AssistantItem>()
   private readonly toolByCall = new Map<string, ToolItem>()
   private readonly turnStartedAt = new Map<number, number>()
+  private readonly stepStartedAt = new Map<string, number>()
+  private readonly firstOutputAtByStep = new Map<string, number>()
+  private readonly outputChunkTimes = new Map<number, number>()
   private localNoticeSequence = 0
 
   /** Rebuild from persisted history before listening for new events. */
@@ -98,10 +111,15 @@ export class TranscriptModel {
     this.assistantByStep.clear()
     this.toolByCall.clear()
     this.turnStartedAt.clear()
+    this.stepStartedAt.clear()
+    this.firstOutputAtByStep.clear()
+    this.outputChunkTimes.clear()
     this.usage.inputTokens = 0
     this.usage.outputTokens = 0
     this.usage.cacheReadTokens = 0
     this.usage.cacheWriteTokens = 0
+    this.performance.timeToFirstTokenMs = undefined
+    this.performance.outputTokensPerSecond = undefined
     this.provider = undefined
     this.model = undefined
     for (const event of events) this.apply(event)
@@ -135,8 +153,17 @@ export class TranscriptModel {
         }
         return
       }
+      case 'step/start': {
+        this.stepStartedAt.set(stepKey(event.data.turn, event.data.step), event.time)
+        return
+      }
       case 'assistant/chunk': {
         const chunk = event.data.chunk
+        if (isTokenDelta(chunk)) {
+          const key = stepKey(event.data.turn, event.data.step)
+          this.outputChunkTimes.set(event.seq, event.time)
+          if (!this.firstOutputAtByStep.has(key)) this.firstOutputAtByStep.set(key, event.time)
+        }
         if (chunk.type !== 'text-delta' && chunk.type !== 'reasoning-delta') return
         const assistant = this.assistant(event.data.turn, event.data.step)
         if (chunk.type === 'text-delta') assistant.text += displayText(chunk.text)
@@ -146,12 +173,20 @@ export class TranscriptModel {
       }
       case 'assistant/message': {
         this.recordUsage(event.data.usage)
+        this.recordPerformance(event)
         if (isReplacementSurfaceEvent(event)) return
         const assistant = this.assistant(event.data.turn, event.data.step)
         assistant.text = contentText(event.data.message.content, 'text')
         assistant.reasoning = contentText(event.data.message.content, 'reasoning')
         assistant.pending = false
         assistant.revision += 1
+        return
+      }
+      case 'step/end': {
+        const key = stepKey(event.data.turn, event.data.step)
+        this.stepStartedAt.delete(key)
+        this.firstOutputAtByStep.delete(key)
+        this.outputChunkTimes.clear()
         return
       }
       case 'tool/call': {
@@ -266,6 +301,33 @@ export class TranscriptModel {
     this.usage.cacheWriteTokens += usage.cacheWriteTokens ?? 0
   }
 
+  /** Derive latest response latency from durable step and raw-chunk timestamps. */
+  private recordPerformance(event: SessionEvent<'assistant/message'>): void {
+    const key = stepKey(event.data.turn, event.data.step)
+    const referencedTimes = event.sourceEventSeqs
+      ?.map(seq => this.outputChunkTimes.get(seq))
+      .filter((time): time is number => time !== undefined)
+    const firstOutputAt = referencedTimes !== undefined && referencedTimes.length > 0
+      ? Math.min(...referencedTimes)
+      : this.firstOutputAtByStep.get(key)
+    const startedAt = this.stepStartedAt.get(key)
+    this.performance.timeToFirstTokenMs = startedAt === undefined || firstOutputAt === undefined
+      ? undefined
+      : Math.max(0, firstOutputAt - startedAt)
+
+    const outputTokens = event.data.usage?.outputTokens
+    const generationMs = firstOutputAt === undefined ? undefined : event.time - firstOutputAt
+    this.performance.outputTokensPerSecond = outputTokens === undefined
+      || outputTokens <= 0
+      || generationMs === undefined
+      || generationMs <= 0
+      ? undefined
+      : outputTokens / (generationMs / 1000)
+
+    this.outputChunkTimes.clear()
+    this.firstOutputAtByStep.delete(key)
+  }
+
   /** A finish-only provider chunk must not leave a permanent working spinner. */
   private finishAssistants(turn: number): void {
     for (const [key, assistant] of this.assistantByStep) {
@@ -278,6 +340,10 @@ export class TranscriptModel {
       if (index >= 0) this.items.splice(index, 1)
     }
   }
+}
+
+function stepKey(turn: number, step: number): string {
+  return `${turn}:${step}`
 }
 
 /** Human-readable non-success turn outcome. */

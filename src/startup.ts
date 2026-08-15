@@ -20,6 +20,7 @@ export interface ClaudeTuiStartupValues {
   readonly provider?: string
   readonly model?: string
   readonly initialPrompt?: string
+  readonly launchNotice?: string
   readonly color: boolean
 }
 
@@ -73,6 +74,7 @@ export function apply(ctx: Context): void {
       program.error('error: --resume and --session-id cannot be used together')
     }
     const prompt = program.args.join(' ').trim()
+    const launchNotice = process.env.DSH_CLAUDE_TUI_LAUNCH_NOTICE?.trim()
     const target = parseModelTarget(program, options.model)
     ctx.provide(CLAUDE_TUI_STARTUP_SERVICE, Object.freeze({
       resumePicker: options.resume === true,
@@ -80,6 +82,9 @@ export function apply(ctx: Context): void {
       ...(options.sessionId === undefined ? {} : { sessionId: options.sessionId }),
       ...target,
       ...(prompt === '' ? {} : { initialPrompt: prompt }),
+      ...(launchNotice === undefined || launchNotice === ''
+        ? {}
+        : { launchNotice: launchNotice.slice(0, 2_000) }),
       color: options.color,
     } satisfies ClaudeTuiStartupValues))
   })

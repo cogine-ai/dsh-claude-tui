@@ -1,7 +1,7 @@
 /** App-owned command-line grammar for exact and interactive resume. */
 import { Context } from '@deepseek-ai/cordis'
 import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apply } from '../src/startup.ts'
 
 const contexts: Context[] = []
@@ -25,5 +25,16 @@ describe('claude-tui startup grammar', () => {
       resumeSessionId: 'session-123',
       color: true,
     })
+  })
+
+  it('reads the launcher fallback notice without turning it into a CLI argument', () => {
+    vi.stubEnv('DSH_CLAUDE_TUI_LAUNCH_NOTICE', 'Using isolated DSH_HOME; sessions were not copied.')
+    try {
+      expect(parse([])).toMatchObject({
+        launchNotice: 'Using isolated DSH_HOME; sessions were not copied.',
+      })
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })

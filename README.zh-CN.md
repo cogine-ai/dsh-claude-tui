@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="66 tests" src="https://img.shields.io/badge/tests-66%2F66-4eba65?style=flat-square" />
+  <img alt="115 tests" src="https://img.shields.io/badge/tests-115%2F115-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -45,6 +45,8 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 
 当前已发布基线为 [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0)。
 对应的源码 Release 为 [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0)。
+下文的环境兼容逻辑已经进入当前源码，计划随下一个补丁版本发布；npm 上的 `0.1.0`
+仍是原先只使用包内固定 DSH 的启动器。
 
 ```bash
 npx dsh-claude-tui
@@ -59,16 +61,22 @@ dsh-claude-tui
 
 真正向模型发送请求时，需要配置所选 Harness 模型提供方的凭证。
 
-即使 `PATH` 中已有其他 `dsh`，启动器也始终使用包内固定版本；同时会沿用所选
-`$DSH_HOME`，让已有凭据、Session、设置和无关 profile 保持可用。启动器只管理
-`claude-tui` profile 的 bundle 注册。如果同名 profile 已存在但没有启动器的所有权
-标记，程序会给出恢复提示并停止，而不会接管或覆盖。
+默认 `auto` 模式会先尝试复用所选 `$DSH_HOME` 已关联的兼容 DSH，再检查 `PATH`
+中可验证来源的 `dsh`。外部 DSH 必须位于 `>=0.1.0-rc.6 <0.1.1`，并通过一个使用
+临时目录、不会继承凭据的 Agent/Session 兼容探针；没有候选通过时，自动使用包内固定
+的 `0.1.0-rc.6`。如需确定性行为，可设置
+`DSH_CLAUDE_TUI_RUNTIME=system|bundled`，分别表示必须使用外部 DSH，或完全跳过
+外部发现。
 
-Harness 目前仍处于预发布阶段，并不承诺所有磁盘状态版本之间都可迁移。包内固定的
-`0.1.0-rc.6` 遇到不兼容的 Session 或存储格式时会拒绝打开，而不会擅自迁移。如果
-现有 `$DSH_HOME` 来自不兼容的 Harness 版本，请使用独立目录（例如
-`DSH_HOME=~/.dsh-claude-tui npx dsh-claude-tui`），只通过 Harness 明确支持的迁移路径
-转移数据。
+只要所选 Home 可安全共享，已有凭据、Session、设置和无关 profile 都继续可用。
+如果旧 `claude-tui` profile 不属于本启动器，它会被完整保留，启动器改用命名空间化的
+`dsh-claude-tui`。如果默认 `~/.dsh` 中存在损坏的启动器标记，程序会自动改用包内
+DSH 与 `~/.dsh-claude-tui`，并在 TUI 内明确提示凭据和 Session 没有被复制。非空的
+显式 `DSH_HOME` 永远不会被偷偷替换；存在不安全冲突时会直接给出可操作错误。
+
+Harness 仍处于预发布阶段，并不承诺所有磁盘状态版本之间都可迁移；数据转移只能走
+Harness 明确支持的迁移路径。完整的选择算法、探针隔离、所有权状态和恢复开关见
+[启动器环境兼容说明](./docs/launcher-environment-compatibility.md)。
 
 不要让不同 Harness 版本并发使用同一个 `$DSH_HOME`：Harness 会管理共享的 profile
 模块 fallback，任一进程都可能按自己的依赖树重新校正它。顺序使用已经纳入验证；如需
@@ -108,7 +116,7 @@ Harness 目前仍处于预发布阶段，并不承诺所有磁盘状态版本之
 以 true-color xterm-compatible PTY 中的 Claude Code `2.1.227` 为基线：
 
 - **23** 个参考帧，**21** 个自动视觉/语义锚点；
-- **66/66** 个测试，包含 `80x24`、`100x30` 的终端行为；
+- **115/115** 个测试，包含 `80x24`、`100x30` 的终端行为；
 - 真实 Harness 运行覆盖审批、问题及前台/后台子代理；
 - 唯一主动差异：增加一行顶部留白，避免图标裁切。
 
@@ -117,6 +125,9 @@ Harness 目前仍处于预发布阶段，并不承诺所有磁盘状态版本之
 ## 兼容边界
 
 仅覆盖已观测到的 Claude Code `2.1.227` TUI。运行数据和能力以 Harness 为准，不模拟其未提供的 Claude 私有状态；新版本需重新验证。
+
+外部 Harness 复用目前只覆盖 DSH `0.1.0` 系列
+（`>=0.1.0-rc.6 <0.1.1`），并且仍须通过运行时探针；仅版本号匹配不视为兼容。
 
 `v0.1.0` 的资格矩阵面向 macOS arm64 与 Linux x64，并要求 true-color、
 xterm-compatible 终端。Windows 启动路径已经实现，但尚未纳入发布资格验证。

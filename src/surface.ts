@@ -10,7 +10,7 @@ import {
 } from '@earendil-works/pi-tui'
 import type { AgentStatus } from '@deepseek-ai/dsh-agent'
 import type { WorkspaceEntry } from './files.ts'
-import type { UsageTotals } from './transcript.ts'
+import type { ResponsePerformance, UsageTotals } from './transcript.ts'
 import type { Palette } from './theme.ts'
 import { displayText } from './text.ts'
 
@@ -102,6 +102,7 @@ export interface PromptContextValues {
   transcriptExpanded: boolean
   reasoningVisible: boolean
   usage: UsageTotals
+  performance: ResponsePerformance
   planModeActive: boolean
   notice?: string
   historySearch?: {
@@ -137,9 +138,20 @@ export class PromptContextComponent implements Component {
       ? 'model pending'
       : `${state.provider}/${state.model}`
     const billedInput = state.usage.inputTokens + state.usage.cacheReadTokens + state.usage.cacheWriteTokens
-    const tokens = billedInput === 0 && state.usage.outputTokens === 0
-      ? ''
-      : `↑${formatTokens(billedInput)} ↓${formatTokens(state.usage.outputTokens)}`
+    const statistics = billedInput === 0 && state.usage.outputTokens === 0
+      ? []
+      : [
+          billedInput === 0
+            ? 'cache —'
+            : `cache ${Math.round((state.usage.cacheReadTokens / billedInput) * 100)}%`,
+          `↑${formatTokens(billedInput)} ↓${formatTokens(state.usage.outputTokens)}`,
+          ...(state.performance.timeToFirstTokenMs === undefined
+            ? []
+            : [`TTFT ${formatDuration(state.performance.timeToFirstTokenMs)}`]),
+          ...(state.performance.outputTokensPerSecond === undefined
+            ? []
+            : [`${state.performance.outputTokensPerSecond.toFixed(1)} tok/s`]),
+        ]
     const safeWidth = Math.max(1, width)
     if (state.slashMenu !== undefined) return this.renderSlashMenu(state.slashMenu, safeWidth)
     if (state.fileMenu !== undefined) return this.renderFileMenu(state.fileMenu, safeWidth)
@@ -157,7 +169,7 @@ export class PromptContextComponent implements Component {
       ].join(' · ')
       return [
         truncateToWidth(`${search}${cursor}${context}`, safeWidth, '…'),
-        truncateToWidth(`${' '.repeat(Math.max(0, safeWidth - visibleWidth(modes) - 2))}${this.palette.dim(modes)}`, safeWidth, '…'),
+        truncateToWidth(this.palette.dim(`  ${modes}`), safeWidth, '…'),
       ]
     }
     if (state.notice !== undefined && state.status !== 'running') {
@@ -169,15 +181,15 @@ export class PromptContextComponent implements Component {
       ].join(' · ')
       return [
         truncateToWidth(joinSides(left, right, safeWidth), safeWidth, '…'),
-        truncateToWidth(`${' '.repeat(Math.max(0, safeWidth - visibleWidth(modes) - 2))}${this.palette.dim(modes)}`, safeWidth, '…'),
+        truncateToWidth(this.palette.dim(`  ${modes}`), safeWidth, '…'),
       ]
     }
     if (state.planModeActive) {
       const left = `  ${this.palette.plan('⏸ plan mode on')}${this.palette.dim(' · /plan off to leave · ← for agents')}`
       const right = this.palette.dim(route)
       const detail = state.notice === undefined
-        ? `${' '.repeat(Math.max(0, safeWidth - visibleWidth(right)))}${right}`
-        : joinSides(this.palette.dim(`  ${displayText(state.notice)}`), right, safeWidth)
+        ? this.palette.dim(`  ${route}`)
+        : this.palette.dim(`  ${displayText(state.notice)} · ${route}`)
       return [
         truncateToWidth(left, safeWidth, '…'),
         truncateToWidth(detail, safeWidth, '…'),
@@ -188,13 +200,13 @@ export class PromptContextComponent implements Component {
       ? `${this.palette.warning('  ✻ Working · Esc to interrupt')}${active.length === 0 ? '' : this.palette.dim(' · ← for agents')}${state.notice === undefined ? '' : this.palette.dim(` · ${displayText(state.notice)}`)}`
       : this.palette.dim(`  ⏸ ${route} · ? for shortcuts · ← for agents`)
     const modes = [
-      tokens,
+      ...statistics,
       state.reasoningVisible ? 'reasoning on' : 'reasoning off',
       state.transcriptExpanded ? 'transcript expanded' : 'transcript compact',
     ].filter(Boolean).join(' · ')
     const rows = [
       truncateToWidth(left, safeWidth, '…'),
-      truncateToWidth(`${' '.repeat(Math.max(0, safeWidth - visibleWidth(modes) - 2))}${this.palette.dim(modes)}`, safeWidth, '…'),
+      truncateToWidth(this.palette.dim(`  ${modes}`), safeWidth, '…'),
     ]
     if (active.length === 0) return rows
     return [
@@ -256,4 +268,11 @@ function formatTokens(value: number): string {
   if (value < 1000) return String(value)
   if (value < 1_000_000) return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`
   return `${(value / 1_000_000).toFixed(1)}m`
+}
+
+/** Compact first-token latency for one terminal status row. */
+function formatDuration(milliseconds: number): string {
+  if (milliseconds < 1000) return `${Math.round(milliseconds)}ms`
+  if (milliseconds < 10_000) return `${(milliseconds / 1000).toFixed(1)}s`
+  return `${Math.round(milliseconds / 1000)}s`
 }

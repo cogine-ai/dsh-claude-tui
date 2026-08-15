@@ -1,5 +1,7 @@
 /** Cordis entry point for the Claude Code-like Harness terminal profile. */
 import { randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { ProcessTerminal, type Terminal } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
 import {
@@ -28,6 +30,10 @@ import {
   type ResolvedConfig,
 } from './config.ts'
 import type { ClaudeTuiStartupValues } from './startup.ts'
+import type { CompatibilityProbeResult } from './probe-contract.ts'
+
+const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
+const PROBE_RESULT_PREFIX = 'DSH_CLAUDE_TUI_PROBE_RESULT '
 
 /** Stable Cordis plugin name. */
 export const name = 'claude-tui'
@@ -57,11 +63,13 @@ export const internals: {
   isTty(): boolean
   cwd(): string
   stderr: { write(chunk: string): unknown }
+  stdout: { write(chunk: string): unknown }
 } = {
   createTerminal: () => new ProcessTerminal(),
   isTty: () => process.stdin.isTTY === true && process.stdout.isTTY === true,
   cwd: () => process.cwd(),
   stderr: process.stderr,
+  stdout: process.stdout,
 }
 
 /** Owned resources created after Loader settlement. */
@@ -141,6 +149,93 @@ export async function awaitCompositionSettlement(ctx: Context): Promise<void> {
   await ctx.get('loader')?.await()
 }
 
+/** Read the mounted plugin's version, not the host DSH package version. */
+function packageVersion(): string {
+  const manifestPath = fileURLToPath(new URL('../package.json', import.meta.url))
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { version?: unknown }
+  if (typeof manifest.version !== 'string' || manifest.version.trim() === '') {
+    throw new Error(`claude-tui: package manifest ${manifestPath} contains no valid version`)
+  }
+  return manifest.version
+}
+
+/** Exercise the injected Agent/Session contracts without sending a model request. */
+export async function runCompatibilityProbe(
+  ctx: Context,
+  token: string,
+  version: string,
+  signal: AbortSignal,
+): Promise<CompatibilityProbeResult> {
+  await awaitCompositionSettlement(ctx)
+  signal.throwIfAborted()
+
+  const agents = ctx.get('agents')
+  const defaultModel = ctx.get('agentDefaultModel')
+  const sessions = ctx.get('sessions')
+  if (agents === undefined || defaultModel === undefined || sessions === undefined) {
+    throw new Error('claude-tui: compatibility probe is missing Agent or Session services')
+  }
+
+  const defaults = defaultModel.currentSelection()
+  const modelRuntime = selectionSetup(defaults, undefined)
+  const handle = await agents.create({
+    sessionId: SessionId(`dsh-claude-tui-probe-${randomUUID()}`),
+    meta: { cwd: internals.cwd() },
+    agentOptions: { provider: defaults.provider, model: defaults.model },
+    setup: modelRuntime.setup,
+    signal,
+  })
+  try {
+    signal.throwIfAborted()
+    await handle.agent.whenIdle()
+    signal.throwIfAborted()
+    await sessions.flush(handle.agent.session)
+  } finally {
+    await handle.dispose()
+  }
+
+  return {
+    token,
+    package: 'dsh-claude-tui',
+    version,
+    services: ['agentDefaultModel', 'agents', 'sessions'],
+  }
+}
+
+function compatibilityProbeToken(): string | undefined {
+  const token = process.env[PROBE_TOKEN_ENV]
+  if (token === undefined) return undefined
+  if (!/^[a-f\d-]{16,128}$/iu.test(token)) {
+    throw new Error(`claude-tui: ${PROBE_TOKEN_ENV} is invalid`)
+  }
+  return token
+}
+
+function mountCompatibilityProbe(
+  ctx: Context,
+  token: string,
+  exit: (code: number) => void,
+): void {
+  ctx.effect(() => {
+    const controller = new AbortController()
+    const completed = runCompatibilityProbe(
+      ctx,
+      token,
+      packageVersion(),
+      controller.signal,
+    ).then((result) => {
+      internals.stdout.write(`${PROBE_RESULT_PREFIX}${JSON.stringify(result)}\n`)
+      exit(0)
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) fail(exit, error)
+    })
+    return async () => {
+      controller.abort(new Error('Claude-like TUI compatibility probe disposed'))
+      await completed
+    }
+  }, 'claude-tui.compatibility-probe()')
+}
+
 /** Create or resume the terminal-owned root Agent after all Loader siblings settle. */
 async function boot(
   ctx: Context,
@@ -214,6 +309,7 @@ async function boot(
       terminal,
       modelSelection: modelRuntime.selection,
       listWorkspaceEntries: listLocalWorkspaceEntries,
+      ...(startup.launchNotice === undefined ? {} : { launchNotice: startup.launchNotice }),
       exit: async (code) => {
         if (exitRequested) return
         exitRequested = true
@@ -251,12 +347,17 @@ async function boot(
 
 /** Mount the deferred application lifecycle. */
 export function apply(ctx: Context, config: ClaudeTuiConfig): void {
-  if (!internals.isTty()) {
-    throw new Error('claude-tui: both stdin and stdout must be TTYs; use a headless profile for pipes')
-  }
   const exit = ctx.get('appExit')
   if (exit === undefined) {
     throw new Error('claude-tui: the launcher must provide ctx.appExit before the tree mounts')
+  }
+  const probeToken = compatibilityProbeToken()
+  if (probeToken !== undefined) {
+    mountCompatibilityProbe(ctx, probeToken, exit)
+    return
+  }
+  if (!internals.isTty()) {
+    throw new Error('claude-tui: both stdin and stdout must be TTYs; use a headless profile for pipes')
   }
   const startup = ctx.claudeTuiStartup
   ctx.effect(() => {

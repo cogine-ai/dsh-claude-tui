@@ -7,9 +7,11 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   readdirSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -260,6 +262,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/DISCLAIMER.md',
       'package/cordis.patch.yml',
       'package/docs/assets/terminal-preview.svg',
+      'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
       'package/docs/visual-qualification-2.1.227.md',
@@ -280,6 +283,7 @@ describe('dsh-claude-tui bundle', () => {
       version?: string
       bin?: Record<string, string>
       dependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
       repository?: { url?: string }
       homepage?: string
       bugs?: { url?: string }
@@ -289,23 +293,35 @@ describe('dsh-claude-tui bundle', () => {
       name: 'dsh-claude-tui',
       version: '0.1.0',
       bin: { 'dsh-claude-tui': 'lib/cli.js' },
-      dependencies: { '@deepseek-ai/dsh': '0.1.0-rc.6' },
+      dependencies: {
+        '@deepseek-ai/dsh': '0.1.0-rc.6',
+        semver: '7.8.5',
+      },
       repository: { url: 'git+https://github.com/cogine-ai/dsh-claude-tui.git' },
       homepage: 'https://github.com/cogine-ai/dsh-claude-tui#readme',
       bugs: { url: 'https://github.com/cogine-ai/dsh-claude-tui/issues' },
     })
     expect(manifest.keywords).toContain('deepseek-harness')
     expect(manifest.dependencies?.['@aws-sdk/credential-provider-node']).toBe('3.972.79')
+    const dshPeers = Object.entries(manifest.peerDependencies ?? {})
+      .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
+    expect(dshPeers.length).toBeGreaterThan(0)
+    expect(dshPeers.every(([, range]) => range === '>=0.1.0-rc.6 <0.1.1')).toBe(true)
     expect(statSync(join(packageDirectory, 'lib/cli.js')).mode & 0o111).not.toBe(0)
 
     const shrinkwrap = JSON.parse(
       readFileSync(join(packageDirectory, 'npm-shrinkwrap.json'), 'utf8'),
     ) as {
       lockfileVersion?: number
-      packages?: Record<string, { version?: string; dependencies?: Record<string, string> }>
+      packages?: Record<string, {
+        version?: string
+        dependencies?: Record<string, string>
+        peerDependencies?: Record<string, string>
+      }>
     }
     expect(shrinkwrap.lockfileVersion).toBe(3)
     expect(shrinkwrap.packages?.['']?.dependencies).toEqual(manifest.dependencies)
+    expect(shrinkwrap.packages?.['']?.peerDependencies).toEqual(manifest.peerDependencies)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
       '@deepseek-ai/dsh': '0.1.0-rc.6',
@@ -353,7 +369,11 @@ describe('dsh-claude-tui bundle', () => {
     if (executable === undefined) throw new Error('packed manifest exposes no dsh-claude-tui bin')
     const result = spawnSync(process.execPath, [join(packageDirectory, executable), '--help'], {
       encoding: 'utf8',
-      env: { ...process.env, DSH_HOME: dshHome },
+      env: {
+        ...process.env,
+        DSH_HOME: dshHome,
+        DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      },
     })
 
     expect(result.status).toBe(0)
@@ -366,7 +386,11 @@ describe('dsh-claude-tui bundle', () => {
     const dshHome = join(packDirectory, 'version-dsh-home')
     const result = spawnSync(process.execPath, [join(packageDirectory, 'lib/cli.js'), '--version'], {
       encoding: 'utf8',
-      env: { ...process.env, DSH_HOME: dshHome },
+      env: {
+        ...process.env,
+        DSH_HOME: dshHome,
+        DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      },
     })
 
     expect(result).toMatchObject({ status: 0, stdout: '0.1.0\n', stderr: '' })
@@ -380,7 +404,11 @@ describe('dsh-claude-tui bundle', () => {
     const result = spawnSync(process.execPath, [installedExecutable, '--dump-config'], {
       cwd: workspaceDirectory,
       encoding: 'utf8',
-      env: { ...process.env, DSH_HOME: dshHome },
+      env: {
+        ...process.env,
+        DSH_HOME: dshHome,
+        DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      },
       timeout: 30_000,
     })
 
@@ -388,7 +416,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(result.stdout).toContain('claude-tui-startup')
     expect(result.stderr).toBe('')
 
-    const profileDirectory = join(dshHome, 'profiles/claude-tui')
+    const profileDirectory = join(dshHome, 'profiles/dsh-claude-tui')
     const manifest = JSON.parse(
       readFileSync(join(profileDirectory, 'package.json'), 'utf8'),
     ) as { dsh?: { profile?: { bundles?: string[] } } }
@@ -417,6 +445,7 @@ describe('dsh-claude-tui bundle', () => {
     const env = {
       ...process.env,
       DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'bundled',
       PATH: `${fakeBinDirectory}${delimiter}${process.env.PATH ?? ''}`,
     }
     const first = spawnSync(process.execPath, [installedExecutable, '--dump-config'], {
@@ -427,7 +456,7 @@ describe('dsh-claude-tui bundle', () => {
     })
     expect(first.status).toBe(0)
 
-    const profileDirectory = join(dshHome, 'profiles/claude-tui')
+    const profileDirectory = join(dshHome, 'profiles/dsh-claude-tui')
     const manifestPath = join(profileDirectory, 'package.json')
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
     manifest.userMarker = 'preserve-me'
@@ -471,6 +500,7 @@ describe('dsh-claude-tui bundle', () => {
     mkdirSync(workspace)
     const env = stringEnvironment({
       DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'bundled',
       DSH_TELEMETRY_DISABLED: '1',
       DEEPSEEK_API_KEY: apiKey,
       DEEPSEEK_BASE_URL: server.baseURL,
@@ -505,6 +535,48 @@ describe('dsh-claude-tui bundle', () => {
       const modelRequests = server.requests.filter(request => Array.isArray(request.body.tools))
       expect(modelRequests.length).toBeGreaterThanOrEqual(2)
       expect(JSON.stringify(modelRequests.map(request => request.body))).toContain('packed tool result')
+    } finally {
+      await server.close()
+    }
+  }, 120_000)
+
+  it('completes a packed tool turn through a physically separate compatible DSH', async () => {
+    const apiKey = 'external-dsh-e2e-key'
+    const server = await startMockDeepSeekServer(apiKey)
+    const dshHome = join(packDirectory, 'external-dsh-turn-home')
+    const workspace = join(packDirectory, 'external-dsh-turn-workspace')
+    const modules = join(dshHome, 'profiles/node_modules/@deepseek-ai')
+    const sourceRequire = createRequire(join(repositoryRoot, 'package.json'))
+    const externalDshRoot = dirname(
+      sourceRequire.resolve('@deepseek-ai/dsh/package.json'),
+    )
+    mkdirSync(workspace)
+    mkdirSync(modules, { recursive: true })
+    symlinkSync(externalDshRoot, join(modules, 'dsh'), 'dir')
+    const env = stringEnvironment({
+      DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'auto',
+      DSH_TELEMETRY_DISABLED: '1',
+      DEEPSEEK_API_KEY: apiKey,
+      DEEPSEEK_BASE_URL: server.baseURL,
+      TERM: 'xterm-256color',
+      COLORTERM: 'truecolor',
+    })
+    try {
+      const outcome = await runPackedTui(
+        installedExecutable,
+        ['--session-id', 'external-dsh-e2e-session', 'run through the external dsh'],
+        workspace,
+        env,
+        'packed artifact reply',
+      )
+
+      expect(outcome.exitCode).toBe(0)
+      expect(outcome.signal).toBe(0)
+      expect(outcome.output).toContain('packed tool result')
+      expect(outcome.output).not.toContain(apiKey)
+      expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))
+      expect(server.requests.some(request => Array.isArray(request.body.tools))).toBe(true)
     } finally {
       await server.close()
     }
