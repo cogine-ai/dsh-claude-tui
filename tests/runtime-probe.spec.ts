@@ -165,20 +165,20 @@ import { spawn } from 'node:child_process'
 const record = __RECORD__
 const childSource = "const fs = require('node:fs');"
   + "fs.writeFileSync(" + JSON.stringify(record + '.started') + ", 'started');"
-  + "setTimeout(() => fs.writeFileSync(" + JSON.stringify(record) + ", 'survived'), 1000);"
+  + "setTimeout(() => fs.writeFileSync(" + JSON.stringify(record) + ", 'survived'), 2000);"
   + "setInterval(() => {}, 1000);"
 spawn(process.execPath, ['-e', childSource], { stdio: 'ignore' })
 setInterval(() => {}, 1_000)
 `)
 
-      const result = await probeRuntimeCompatibility(runtime, identity, { timeoutMs: 300 })
+      const result = await probeRuntimeCompatibility(runtime, identity, { timeoutMs: 1_000 })
 
       expect(result).toEqual({
         compatible: false,
         reason: expect.stringContaining('timed out'),
       })
       expect(existsSync(`${record}.started`)).toBe(true)
-      await delay(900)
+      await delay(1_500)
       expect(existsSync(record)).toBe(false)
     },
     5_000,
