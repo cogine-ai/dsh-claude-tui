@@ -129,8 +129,7 @@ function launchAdapter(identity: PackageIdentity): LaunchPlannerAdapter {
 
 /** Run Harness in the foreground while preserving the caller's process boundary. */
 async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<number> {
-  const toolsMode = process.env.DSH_TOOLS_MODE ?? 'code'
-  const snapshotToolsMode = toolsMode.trim()
+  const toolsMode = (process.env.DSH_TOOLS_MODE ?? 'code').trim()
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     DSH_HOME: plan.home.path,
@@ -140,13 +139,13 @@ async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<nu
   delete environment[LAUNCH_NOTICE_ENV]
   delete environment[RUNTIME_SNAPSHOT_ENV]
   if (plan.notices.length > 0) environment[LAUNCH_NOTICE_ENV] = plan.notices.join(' ')
-  if (isDshToolsMode(snapshotToolsMode)) {
+  if (isDshToolsMode(toolsMode)) {
     environment[RUNTIME_SNAPSHOT_ENV] = JSON.stringify({
       harnessVersion: plan.runtime.version,
       runtimeKind: plan.runtime.kind,
       homeKind: plan.home.kind,
       homePath: plan.home.path,
-      toolsMode: snapshotToolsMode,
+      toolsMode,
     })
   }
   const harnessArgs = [plan.runtime.executable, '--profile', plan.profile.name, ...args]

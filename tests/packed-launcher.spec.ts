@@ -96,7 +96,7 @@ setInterval(() => {}, 1_000)
     rmSync(temporaryDirectory, { recursive: true, force: true })
   })
 
-  it('forwards arguments, cwd, explicit environment, and the Harness exit code', () => {
+  it('forwards arguments, cwd, normalized tools mode, and the Harness exit code', () => {
     const readyPath = join(temporaryDirectory, 'forwarding-record.json')
     const dshHome = join(temporaryDirectory, 'forwarding-dsh-home')
     const workspace = join(temporaryDirectory, 'forwarding-workspace')
@@ -116,7 +116,7 @@ setInterval(() => {}, 1_000)
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unused-signal.txt'),
         DSH_FAKE_EXIT_CODE: '23',
-        DSH_TOOLS_MODE: 'native',
+        DSH_TOOLS_MODE: ' native ',
       }),
     })
 
