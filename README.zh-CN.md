@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://github.com/cogine-ai/dsh-claude-tui/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/cogine-ai/dsh-claude-tui?style=flat-square&logo=github" /></a>
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
+  <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
   <img alt="66 tests" src="https://img.shields.io/badge/tests-66%2F66-4eba65?style=flat-square" />
@@ -44,6 +45,13 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 
 ```bash
 npx dsh-claude-tui
+```
+
+如果会反复使用，也可以选择全局安装；两种方式调用的是同一个启动器：
+
+```bash
+npm install --global dsh-claude-tui@0.1.0
+dsh-claude-tui
 ```
 
 真正向模型发送请求时，需要配置所选 Harness 模型提供方的凭证。
@@ -121,15 +129,15 @@ corepack pnpm check
 
 ## 路线图
 
-**现在 — v0.1.0 Release Hardening**
+**v0.1.0 — 已通过发布资格验证的基线**
 
-- 保证从干净 checkout 构建出可发布、可运行的 npm 包；
+- 从干净 checkout 生成由 shrinkwrap 固定依赖的 npm 包；
 - 以 `npx dsh-claude-tui` 完成安装与启动，不再要求用户手动安装 Harness 或 profile；
-- 验证首次初始化、重复启动幂等性，以及 tarball 安装后的真实运行路径。
+- 已验证首次初始化、重复启动幂等性、tarball 真实运行路径和真实 DeepSeek 请求。
 
-完整范围和发布门槛见 [v0.1.0 Release Hardening 计划](./docs/release-hardening-v0.1.0.md)。
+完整验证门槛和结果见 [v0.1.0 Release Hardening 报告](./docs/release-hardening-v0.1.0.md)。
 
-**下一步 — v0.1.0 之后**
+**下一步 — 由反馈驱动的 v0.1.x**
 
 - 更丰富的附件与补全界面；
 - 更完整的 Session 管理和重命名流程；
