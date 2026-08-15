@@ -9,6 +9,8 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   deps: {
+    alwaysBundle: [/^semver(?:\/|$)/],
+    onlyBundle: [/^semver(?:\/|$)/],
     neverBundle: [/^@deepseek-ai\//, /^@earendil-works\//, 'commander'],
   },
 })

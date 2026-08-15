@@ -33,6 +33,14 @@ async function waitForFile(path: string, timeoutMs = 3_000): Promise<void> {
   throw new Error(`timed out waiting for ${path}`)
 }
 
+function bundledEnvironment(overrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+    ...overrides,
+  }
+}
+
 describe('packed dsh-claude-tui launcher', () => {
   let temporaryDirectory: string
   let packageDirectory: string
@@ -56,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.0-test',
+      version: '0.1.0-rc.6',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -72,6 +80,8 @@ writeFileSync(process.env.DSH_FAKE_READY, JSON.stringify({
   pid: process.pid,
   args: process.argv.slice(2),
   cwd: process.cwd(),
+  dshHome: process.env.DSH_HOME,
+  launchNotice: process.env.DSH_CLAUDE_TUI_LAUNCH_NOTICE,
   toolsMode: process.env.DSH_TOOLS_MODE,
 }))
 if (process.env.DSH_FAKE_EXIT_CODE !== undefined) {
@@ -100,14 +110,13 @@ setInterval(() => {}, 1_000)
     ], {
       cwd: realpathSync(workspace),
       encoding: 'utf8',
-      env: {
-        ...process.env,
+      env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unused-signal.txt'),
         DSH_FAKE_EXIT_CODE: '23',
         DSH_TOOLS_MODE: 'native',
-      },
+      }),
     })
 
     expect(result.status).toBe(23)
@@ -116,7 +125,7 @@ setInterval(() => {}, 1_000)
       pid: expect.any(Number),
       args: [
         '--profile',
-        'claude-tui',
+        'dsh-claude-tui',
         '--resume',
         'session-123',
         '--model',
@@ -124,19 +133,19 @@ setInterval(() => {}, 1_000)
         'inspect this repository',
       ],
       cwd: realpathSync(workspace),
+      dshHome,
       toolsMode: 'native',
     })
   })
 
   it('defaults to Code Mode without replacing an explicit caller value', () => {
     const readyPath = join(temporaryDirectory, 'default-mode-record.json')
-    const environment: NodeJS.ProcessEnv = {
-      ...process.env,
+    const environment: NodeJS.ProcessEnv = bundledEnvironment({
       DSH_HOME: join(temporaryDirectory, 'default-mode-dsh-home'),
       DSH_FAKE_READY: readyPath,
       DSH_FAKE_SIGNAL: join(temporaryDirectory, 'default-mode-signal.txt'),
       DSH_FAKE_EXIT_CODE: '0',
-    }
+    })
     delete environment.DSH_TOOLS_MODE
     const result = spawnSync(process.execPath, [executable, '--dump-config'], {
       cwd: temporaryDirectory,
@@ -161,13 +170,12 @@ setInterval(() => {}, 1_000)
     const result = spawnSync(process.execPath, ['--import', preload, executable], {
       cwd: temporaryDirectory,
       encoding: 'utf8',
-      env: {
-        ...process.env,
+      env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unsupported-node-signal.txt'),
         DSH_FAKE_EXIT_CODE: '0',
-      },
+      }),
     })
 
     expect(result.status).toBe(1)
@@ -180,13 +188,12 @@ setInterval(() => {}, 1_000)
   it('does not rewrite an already-current managed marker on repeat launch', () => {
     const dshHome = join(temporaryDirectory, 'idempotent-dsh-home')
     const readyPath = join(temporaryDirectory, 'idempotent-ready.json')
-    const environment = {
-      ...process.env,
+    const environment = bundledEnvironment({
       DSH_HOME: dshHome,
       DSH_FAKE_READY: readyPath,
       DSH_FAKE_SIGNAL: join(temporaryDirectory, 'idempotent-signal.txt'),
       DSH_FAKE_EXIT_CODE: '0',
-    }
+    })
     const first = spawnSync(process.execPath, [executable], {
       cwd: temporaryDirectory,
       encoding: 'utf8',
@@ -196,11 +203,11 @@ setInterval(() => {}, 1_000)
 
     const markerPath = join(
       dshHome,
-      'profiles/claude-tui/.dsh-claude-tui-managed.json',
+      'profiles/dsh-claude-tui/.dsh-claude-tui-managed.json',
     )
     const bundleLink = join(
       dshHome,
-      'profiles/claude-tui/node_modules/dsh-claude-tui',
+      'profiles/dsh-claude-tui/node_modules/dsh-claude-tui',
     )
     const referenceTime = new Date('2000-01-01T00:00:00.000Z')
     utimesSync(markerPath, referenceTime, referenceTime)
@@ -223,7 +230,7 @@ setInterval(() => {}, 1_000)
     expect(lstatSync(bundleLink).mtimeMs).toBe(bundleBefore)
   })
 
-  it('refuses to adopt an existing unowned claude-tui profile', () => {
+  it('leaves an unowned legacy claude-tui profile untouched', () => {
     const dshHome = join(temporaryDirectory, 'unowned-profile-dsh-home')
     const profileDirectory = join(dshHome, 'profiles/claude-tui')
     const readyPath = join(temporaryDirectory, 'unowned-profile-ready.json')
@@ -235,20 +242,145 @@ setInterval(() => {}, 1_000)
     const result = spawnSync(process.execPath, [executable], {
       cwd: temporaryDirectory,
       encoding: 'utf8',
-      env: {
-        ...process.env,
+      env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unowned-profile-signal.txt'),
         DSH_FAKE_EXIT_CODE: '0',
+      }),
+    })
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(profileDirectory, 'package.json'), 'utf8')).toBe(originalManifest)
+    expect(existsSync(join(profileDirectory, '.dsh-claude-tui-managed.json'))).toBe(false)
+    expect(existsSync(join(
+      dshHome,
+      'profiles/dsh-claude-tui/.dsh-claude-tui-managed.json',
+    ))).toBe(true)
+    expect(JSON.parse(readFileSync(readyPath, 'utf8'))).toMatchObject({
+      args: ['--profile', 'dsh-claude-tui'],
+    })
+  })
+
+  it('uses a compatible DSH associated with the requested home after an isolated probe', () => {
+    const dshHome = join(temporaryDirectory, 'system-runtime-dsh-home')
+    const systemRecord = join(temporaryDirectory, 'system-runtime-record.json')
+    const bundledRecord = join(temporaryDirectory, 'system-runtime-bundled-record.json')
+    const systemPackage = join(dshHome, 'profiles/node_modules/@deepseek-ai/dsh')
+    mkdirSync(systemPackage, { recursive: true })
+    writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
+      name: '@deepseek-ai/dsh',
+      version: '0.1.0-rc.6',
+      type: 'module',
+      bin: { dsh: 'bin.js' },
+    }, undefined, 2)}\n`)
+    writeFileSync(join(systemPackage, 'bin.js'), `
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const token = process.env.DSH_CLAUDE_TUI_PROBE_TOKEN
+if (token !== undefined) {
+  const manifest = JSON.parse(readFileSync(join(
+    process.env.DSH_HOME,
+    'profiles/dsh-claude-tui/node_modules/dsh-claude-tui/package.json',
+  ), 'utf8'))
+  process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
+    token,
+    package: 'dsh-claude-tui',
+    version: manifest.version,
+    services: ['agentDefaultModel', 'agents', 'sessions'],
+  }) + '\\n')
+} else {
+  writeFileSync(${JSON.stringify(systemRecord)}, JSON.stringify({
+    runtime: 'system',
+    args: process.argv.slice(2),
+    dshHome: process.env.DSH_HOME,
+  }))
+}
+`)
+
+    const result = spawnSync(process.execPath, [executable, 'use existing dsh'], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        DSH_HOME: dshHome,
+        DSH_FAKE_READY: bundledRecord,
+        DSH_FAKE_SIGNAL: join(temporaryDirectory, 'system-runtime-signal.txt'),
+        DSH_FAKE_EXIT_CODE: '0',
+        DSH_CLAUDE_TUI_RUNTIME: 'auto',
       },
     })
 
+    expect(result.status).toBe(0)
+    expect(existsSync(bundledRecord)).toBe(false)
+    expect(JSON.parse(readFileSync(systemRecord, 'utf8'))).toEqual({
+      runtime: 'system',
+      args: ['--profile', 'dsh-claude-tui', 'use existing dsh'],
+      dshHome,
+    })
+  })
+
+  it('falls back to an isolated home only when the default home has a hard conflict', () => {
+    const userHome = join(temporaryDirectory, 'isolated-fallback-user')
+    const sharedHome = join(userHome, '.dsh')
+    const legacy = join(sharedHome, 'profiles/claude-tui')
+    const readyPath = join(temporaryDirectory, 'isolated-fallback-ready.json')
+    mkdirSync(legacy, { recursive: true })
+    writeFileSync(join(legacy, '.dsh-claude-tui-managed.json'), '{broken')
+
+    const result = spawnSync(process.execPath, [executable], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: bundledEnvironment({
+        HOME: userHome,
+        USERPROFILE: userHome,
+        DSH_HOME: undefined,
+        DSH_FAKE_READY: readyPath,
+        DSH_FAKE_SIGNAL: join(temporaryDirectory, 'isolated-fallback-signal.txt'),
+        DSH_FAKE_EXIT_CODE: '0',
+      }),
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).toContain('Using isolated DSH_HOME')
+    expect(result.stderr).toContain('sessions and credentials')
+    const isolatedHome = join(userHome, '.dsh-claude-tui')
+    expect(JSON.parse(readFileSync(readyPath, 'utf8'))).toMatchObject({
+      args: ['--profile', 'dsh-claude-tui'],
+      dshHome: isolatedHome,
+      launchNotice: expect.stringContaining('were not copied'),
+    })
+    expect(readFileSync(join(legacy, '.dsh-claude-tui-managed.json'), 'utf8')).toBe('{broken')
+    expect(existsSync(join(
+      isolatedHome,
+      'profiles/dsh-claude-tui/.dsh-claude-tui-managed.json',
+    ))).toBe(true)
+  })
+
+  it('fails instead of replacing an explicit DSH_HOME with isolated state', () => {
+    const dshHome = join(temporaryDirectory, 'explicit-conflict-dsh-home')
+    const legacy = join(dshHome, 'profiles/claude-tui')
+    const readyPath = join(temporaryDirectory, 'explicit-conflict-ready.json')
+    mkdirSync(legacy, { recursive: true })
+    writeFileSync(join(legacy, '.dsh-claude-tui-managed.json'), '{broken')
+
+    const result = spawnSync(process.execPath, [executable], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: bundledEnvironment({
+        DSH_HOME: dshHome,
+        DSH_FAKE_READY: readyPath,
+        DSH_FAKE_SIGNAL: join(temporaryDirectory, 'explicit-conflict-signal.txt'),
+        DSH_FAKE_EXIT_CODE: '0',
+      }),
+    })
+
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('already exists but is not launcher-managed')
-    expect(readFileSync(join(profileDirectory, 'package.json'), 'utf8')).toBe(originalManifest)
-    expect(existsSync(join(profileDirectory, '.dsh-claude-tui-managed.json'))).toBe(false)
+    expect(result.stderr).toContain('explicit DSH_HOME')
+    expect(result.stderr).toContain('cannot read managed state')
     expect(existsSync(readyPath)).toBe(false)
+    expect(readFileSync(join(legacy, '.dsh-claude-tui-managed.json'), 'utf8')).toBe('{broken')
   })
 
   it('forwards SIGTERM and waits for Harness to stop', async () => {
@@ -257,12 +389,11 @@ setInterval(() => {}, 1_000)
     const dshHome = join(temporaryDirectory, 'signal-dsh-home')
     const launcher = spawn(process.execPath, [executable], {
       cwd: temporaryDirectory,
-      env: {
-        ...process.env,
+      env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: signalPath,
-      },
+      }),
       stdio: 'ignore',
     })
     const outcome = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
@@ -292,7 +423,7 @@ setInterval(() => {}, 1_000)
     expect(readFileSync(signalPath, 'utf8')).toBe('SIGTERM')
   }, 10_000)
 
-  it.runIf(process.platform !== 'win32')('refuses to replace a dangling profile symlink', () => {
+  it.runIf(process.platform !== 'win32')('leaves a dangling legacy profile symlink untouched', () => {
     const dshHome = join(temporaryDirectory, 'dangling-link-dsh-home')
     const profilesDirectory = join(dshHome, 'profiles')
     const profileDirectory = join(profilesDirectory, 'claude-tui')
@@ -304,19 +435,21 @@ setInterval(() => {}, 1_000)
     const result = spawnSync(process.execPath, [executable], {
       cwd: temporaryDirectory,
       encoding: 'utf8',
-      env: {
-        ...process.env,
+      env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'dangling-link-signal.txt'),
         DSH_FAKE_EXIT_CODE: '0',
-      },
+      }),
     })
 
-    expect(result.status).toBe(1)
-    expect(result.stderr).toContain('profile path')
+    expect(result.status).toBe(0)
     expect(lstatSync(profileDirectory).isSymbolicLink()).toBe(true)
     expect(readlinkSync(profileDirectory)).toBe(missingTarget)
-    expect(existsSync(readyPath)).toBe(false)
+    expect(existsSync(join(
+      dshHome,
+      'profiles/dsh-claude-tui/.dsh-claude-tui-managed.json',
+    ))).toBe(true)
+    expect(existsSync(readyPath)).toBe(true)
   })
 })

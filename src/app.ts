@@ -49,6 +49,8 @@ export interface ClaudeTuiRuntime {
   listWorkspaceEntries?: ListWorkspaceEntries
   /** Agent-scoped DSH selection; the loop snapshots it for the next model request. */
   modelSelection?: ModelSelectionRef
+  /** Launcher-only fallback notice; rendered locally and never persisted to the Session. */
+  launchNotice?: string
 }
 
 /** Inline reverse-search state matching Claude Code's prompt-history surface. */
@@ -124,6 +126,9 @@ export class ClaudeTuiApplication {
     private readonly runtime: ClaudeTuiRuntime,
   ) {
     this.transcript.replay(agent.session.events)
+    if (runtime.launchNotice !== undefined) {
+      this.transcript.addNotice(runtime.launchNotice, 'warning')
+    }
     this.planModeActive = foldPlanMode(agent.session.events)
     for (const item of this.transcript.items) {
       if (item.kind === 'user' && item.text.trim() !== '') this.promptHistory.push(item.text)
@@ -158,6 +163,7 @@ export class ClaudeTuiApplication {
         transcriptExpanded: this.transcriptView.transcriptExpanded,
         reasoningVisible: this.transcriptView.reasoningVisible,
         usage: this.transcript.usage,
+        performance: this.transcript.performance,
         planModeActive: this.planModeActive,
         ...(this.agentsVisible && this.activeSubagents.size > 0
           ? {

@@ -10,7 +10,7 @@ import {
   createUserMessage,
   type UserMessage,
 } from '@deepseek-ai/dsh-llm'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { SubagentRunId } from '@deepseek-ai/dsh-subagent'
 import type {
   AskUserQuestionAnswer,
@@ -54,6 +54,8 @@ interface BenchOptions {
   readonly models?: ModelFixture
   readonly credentials?: CredentialFixture
   readonly seed?: (session: Session) => void
+  readonly seedEvents?: readonly SessionEvent[]
+  readonly launchNotice?: string
 }
 
 const contexts: Context[] = []
@@ -151,7 +153,7 @@ function bench(
     } as never)
   }
 
-  const session = Session.create(SessionId('terminal-test'), undefined, {
+  const session = Session.create(SessionId('terminal-test'), options.seedEvents, {
     version: 0,
     id: SessionId('terminal-test'),
     createdAt: 1,
@@ -184,6 +186,7 @@ function bench(
     terminal,
     exit: (code: number) => { exitCodes.push(code) },
     now,
+    ...(options.launchNotice === undefined ? {} : { launchNotice: options.launchNotice }),
     ...(options.models === undefined ? {} : { modelSelection: options.models.selection }),
   } as never)
   return {
@@ -310,6 +313,121 @@ function descriptionColumn(line: string): number {
 }
 
 describe('ClaudeTuiApplication', () => {
+  it('shows an isolated-home notice without persisting it to the Session', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      launchNotice: 'Using isolated DSH_HOME; existing sessions were not copied.',
+    })
+
+    await test.app.start()
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain(
+      'Using isolated DSH_HOME; existing sessions were not copied.',
+    )
+    expect(test.app.agent.session.events).toEqual([])
+    await test.app.dispose()
+  })
+
+  it('left-aligns both prompt status rows', async () => {
+    const test = bench(100, 30)
+
+    await test.app.start()
+    await test.terminal.settle()
+
+    const lines = test.terminal.lines()
+    const primaryRow = lines.findIndex(line => line.includes('? for shortcuts'))
+    expect(primaryRow).toBeGreaterThanOrEqual(0)
+    expect([
+      lines[primaryRow]?.search(/\S/u),
+      lines[primaryRow + 1]?.search(/\S/u),
+    ]).toEqual([2, 2])
+
+    await test.app.dispose()
+  })
+
+  it('keeps the plan-mode status detail left-aligned too', async () => {
+    const test = bench(100, 30, () => 1_000, {
+      seed: session => {
+        const withPlanMode = session as unknown as {
+          append(type: string, data: unknown): unknown
+        }
+        withPlanMode.append('plan/mode', { active: true })
+      },
+    })
+
+    await test.app.start()
+    await test.terminal.settle()
+
+    const lines = test.terminal.lines()
+    const primaryRow = lines.findIndex(line => line.includes('plan mode on'))
+    expect(primaryRow).toBeGreaterThanOrEqual(0)
+    expect([
+      lines[primaryRow]?.search(/\S/u),
+      lines[primaryRow + 1]?.search(/\S/u),
+    ]).toEqual([2, 2])
+
+    await test.app.dispose()
+  })
+
+  it('shows cache, token, first-token, and throughput statistics on the second status row', async () => {
+    const user = createUserMessage({
+      content: [{ type: 'text', text: 'measure this response' }],
+      source: { kind: 'user' },
+    })
+    const assistant = createAssistantMessage({
+      content: [{ type: 'text', text: 'done' }],
+      source: { provider: 'test', model: 'model' },
+    })
+    const seedEvents: SessionEvent[] = [
+      { type: 'turn/start', seq: 0, time: 1_000, data: { turn: 1 } },
+      { type: 'step/start', seq: 1, time: 1_000, data: { turn: 1, step: 1 } },
+      { type: 'user/message', seq: 2, time: 1_000, data: user, surfaceOp: 'append' },
+      {
+        type: 'assistant/chunk',
+        seq: 3,
+        time: 1_250,
+        data: { turn: 1, step: 1, chunk: { type: 'block-start', index: 0, blockType: 'text' } },
+      },
+      {
+        type: 'assistant/chunk',
+        seq: 4,
+        time: 2_000,
+        data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: 'done' } },
+      },
+      {
+        type: 'assistant/message',
+        seq: 5,
+        time: 2_250,
+        data: {
+          turn: 1,
+          step: 1,
+          message: assistant,
+          usage: {
+            inputTokens: 30,
+            outputTokens: 10,
+            cacheReadTokens: 60,
+            cacheWriteTokens: 10,
+          },
+        },
+        surfaceOp: 'append',
+        sourceEventSeqs: [3, 4],
+      },
+      { type: 'step/end', seq: 6, time: 2_250, data: { turn: 1, step: 1 } },
+      { type: 'turn/end', seq: 7, time: 2_300, data: { turn: 1, reason: { kind: 'completed' } } },
+    ]
+    const test = bench(110, 30, () => 1_000, { seedEvents })
+
+    await test.app.start()
+    await test.terminal.settle()
+
+    const status = test.terminal.lines().find(line => line.includes('cache 60%'))
+    expect(status?.trim()).toBe(
+      'cache 60% · ↑100 ↓10 · TTFT 250ms · 10.0 tok/s · reasoning on · transcript compact',
+    )
+
+    await test.app.dispose()
+  })
+
   it('keeps the Claude logo below a safe top row and uses the DeepSeek Harness Claude TUI identity', async () => {
     const test = bench(80, 24)
     await test.app.start()

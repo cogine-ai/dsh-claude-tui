@@ -64,9 +64,9 @@
     "capture:claude-reference": "node scripts/capture-claude-reference.mjs",
     "clean": "node -e \"for (const path of ['lib', 'dist']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
     "prepack": "tsdown",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && vitest run && tsdown"
+    "check": "tsc --noEmit && vitest run --no-file-parallelism && tsdown"
   },
   "dependencies": {
     "@aws-sdk/credential-provider-node": "3.972.79",
@@ -76,21 +76,22 @@
     "@deepseek-ai/dsh-tool-ask-user": "0.1.0-rc.6",
     "@deepseek-ai/schemastery": "3.18.1",
     "@earendil-works/pi-tui": "0.84.1",
-    "commander": "^15.0.0"
+    "commander": "^15.0.0",
+    "semver": "7.8.5"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/cordis-plugin-loader": "^1.0.2",
-    "@deepseek-ai/dsh-agent": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-agent-default-model": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-commands": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-credentials": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-llm": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-session": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-settings": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-subagent": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-user-approval": "^0.1.0-rc.5",
-    "@deepseek-ai/dsh-user-questions": "^0.1.0-rc.5"
+    "@deepseek-ai/dsh-agent": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-agent-default-model": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-commands": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-credentials": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-llm": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-session": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-settings": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-subagent": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-user-approval": ">=0.1.0-rc.6 <0.1.1",
+    "@deepseek-ai/dsh-user-questions": ">=0.1.0-rc.6 <0.1.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
@@ -106,6 +107,7 @@
     "@deepseek-ai/dsh-user-approval": "0.1.0-rc.6",
     "@deepseek-ai/dsh-user-questions": "0.1.0-rc.6",
     "@types/node": "^24.10.0",
+    "@types/semver": "7.8.0",
     "@xterm/headless": "6.0.0",
     "node-pty": "1.1.0",
     "tsdown": "^0.22.2",

@@ -1,7 +1,12 @@
 /** Startup settlement must not await the Include entry that owns this plugin. */
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
-import { awaitCompositionSettlement } from '../src/index.ts'
+import {
+  apply,
+  awaitCompositionSettlement,
+  internals,
+  runCompatibilityProbe,
+} from '../src/index.ts'
 
 describe('awaitCompositionSettlement', () => {
   it('awaits the current entry tree instead of the root loader', async () => {
@@ -34,5 +39,69 @@ describe('awaitCompositionSettlement', () => {
     await awaitCompositionSettlement(ctx)
 
     expect(rootAwait).toHaveBeenCalledOnce()
+  })
+})
+
+describe('launcher compatibility probe', () => {
+  it('creates, flushes, and disposes a temporary Agent without starting the terminal', async () => {
+    const session = { id: 'probe-session' }
+    const whenIdle = vi.fn(async () => undefined)
+    const dispose = vi.fn(async () => undefined)
+    const create = vi.fn(async () => ({ agent: { session, whenIdle }, dispose }))
+    const flush = vi.fn(async () => undefined)
+    const localAwait = vi.fn(async () => undefined)
+    const ctx = {
+      fiber: { entry: { parent: { tree: { await: localAwait } } } },
+      get: vi.fn((service: string) => {
+        if (service === 'agents') return { create }
+        if (service === 'agentDefaultModel') {
+          return { currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }) }
+        }
+        if (service === 'sessions') return { flush }
+        return undefined
+      }),
+    } as unknown as Context
+    const controller = new AbortController()
+
+    const result = await runCompatibilityProbe(
+      ctx,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      controller.signal,
+    )
+
+    expect(result).toEqual({
+      token: '01234567-89ab-cdef-0123-456789abcdef',
+      package: 'dsh-claude-tui',
+      version: '0.1.0',
+      services: ['agentDefaultModel', 'agents', 'sessions'],
+    })
+    expect(localAwait).toHaveBeenCalledOnce()
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: expect.stringMatching(/^dsh-claude-tui-probe-/u),
+      agentOptions: { provider: 'deepseek', model: 'deepseek-chat' },
+      signal: controller.signal,
+    }))
+    expect(whenIdle).toHaveBeenCalledOnce()
+    expect(flush).toHaveBeenCalledWith(session)
+    expect(dispose).toHaveBeenCalledOnce()
+  })
+
+  it('enters the hidden probe branch before enforcing the interactive TTY contract', () => {
+    const previousTty = internals.isTty
+    vi.stubEnv('DSH_CLAUDE_TUI_PROBE_TOKEN', '01234567-89ab-cdef-0123-456789abcdef')
+    internals.isTty = () => false
+    const effect = vi.fn()
+    const ctx = {
+      get: vi.fn((service: string) => service === 'appExit' ? vi.fn() : undefined),
+      effect,
+    } as unknown as Context
+    try {
+      expect(() => apply(ctx, {})).not.toThrow()
+      expect(effect).toHaveBeenCalledOnce()
+    } finally {
+      internals.isTty = previousTty
+      vi.unstubAllEnvs()
+    }
   })
 })

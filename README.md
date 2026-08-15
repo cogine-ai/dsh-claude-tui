@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="66 tests" src="https://img.shields.io/badge/tests-66%2F66-4eba65?style=flat-square" />
+  <img alt="106 tests" src="https://img.shields.io/badge/tests-106%2F106-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -46,6 +46,9 @@ or manual profile setup is required.
 
 The current published baseline is [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0).
 The corresponding source release is [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0).
+The environment-compatibility behavior described below is implemented in the
+current source and is intended for the next patch release; published `0.1.0`
+retains the original pinned-only launcher.
 
 ```bash
 npx dsh-claude-tui
@@ -60,19 +63,28 @@ dsh-claude-tui
 
 Sending a real model request requires the credentials for the Harness model provider you select.
 
-The launcher uses its pinned Harness executable even when another `dsh` is on
-`PATH`, while deliberately sharing the selected `$DSH_HOME` so existing
-credentials, Sessions, settings, and unrelated profiles remain available. It
-owns only the `claude-tui` profile's bundle registration. If that profile name
-already exists without the launcher's ownership marker, startup fails with a
-recovery message instead of adopting or overwriting it.
+In the default `auto` mode, the launcher first tries a compatible DSH already
+associated with the selected `$DSH_HOME`, then a verifiable `dsh` on `PATH`.
+External DSH must be in `>=0.1.0-rc.6 <0.1.1` and pass an isolated, credential-
+free Agent/Session compatibility probe. If neither qualifies, the launcher
+uses its pinned `0.1.0-rc.6` runtime. Set
+`DSH_CLAUDE_TUI_RUNTIME=system|bundled` to require an external runtime or
+bypass external discovery.
+
+Existing credentials, Sessions, settings, and unrelated profiles remain
+available whenever the selected home can be shared safely. An unowned legacy
+`claude-tui` profile is left untouched; the launcher uses its namespaced
+`dsh-claude-tui` profile instead. A corrupt launcher marker in an implicit
+`~/.dsh` causes an automatic bundled fallback to `~/.dsh-claude-tui`, with a
+visible notice that credentials and Sessions were not copied. A non-empty,
+explicit `DSH_HOME` is never silently replaced: an unsafe conflict fails with
+an actionable error.
 
 Harness is still pre-release and does not promise migration between every
-on-disk state version. The bundled `0.1.0-rc.6` runtime rejects incompatible
-Session or storage formats rather than migrating them. If an existing
-`$DSH_HOME` was produced by an incompatible Harness build, use an isolated
-home (for example `DSH_HOME=~/.dsh-claude-tui npx dsh-claude-tui`) and move
-only data through an explicitly supported Harness migration path.
+on-disk state version. Move data only through an explicitly supported Harness
+migration path. The exact launcher algorithm, probe isolation, ownership
+states, and recovery overrides are documented in
+[Launcher environment compatibility](./docs/launcher-environment-compatibility.md).
 
 Do not run different Harness versions concurrently against the same
 `$DSH_HOME`: Harness owns a shared profile-module fallback and either process
@@ -113,7 +125,7 @@ Use `/model` for the same model picker and `/provider` to inspect or update cred
 Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
 
 - **23** reference frames and **21** automated visual/semantic anchors.
-- **66/66** tests, including terminal behavior at `80x24` and `100x30`.
+- **106/106** tests, including terminal behavior at `80x24` and `100x30`.
 - Real Harness runs for approvals, questions, and foreground/background subagents.
 - One intentional difference: a blank top row prevents logo clipping.
 
@@ -138,6 +150,10 @@ The plugin waits for Loader settlement, binds every event to the exact root Agen
 ## Compatibility
 
 Targets the observed Claude Code `2.1.227` TUI only. Harness remains the source of truth for runtime data and capabilities; unsupported Claude-only states are not simulated. New versions require requalification.
+
+External Harness reuse currently targets the DSH `0.1.0` series
+(`>=0.1.0-rc.6 <0.1.1`) and still requires the runtime probe; version matching
+alone is not treated as compatibility.
 
 The `v0.1.0` qualification matrix targets macOS arm64 and Linux x64 with a
 true-color xterm-compatible terminal. The Windows launcher path is present but
