@@ -51,7 +51,7 @@ dsh-claude-tui
 | --- | --- |
 | 熟悉的终端 | Claude 风格欢迎面板、输入框、菜单、对话记录、状态栏、审批、问题和 Agent 状态 |
 | 真实 Harness | DSH 管理的模型、持久化 Session、命令、审批策略、工具、结构化问题与子代理 |
-| 实时模型配置 | Provider/model 列表、准确 effort、默认值保存、API Key 掩码录入和凭据来源 |
+| 实时模型配置 | Provider/model 列表、DSH 暴露的 effort 级别、默认值保存、API Key 掩码录入和凭据来源 |
 | 高效输入 | 多行编辑、提交或 steer、中断、历史搜索、斜杠补全和有边界的 `@` 文件补全 |
 | 清晰的执行状态 | reasoning、工具调用/结果、缓存命中率、Token、TTFT、吞吐率和 turn 结果 |
 | Session 与 Agent | 新建/恢复 Session、安全 flush、前后台子代理和活动 Agent roster |
