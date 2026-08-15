@@ -21,6 +21,7 @@ export interface Palette {
   warning(text: string): string
   error(text: string): string
   bold(text: string): string
+  faint(text: string): string
   italic(text: string): string
   underline(text: string): string
   reverse(text: string): string
@@ -79,6 +80,7 @@ export function createPalette(color: boolean): Palette {
     warning: sgr(color, 33, 39),
     error: foreground(color, '#ff6b80'),
     bold: sgr(color, 1, 22),
+    faint: sgr(color, 2, 22),
     italic: sgr(color, 3, 23),
     underline: sgr(color, 4, 24),
     reverse: sgr(color, 7, 27),

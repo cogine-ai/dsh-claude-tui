@@ -17,7 +17,7 @@ export interface Config {
 
 /** Loader schema for the terminal configuration. */
 export const Config: z<Config> = z.object({
-  title: z.string().default('DeepSeek Harness - Claude TUI'),
+  title: z.string().default('DSH Claude TUI'),
   color: z.boolean().default(true),
   showReasoning: z.boolean().default(true),
   maxTranscriptRows: z.number().step(1).min(100).default(5000),
@@ -36,7 +36,7 @@ export interface ResolvedConfig {
 /** Apply the same defaults for direct callers that bypass Loader validation. */
 export function resolveConfig(config: Config | undefined): ResolvedConfig {
   return {
-    title: config?.title ?? 'DeepSeek Harness - Claude TUI',
+    title: config?.title ?? 'DSH Claude TUI',
     color: config?.color ?? true,
     showReasoning: config?.showReasoning ?? true,
     maxTranscriptRows: config?.maxTranscriptRows ?? 5000,

@@ -37,4 +37,34 @@ describe('claude-tui startup grammar', () => {
       vi.unstubAllEnvs()
     }
   })
+
+  it('accepts only a valid launcher runtime snapshot', () => {
+    vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', JSON.stringify({
+      harnessVersion: '0.1.0-rc.6',
+      runtimeKind: 'bundled',
+      homeKind: 'shared',
+      homePath: '/tmp/test-dsh-home',
+      toolsMode: 'both',
+    }))
+    try {
+      expect(parse([])).toMatchObject({
+        runtimeSnapshot: {
+          harnessVersion: '0.1.0-rc.6',
+          runtimeKind: 'bundled',
+          homeKind: 'shared',
+          homePath: '/tmp/test-dsh-home',
+          toolsMode: 'both',
+        },
+      })
+    } finally {
+      vi.unstubAllEnvs()
+    }
+
+    vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', '{"toolsMode":"invented"}')
+    try {
+      expect(parse([])).not.toHaveProperty('runtimeSnapshot')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
 })

@@ -1,4 +1,6 @@
 /** Main-screen terminal application over one live Harness Agent. */
+import { homedir } from 'node:os'
+import { sep } from 'node:path'
 import {
   Editor,
   Key,
@@ -27,6 +29,7 @@ import {
   soleMissingCredential,
   type ProviderEntry,
 } from './providers.ts'
+import type { ClaudeTuiRuntimeSnapshot } from './runtime-snapshot.ts'
 import { ClaudePromptEditorComponent, HeaderComponent, PromptContextComponent } from './surface.ts'
 import { displayText } from './text.ts'
 import { createPalette, editorTheme } from './theme.ts'
@@ -51,6 +54,12 @@ export interface ClaudeTuiRuntime {
   modelSelection?: ModelSelectionRef
   /** Launcher-only fallback notice; rendered locally and never persisted to the Session. */
   launchNotice?: string
+  /** New Sessions use Claude's expanded welcome surface; resumed Sessions stay compact. */
+  welcomeExpanded?: boolean
+  /** Executing TUI package version shown only in the expanded welcome identity. */
+  tuiVersion?: string
+  /** Launcher-verified DSH provenance; absent for direct profile launches. */
+  runtimeSnapshot?: ClaudeTuiRuntimeSnapshot
 }
 
 /** Inline reverse-search state matching Claude Code's prompt-history surface. */
@@ -86,6 +95,31 @@ function foldPlanMode(events: readonly unknown[]): boolean {
   let active = false
   for (const event of events) active = planModeEvent(event) ?? active
   return active
+}
+
+const toolsModeLabels = {
+  native: 'Standard',
+  code: 'PTC',
+  both: 'Both (Native + PTC)',
+} as const
+
+/** Keep user-home provenance concise without changing the actual DSH_HOME. */
+function displayHome(path: string): string {
+  const userHome = homedir()
+  if (path === userHome) return '~'
+  const prefix = `${userHome}${sep}`
+  return path.startsWith(prefix) ? `~${sep}${path.slice(prefix.length)}` : path
+}
+
+/** Translate verified Harness semantics into the product-facing welcome vocabulary. */
+function welcomeRuntime(snapshot: ClaudeTuiRuntimeSnapshot | undefined) {
+  if (snapshot === undefined) return undefined
+  return {
+    primary: displayText(
+      `Harness ${snapshot.harnessVersion} · ${snapshot.runtimeKind} · ${toolsModeLabels[snapshot.toolsMode]}`,
+    ),
+    secondary: displayText(`Home ${displayHome(snapshot.homePath)} · ${snapshot.homeKind}`),
+  }
 }
 
 /** Mounted terminal channel and its complete interaction lifecycle. */
@@ -186,16 +220,26 @@ export class ClaudeTuiApplication {
             }),
       }
     }, this.palette)
+    const runtimeDetails = welcomeRuntime(this.runtime.runtimeSnapshot)
     this.tui.addChild(new HeaderComponent({
       title: safeTitle,
+      ...(this.runtime.tuiVersion === undefined
+        ? {}
+        : { version: displayText(this.runtime.tuiVersion) }),
       sessionId: displayText(String(agent.id)),
       cwd: displayText(agent.session.header.cwd ?? process.cwd()),
       model: () => {
         const selected = this.runtime.modelSelection?.current
-        return displayText(selected === undefined
-          ? `${agent.options.provider}/${agent.options.model}`
-          : `${selected.provider}/${selected.model}`)
+        if (selected === undefined) {
+          return displayText(`${agent.options.provider}/${agent.options.model}`)
+        }
+        const effort = selected.reasoningEffort
+        return displayText(
+          `${selected.provider}/${selected.model}${effort === undefined ? '' : ` · ${effort}`}`,
+        )
       },
+      ...(runtimeDetails === undefined ? {} : { runtime: runtimeDetails }),
+      expanded: () => this.runtime.welcomeExpanded === true && this.runtime.terminal.rows >= 24,
     }, this.palette))
     this.tui.addChild(new Spacer(2))
     this.tui.addChild(this.transcriptView)

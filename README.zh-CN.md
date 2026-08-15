@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="115 tests" src="https://img.shields.io/badge/tests-115%2F115-4eba65?style=flat-square" />
+  <img alt="118 tests" src="https://img.shields.io/badge/tests-118%2F118-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -33,7 +33,7 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 
 - **操作熟悉：** Claude 风格的主界面、输入框、菜单、对话记录、审批、问题和 Agent 状态。
 - **语义真实：** 使用 Harness 的真实模型、持久化 Session、命令、权限、工具与子代理。
-- **高保真可证明：** 从真实 Claude Code `2.1.227` PTY 独立捕获 23 个参考帧，其中 21 个接入自动对比。
+- **高保真可证明：** 从真实 Claude Code `2.1.227` PTY 独立捕获 24 个参考帧，其中 22 个接入自动对比。
 - **验证的是终端，不是效果图：** 比较 buffer、字符格坐标、RGB 样式、硬件光标和状态转换。
 
 它是一个真正的 Harness 外部 bundle，不是网页换肤，也不是预录的终端动画。
@@ -45,8 +45,8 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 
 当前已发布基线为 [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0)。
 对应的源码 Release 为 [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0)。
-下文的环境兼容逻辑已经进入当前源码，计划随下一个补丁版本发布；npm 上的 `0.1.0`
-仍是原先只使用包内固定 DSH 的启动器。
+下文的环境兼容逻辑已经进入当前 `0.1.1` 源码，计划随下一个补丁版本发布；npm 上的
+`0.1.0` 仍是原先只使用包内固定 DSH 的启动器。
 
 ```bash
 npx dsh-claude-tui
@@ -86,7 +86,7 @@ Harness 明确支持的迁移路径。完整的选择算法、探针隔离、所
 
 | 界面 | 当前能力 |
 | --- | --- |
-| 主界面 | normal-buffer 回滚、Claude 橙色图标、响应式 Header、编辑器和状态栏 |
+| 主界面 | normal-buffer 回滚、带已验证 DSH 运行时来源的新 Session 展开欢迎面板、恢复 Session 紧凑 Header、编辑器和状态栏 |
 | 输入 | 多行编辑、提交/steer、中断、反向历史搜索 |
 | 补全 | 斜杠命令和有边界的 `@` 工作区文件补全 |
 | 模型 | 从 DSH 实时读取 provider/model 与准确 effort，支持当前 Agent 切换和保存 DSH 默认值 |
@@ -115,10 +115,10 @@ Harness 明确支持的迁移路径。完整的选择算法、探针隔离、所
 
 以 true-color xterm-compatible PTY 中的 Claude Code `2.1.227` 为基线：
 
-- **23** 个参考帧，**21** 个自动视觉/语义锚点；
-- **115/115** 个测试，包含 `80x24`、`100x30` 的终端行为；
+- **24** 个参考帧，**22** 个自动视觉/语义锚点；
+- **118/118** 个测试，包含 `80x24`、`100x30` 的终端行为；
 - 真实 Harness 运行覆盖审批、问题及前台/后台子代理；
-- 唯一主动差异：增加一行顶部留白，避免图标裁切。
+- 新 Session 的展开面板遵循真实捕获的边框几何，并展示实际 Harness/Home/tool mode 与 `powered by dsh`；恢复 Session 的紧凑状态保留已验证的顶部安全留白。
 
 [完整资格报告](./docs/visual-qualification-2.1.227.md)
 

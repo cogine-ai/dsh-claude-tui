@@ -2,6 +2,9 @@
 import { Command } from 'commander'
 import type { Context } from '@deepseek-ai/cordis'
 import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
+import type { ClaudeTuiRuntimeSnapshot, DshToolsMode } from './runtime-snapshot.ts'
+
+const RUNTIME_SNAPSHOT_ENV = 'DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT'
 
 /** Stable Cordis plugin name. */
 export const name = 'claude-tui-startup'
@@ -21,6 +24,7 @@ export interface ClaudeTuiStartupValues {
   readonly model?: string
   readonly initialPrompt?: string
   readonly launchNotice?: string
+  readonly runtimeSnapshot?: ClaudeTuiRuntimeSnapshot
   readonly color: boolean
 }
 
@@ -39,6 +43,41 @@ function parseModelTarget(program: Command, raw: string | undefined): Pick<Claud
     program.error('error: --model must use provider/model, for example deepseek/deepseek-chat')
   }
   return { provider: raw.slice(0, separator), model: raw.slice(separator + 1) }
+}
+
+function isDshToolsMode(value: string): value is DshToolsMode {
+  return value === 'native' || value === 'code' || value === 'both'
+}
+
+/** Parse the internal environment boundary without trusting inherited process state. */
+function parseRuntimeSnapshot(raw: string | undefined): ClaudeTuiRuntimeSnapshot | undefined {
+  if (raw === undefined || raw.length === 0 || raw.length > 4_096) return undefined
+  let value: unknown
+  try {
+    value = JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const candidate = value as Record<string, unknown>
+  const harnessVersion = candidate.harnessVersion
+  const runtimeKind = candidate.runtimeKind
+  const homeKind = candidate.homeKind
+  const homePath = candidate.homePath
+  const toolsMode = candidate.toolsMode
+  if (
+    typeof harnessVersion !== 'string'
+    || harnessVersion.trim() === ''
+    || harnessVersion.length > 128
+    || (runtimeKind !== 'system' && runtimeKind !== 'bundled')
+    || (homeKind !== 'shared' && homeKind !== 'isolated')
+    || typeof homePath !== 'string'
+    || homePath.trim() === ''
+    || homePath.length > 2_000
+    || typeof toolsMode !== 'string'
+    || !isDshToolsMode(toolsMode)
+  ) return undefined
+  return Object.freeze({ harnessVersion, runtimeKind, homeKind, homePath, toolsMode })
 }
 
 /** Build a fresh Commander program for one invocation. */
@@ -75,6 +114,7 @@ export function apply(ctx: Context): void {
     }
     const prompt = program.args.join(' ').trim()
     const launchNotice = process.env.DSH_CLAUDE_TUI_LAUNCH_NOTICE?.trim()
+    const runtimeSnapshot = parseRuntimeSnapshot(process.env[RUNTIME_SNAPSHOT_ENV])
     const target = parseModelTarget(program, options.model)
     ctx.provide(CLAUDE_TUI_STARTUP_SERVICE, Object.freeze({
       resumePicker: options.resume === true,
@@ -85,6 +125,7 @@ export function apply(ctx: Context): void {
       ...(launchNotice === undefined || launchNotice === ''
         ? {}
         : { launchNotice: launchNotice.slice(0, 2_000) }),
+      ...(runtimeSnapshot === undefined ? {} : { runtimeSnapshot }),
       color: options.color,
     } satisfies ClaudeTuiStartupValues))
   })

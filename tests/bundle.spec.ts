@@ -291,7 +291,7 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.0',
+      version: '0.1.1',
       bin: { 'dsh-claude-tui': 'lib/cli.js' },
       dependencies: {
         '@deepseek-ai/dsh': '0.1.0-rc.6',
@@ -393,7 +393,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.0\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.1\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -517,6 +517,15 @@ describe('dsh-claude-tui bundle', () => {
       )
       expect(first.exitCode).toBe(0)
       expect(first.signal).toBe(0)
+      expect(first.output).toContain('Welcome back!')
+      expect(first.output).toContain('Tips for getting started')
+      expect(first.output).toContain('DSH Claude TUI')
+      expect(first.output).toContain('v0.1.1')
+      expect(first.output).toContain('Harness 0.1.0-rc.6 · bundled · PTC')
+      expect(first.output).toContain('powered by dsh')
+      expect(first.output).toContain('Run /help for commands and shortcuts')
+      expect(first.output).not.toContain('Use /provider to configure API access')
+      expect(first.output).not.toContain("What's new")
       expect(first.output).toContain('packed tool result')
       expect(first.output).not.toContain(apiKey)
 
@@ -529,6 +538,7 @@ describe('dsh-claude-tui bundle', () => {
       )
       expect(resumed.exitCode).toBe(0)
       expect(resumed.signal).toBe(0)
+      expect(resumed.output).not.toContain('Welcome back!')
       expect(resumed.output).toContain('run the packed artifact tool turn')
       expect(resumed.output).not.toContain(apiKey)
 
@@ -573,6 +583,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
+      expect(outcome.output).toContain('Harness 0.1.0-rc.6 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))

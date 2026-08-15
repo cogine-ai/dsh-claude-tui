@@ -34,6 +34,15 @@ ensureNodePtyHelper()
 
 const scenarios = [
   { name: 'idle', columns: 80, rows: 24, input: '', expected: '? for shortcuts' },
+  {
+    name: 'welcome',
+    columns: 100,
+    rows: 30,
+    input: '',
+    expected: '? for shortcuts',
+    mockApi: 'response',
+    isolatedConfig: true,
+  },
   { name: 'prompt', columns: 80, rows: 24, input: 'inspect this repository', expected: 'inspect this repository' },
   { name: 'slash', columns: 80, rows: 24, input: '/', expected: '/add-dir' },
   { name: 'file-mention', columns: 80, rows: 24, input: '@', expected: 'README.zh.md' },
