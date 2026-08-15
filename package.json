@@ -2,9 +2,28 @@
   "name": "dsh-claude-tui",
   "version": "0.1.0",
   "description": "Unofficial, high-fidelity Claude Code-style TUI for DeepSeek Harness, verified against real PTY captures",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "claude-code",
+    "coding-agent",
+    "terminal",
+    "tui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cogine-ai/dsh-claude-tui.git"
+  },
+  "homepage": "https://github.com/cogine-ai/dsh-claude-tui#readme",
+  "bugs": {
+    "url": "https://github.com/cogine-ai/dsh-claude-tui/issues"
+  },
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "bin": {
+    "dsh-claude-tui": "lib/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -21,12 +40,16 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "docs/**/*",
+    "npm-shrinkwrap.json",
     "cordis.patch.yml",
     "README*.md",
     "DISCLAIMER.md",
     "LICENSE"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
   },
@@ -40,11 +63,14 @@
     "build": "tsdown",
     "capture:claude-reference": "node scripts/capture-claude-reference.mjs",
     "clean": "node -e \"for (const path of ['lib', 'dist']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
+    "prepack": "tsdown",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm run typecheck && pnpm run test && pnpm run build"
+    "check": "tsc --noEmit && vitest run && tsdown"
   },
   "dependencies": {
+    "@aws-sdk/credential-provider-node": "3.972.79",
+    "@deepseek-ai/dsh": "0.1.0-rc.6",
     "@deepseek-ai/dsh-cmdline": "0.1.0-rc.6",
     "@deepseek-ai/dsh-code-runtime-worker-thread": "0.1.0-rc.6",
     "@deepseek-ai/dsh-tool-ask-user": "0.1.0-rc.6",

@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="53 tests" src="https://img.shields.io/badge/tests-53%2F53-4eba65?style=flat-square" />
+  <img alt="66 tests" src="https://img.shields.io/badge/tests-66%2F66-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -39,20 +39,29 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 
 ## 立即体验
 
-前置条件：可用的 DeepSeek Harness CLI、Node.js `24` 和 pnpm `11`。
+前置条件：Node.js `22.19+` 或 `24+`。命令自带已验证的 DeepSeek Harness
+版本，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。
 
 ```bash
-git clone https://github.com/cogine-ai/dsh-claude-tui.git
-cd dsh-claude-tui
-
-corepack pnpm install --frozen-lockfile
-corepack pnpm check
-
-dsh plugin --profile claude-tui add "$PWD"
-DSH_TOOLS_MODE=code dsh --profile claude-tui
+npx dsh-claude-tui
 ```
 
 真正向模型发送请求时，需要配置所选 Harness 模型提供方的凭证。
+
+即使 `PATH` 中已有其他 `dsh`，启动器也始终使用包内固定版本；同时会沿用所选
+`$DSH_HOME`，让已有凭据、Session、设置和无关 profile 保持可用。启动器只管理
+`claude-tui` profile 的 bundle 注册。如果同名 profile 已存在但没有启动器的所有权
+标记，程序会给出恢复提示并停止，而不会接管或覆盖。
+
+Harness 目前仍处于预发布阶段，并不承诺所有磁盘状态版本之间都可迁移。包内固定的
+`0.1.0-rc.6` 遇到不兼容的 Session 或存储格式时会拒绝打开，而不会擅自迁移。如果
+现有 `$DSH_HOME` 来自不兼容的 Harness 版本，请使用独立目录（例如
+`DSH_HOME=~/.dsh-claude-tui npx dsh-claude-tui`），只通过 Harness 明确支持的迁移路径
+转移数据。
+
+不要让不同 Harness 版本并发使用同一个 `$DSH_HOME`：Harness 会管理共享的 profile
+模块 fallback，任一进程都可能按自己的依赖树重新校正它。顺序使用已经纳入验证；如需
+并发运行，请为本启动器设置独立的 `DSH_HOME`。
 
 ## 已实现
 
@@ -88,7 +97,7 @@ DSH_TOOLS_MODE=code dsh --profile claude-tui
 以 true-color xterm-compatible PTY 中的 Claude Code `2.1.227` 为基线：
 
 - **23** 个参考帧，**21** 个自动视觉/语义锚点；
-- **53/53** 个测试，包含 `80x24`、`100x30` 的终端行为；
+- **66/66** 个测试，包含 `80x24`、`100x30` 的终端行为；
 - 真实 Harness 运行覆盖审批、问题及前台/后台子代理；
 - 唯一主动差异：增加一行顶部留白，避免图标裁切。
 
@@ -97,6 +106,9 @@ DSH_TOOLS_MODE=code dsh --profile claude-tui
 ## 兼容边界
 
 仅覆盖已观测到的 Claude Code `2.1.227` TUI。运行数据和能力以 Harness 为准，不模拟其未提供的 Claude 私有状态；新版本需重新验证。
+
+`v0.1.0` 的资格矩阵面向 macOS arm64 与 Linux x64，并要求 true-color、
+xterm-compatible 终端。Windows 启动路径已经实现，但尚未纳入发布资格验证。
 
 ## 开发与验证
 
