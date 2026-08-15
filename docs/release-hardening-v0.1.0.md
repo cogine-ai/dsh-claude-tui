@@ -19,7 +19,7 @@ No separately installed `dsh` command, repository checkout, pnpm installation, o
 This milestone also includes the bounded model/provider surfaces approved for first-run usability: the Claude-shaped interaction is [documented separately](./model-provider-interactions.md), while all catalog, default, effort, and credential semantics remain DSH-owned. Further visual surfaces and interaction features remain deferred until after `v0.1.0`. The release sequence remains:
 
 ```text
-Release hardening ✓ -> npm 0.1.0 -> GitHub Release/GIF -> public launch -> feedback-led iteration
+Release hardening ✓ -> merge to main -> publish from the exact merged main commit -> verify registry metadata and a clean npx launch -> GitHub Release/GIF -> public launch -> feedback-led iteration
 ```
 
 ## Release gates
