@@ -1,6 +1,6 @@
 # v0.1.0 Release Hardening
 
-- Status: **Now — accepted scope, implementation pending**
+- Status: **Now — implementation and qualification in progress**
 - Owner: maintainers
 - Confidence: medium
 - Target: npm `0.1.0`
@@ -36,6 +36,7 @@ Release hardening -> npm 0.1.0 -> GitHub Release/GIF -> public launch -> feedbac
 The package must expose an executable through `package.json#bin`. That launcher must:
 
 - carry a compatible, version-pinned DeepSeek Harness CLI as a runtime dependency;
+- publish a production `npm-shrinkwrap.json` so `npx` resolves the qualified transitive tree instead of accepting newly published dependency drift;
 - make `npx dsh-claude-tui` reach the Claude-style TUI on first run;
 - initialize the managed `claude-tui` profile when it is absent;
 - on later runs, reconcile only the launcher-owned plugin registration to the package version currently executing;
@@ -76,6 +77,9 @@ The existing Gate 3 runtime evidence remains the semantic baseline: local determ
 | Item | Release implication |
 | --- | --- |
 | Harness CLI compatibility | Pin the CLI used by the launcher and qualify upgrades instead of accepting an unbounded range. |
+| Existing Harness installs | Ignore global executables, preserve unrelated `$DSH_HOME` state, reject an unowned `claude-tui` profile, and fail loud on pre-release on-disk format mismatches; cross-version migration is not owned by this launcher. Do not concurrently run different Harness versions against one `$DSH_HOME`, because Harness owns and may reconcile shared profile-module fallbacks. |
+| Registry dependency drift | Publish the qualified npm production tree. The temporary direct pin on `@aws-sdk/credential-provider-node@3.972.79` avoids upstream `3.972.80`, whose published dependency range currently points to a nonexistent package version; remove the pin only after a clean npm install and packed E2E both pass without it. |
+| Native install surface | The npm package is small, but its pinned Harness closure installs hundreds of packages and runs reviewed native setup for `node-pty`, `koffi`, and Harness' subprocess helper. Qualify cold installs on every supported OS and keep the production audit clean. |
 | Profile ownership | Reconciliation must distinguish launcher-owned state from user-owned customization. |
 | `npx` cache and offline behavior | Errors must identify whether package resolution, Harness setup, or provider access failed. |
 | npm authentication and 2FA | Code may be ready while publication remains operationally blocked. |

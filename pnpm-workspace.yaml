@@ -1,6 +1,13 @@
 allowBuilds:
-  # Fixed-size PTY capture is a dev-only visual qualification boundary.
+  # Harness' PTY adapter restores the executable bit on node-pty's macOS helper.
+  '@deepseek-ai/dsh-subprocess-local': true
+  # Koffi supplies the reviewed native boundary used by Harness' durable writes on Windows.
+  koffi: true
+  # Fixed-size PTY capture is also a dev-only visual qualification boundary.
   node-pty: true
+  # These dependency lifecycle hooks are not needed by the published artifacts.
+  '@google/genai': false
+  protobufjs: false
 minimumReleaseAgeExclude:
   - '@deepseek-ai/cordis-plugin-loader@1.0.2'
   - '@deepseek-ai/cordis@4.0.1'
