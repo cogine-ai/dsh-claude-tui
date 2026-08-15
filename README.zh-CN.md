@@ -43,6 +43,8 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 前置条件：Node.js `22.19+` 或 `24+`。命令自带已验证的 DeepSeek Harness
 版本，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。
 
+当前已发布基线为 [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0)。
+
 ```bash
 npx dsh-claude-tui
 ```
@@ -129,7 +131,7 @@ corepack pnpm check
 
 ## 路线图
 
-**v0.1.0 — 已通过发布资格验证的基线**
+**v0.1.0 — 已发布基线**
 
 - 从干净 checkout 生成由 shrinkwrap 固定依赖的 npm 包；
 - 以 `npx dsh-claude-tui` 完成安装与启动，不再要求用户手动安装 Harness 或 profile；
