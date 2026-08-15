@@ -44,6 +44,7 @@ DeepSeek Harness 提供了可组合的 Agent、Session、工具、审批、用�
 版本，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。
 
 当前已发布基线为 [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0)。
+对应的源码 Release 为 [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0)。
 
 ```bash
 npx dsh-claude-tui

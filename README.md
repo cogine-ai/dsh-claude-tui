@@ -45,6 +45,7 @@ DeepSeek Harness version; no global `dsh`, repository checkout, pnpm install,
 or manual profile setup is required.
 
 The current published baseline is [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0).
+The corresponding source release is [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0).
 
 ```bash
 npx dsh-claude-tui
