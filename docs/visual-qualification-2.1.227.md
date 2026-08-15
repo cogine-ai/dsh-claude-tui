@@ -2,7 +2,7 @@
 
 ## Verdict
 
-The implemented main-screen slice is high-fidelity against a version-pinned real Claude Code `2.1.227` PTY. The reference corpus has 23 captured frames; 21 are active automated comparison anchors. The remaining two permission-mode frames are reference-only because DeepSeek Harness does not expose equivalent Claude permission semantics. The candidate retains Claude's orange logo and shell geometry with one explicit, user-approved top safety inset; this deliberate offset is tested instead of being hidden inside the reference data.
+The implemented main-screen slice is high-fidelity against a version-pinned real Claude Code `2.1.227` PTY. The reference corpus has 24 captured frames; 22 are active automated comparison anchors. The remaining two permission-mode frames are reference-only because DeepSeek Harness does not expose equivalent Claude permission semantics. A new Harness Session uses the captured full welcome-panel geometry from row `0`; a resumed Session uses the compact header with its explicit, user-approved top safety inset. Both mappings are tested instead of being hidden inside the reference data.
 
 This is a scoped, evidence-backed claim, not whole-product equivalence. It covers the shell, prompt and completion affordances, session picker, errors, response/tool states, approval and question panels, plan indication, and foreground/background subagent presentation. It does not claim Claude's private model behavior, permission classifier, cloud/session services, completed background-agent notification, full plan/todo system, or every terminal emulator.
 
@@ -14,7 +14,7 @@ The reference executable reported:
 2.1.227 (Claude Code)
 ```
 
-Frames were captured in the DeepSeek Harness checkout at commit `47f943859bef60e4160492346772ded9b24f765a`. Every launch disables settings sources, MCP servers, the updater, and nonessential traffic. The common Claude flags are:
+The original Harness-state frames were captured in the DeepSeek Harness checkout at commit `47f943859bef60e4160492346772ded9b24f765a`; the welcome-state frame was captured in this plugin checkout. Each fixture records its exact working directory and transport. Every launch disables settings sources, MCP servers, the updater, and nonessential traffic. The common Claude flags are:
 
 ```text
 --settings {}
@@ -49,6 +49,7 @@ Each JSON fixture records source identity, scenario, terminal dimensions, SHA-25
 | `ctrl-d-confirm-80x24.json` | automated anchor | first-gesture confirmation on row 8 |
 | `ctrl-c-confirm-80x24.json` | automated anchor | first-gesture confirmation on row 8 |
 | `idle-100x30.json` | automated anchor | same shell geometry at wider size |
+| `welcome-100x30.json` | automated anchor | full welcome panel on rows 0-10; inner divider at column 46 |
 | `permission-accept-edits-80x24.json` | reference only | Claude accept-edits indicator |
 | `permission-plan-80x24.json` | automated anchor | durable Harness plan state projected in Claude's row/style |
 | `permission-auto-80x24.json` | reference only | Claude auto-mode indicator |
@@ -68,7 +69,7 @@ The fixtures live in `tests/fixtures/claude-code-2.1.227/` and are produced only
 
 ## Measured visual anchors
 
-The reference uses the normal terminal buffer, preserving scrollback. At `80x24`, the immutable Claude capture and the candidate mapping are:
+The reference uses the normal terminal buffer, preserving scrollback. At `80x24`, the immutable compact/returning Claude capture and the candidate mapping are:
 
 | Element | Claude reference | DeepSeek Harness candidate |
 | --- | --- | --- |
@@ -81,7 +82,9 @@ The reference uses the normal terminal buffer, preserving scrollback. At `80x24`
 | primary context or menu | row `8` onward | row `9` onward |
 | secondary mode line | row `9` in idle states | row `10` in idle states |
 
-The candidate title is `DeepSeek Harness - Claude TUI`. Its third logo row keeps the live working directory on the left and adds a right-aligned `powered by dsh` badge at widths of 48 columns or more; below that width the badge disappears rather than displacing terminal content.
+For `welcome-100x30.json`, Claude's panel occupies rows `0-10`, its inner divider is at column `46`, and the prompt cursor is on row `14`. The candidate new-Session panel uses the same measured rows and divider column, so it owns row `0` rather than adding the compact header's safety inset.
+
+The candidate title is `DSH Claude TUI`; the expanded title also shows the executing TUI package version. In the compact state, its third logo row keeps the live working directory on the left and adds a right-aligned `powered by dsh` badge at widths of 48 columns or more; below that width the badge disappears rather than displacing terminal content. In the expanded state, the left cell contains the live model/effort and working directory, while the right cell shows `/help` guidance plus launcher-verified Harness version, system/bundled source, DSH tools mode, and shared/isolated Home. The final panel row retains the right-aligned `powered by dsh` badge. Session ID remains available in the compact resumed-Session header instead of crowding the new-Session Hero.
 
 Observed true-color roles are:
 
@@ -104,7 +107,7 @@ The implementation uses these measured true-color values directly rather than ma
 The candidate is rendered through a real `pi-tui` ANSI path into the same xterm headless cell model used to normalize Claude's PTY stream. Automated assertions compare the relevant observable contract for each state:
 
 - active buffer and scrollback-visible layout;
-- logo count, the explicit one-row candidate inset, divider rows/widths, prompt row, modal rows and roster placement;
+- compact-header logo count and safety inset, expanded-panel border/divider geometry, prompt row, modal rows and roster placement;
 - stable glyphs and labels, including Claude's non-breaking space after `❯`;
 - hardware cursor coordinates and modal/editor cursor ownership;
 - selected foreground, background, bold, dim, and inverse runs;
@@ -122,8 +125,8 @@ Five visible differences are deliberate and tested:
 1. Harness currently grants `allowed-once`, rejection, or cancellation; it has no durable Claude “always allow” outcome. The second approval row therefore says it is unavailable and cannot be selected.
 2. Claude's background panel advertises `↓ to manage`. Harness has no equivalent manager contract, so the row keeps Claude's captured geometry and style but exposes the real `← for agents` roster control instead.
 3. Claude reports private subagent tool-use/token/time metrics. Harness does not provide all of those values on this surface, so completion says `Done` without inventing metrics. Expanded mode shows the real child result.
-4. The candidate reserves a blank top row before Claude's logo. This addresses clipping at the terminal viewport boundary and shifts only the main-screen shell by one row; the captured Claude fixtures remain unchanged.
-5. Product identity is truthful: the orange Claude-shaped logo remains, while the title reads `DeepSeek Harness - Claude TUI` and an official-blue `powered by dsh` badge appears on sufficiently wide terminals. The badge is absent below 48 columns.
+4. The compact returning state reserves a blank top row before Claude's logo to address clipping at the terminal viewport boundary. The expanded new-Session panel follows the captured bordered geometry from row `0`, so it does not add that inset.
+5. Product identity is truthful: the orange Claude-shaped logo remains, while the title reads `DSH Claude TUI` and the expanded form includes the real package version. Both header forms retain the official-blue `powered by dsh` badge. The expanded panel replaces Claude's account, billing and release-note cells with live DSH model/effort/cwd data, `/help` guidance, and launcher-verified Harness/Home/tools-mode provenance. DSH `native`, `code`, and `both` map to `Standard`, `PTC`, and `Both (Native + PTC)`; Minimal is not presented as a tools mode.
 
 These boundaries lower literal text identity in narrowly defined cells while preserving both visual shape and truthful interaction semantics.
 
@@ -134,7 +137,7 @@ Visual projection tests are not the only evidence. An isolated `claude-tui` Harn
 | Gate | Runtime evidence |
 | --- | --- |
 | startup | the plugin completed Loader composition and entered the live TUI; this verified the ancestor-tree settlement fix rather than only a unit helper |
-| header identity | an `80x24` real Harness PTY emitted the blank safety row, Claude's orange three-row logo, `DeepSeek Harness - Claude TUI`, the live DeepSeek model/session/cwd, and a white-on-`#4d6bfe` `powered by dsh` badge; the terminal title used the same identity |
+| header identity | the compact/resumed path was qualified in an `80x24` real Harness PTY: it emitted the blank safety row, Claude's orange three-row logo, `DSH Claude TUI`, the live DeepSeek model/session/cwd, and a white-on-`#4d6bfe` `powered by dsh` badge; the expanded new-Session path is cell-qualified against `welcome-100x30.json` and packed-artifact PTY tests additionally verify its TUI/Harness versions, runtime source, PTC label, `/help` tip, and DSH badge |
 | approval rejection | a danger-full-access Bash call proposed `touch /tmp/dsh-claude-tui-should-not-exist`; selecting `No` persisted `approval/asked`, rejected `approval/decided`, an error tool result, and a completed turn; the marker remained absent |
 | structured question | `ask_user_question` displayed the captured panel, returned `Alpha`, persisted the structured answer in the tool result, and completed the turn |
 | foreground subagent | the live TUI showed `Initializing…`, `⏺ main`, the real `spawn` provider, then `Done`; the parent persisted a successful `subagent` call/result while the child Session independently persisted its delegated prompt, response, and completed turn |
@@ -164,6 +167,7 @@ The reference comparisons and live gates exposed and fixed concrete mismatches r
 | --- | --- | --- |
 | terminal buffer | alternate screen | normal/main screen with scrollback |
 | shell rows | dividers at `19/21` | Claude reference at `5/7`; candidate at `6/8` after the explicit safety inset |
+| new-Session welcome | compact unauthenticated fixture was the only startup baseline | independently captured full panel; matching border rows/divider with truthful DSH content |
 | identity | no Claude-shaped logo | three measured orange logo rows, truthful title, responsive dsh badge |
 | palette | ANSI approximation | pinned RGB roles above |
 | prompt | padded generic editor line | captured glyph, NBSP and cursor geometry |

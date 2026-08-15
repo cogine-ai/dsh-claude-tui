@@ -27,6 +27,26 @@ The launcher does not scan arbitrary npm/pnpm caches, invoke a nested
 launch has begun. The last rule prevents duplicate model requests and Session
 writes.
 
+## Welcome runtime provenance
+
+After resolving the complete launch plan, the launcher replaces any inherited
+internal snapshot with a bounded record of the selected Harness version,
+`system`/`bundled` runtime kind, `shared`/`isolated` home kind, exact DSH home,
+and effective `DSH_TOOLS_MODE`. The startup plugin validates this record before
+the expanded welcome panel renders it; malformed or missing data is ignored
+instead of crashing the TUI. The snapshot is process-local and is never written
+to a Session, profile, credential store, prompt, or model request.
+
+The product labels stay mapped to DSH's real tools configuration:
+
+- `native` renders as `Standard`;
+- `code` renders as `PTC`;
+- `both` renders as `Both (Native + PTC)`.
+
+`Minimal` remains an Agent-composition choice, not a fourth DSH tools mode. A
+direct `dsh --profile ...` launch has no launcher decision to report, so the
+panel says that provenance is unavailable rather than guessing it.
+
 ## DSH home and profile ownership
 
 An unset or empty `DSH_HOME` selects `~/.dsh`. A non-empty `DSH_HOME` is an

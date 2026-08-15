@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="115 tests" src="https://img.shields.io/badge/tests-115%2F115-4eba65?style=flat-square" />
+  <img alt="118 tests" src="https://img.shields.io/badge/tests-118%2F118-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -33,7 +33,7 @@ This plugin joins those two ideas without forking Harness core:
 
 - **Feels familiar:** Claude-shaped shell, prompt, menus, transcript, approvals, questions, and agent states.
 - **Runs on Harness:** live Harness models, durable Sessions, commands, permissions, tools, and subagents.
-- **Proves fidelity:** 23 frames captured from a real Claude Code `2.1.227` PTY; 21 are automated comparison anchors.
+- **Proves fidelity:** 24 frames captured from a real Claude Code `2.1.227` PTY; 22 are automated comparison anchors.
 - **Tests the terminal, not a mockup:** buffer choice, cell geometry, RGB styles, hardware cursor, and interaction transitions.
 
 It is an external Harness bundle—not a web skin and not a hardcoded terminal recording.
@@ -47,8 +47,8 @@ or manual profile setup is required.
 The current published baseline is [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0).
 The corresponding source release is [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0).
 The environment-compatibility behavior described below is implemented in the
-current source and is intended for the next patch release; published `0.1.0`
-retains the original pinned-only launcher.
+current `0.1.1` source and is intended for the next patch release; published
+`0.1.0` retains the original pinned-only launcher.
 
 ```bash
 npx dsh-claude-tui
@@ -95,7 +95,7 @@ for concurrent use, give this launcher an isolated `DSH_HOME`.
 
 | Surface | Implemented behavior |
 | --- | --- |
-| Main shell | normal-buffer scrollback, Claude orange logo, responsive header, editor, status footer |
+| Main shell | normal-buffer scrollback, expanded new-Session welcome panel with verified DSH runtime provenance, compact resumed-Session header, editor, status footer |
 | Prompt | multiline editing, submit/steer, cancellation, reverse history search |
 | Completion | slash commands and bounded `@` workspace file mentions |
 | Models | live DSH provider/model catalog, exact advertised effort levels, current-Agent and saved-default selection |
@@ -124,10 +124,10 @@ Use `/model` for the same model picker and `/provider` to inspect or update cred
 
 Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
 
-- **23** reference frames and **21** automated visual/semantic anchors.
-- **115/115** tests, including terminal behavior at `80x24` and `100x30`.
+- **24** reference frames and **22** automated visual/semantic anchors.
+- **118/118** tests, including terminal behavior at `80x24` and `100x30`.
 - Real Harness runs for approvals, questions, and foreground/background subagents.
-- One intentional difference: a blank top row prevents logo clipping.
+- The expanded new-Session panel follows the captured bordered geometry and shows the selected Harness/Home/tool mode plus `powered by dsh`; the compact returning state keeps its approved top safety inset.
 
 [Full qualification report](./docs/visual-qualification-2.1.227.md)
 

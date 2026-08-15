@@ -17,12 +17,18 @@ import { displayText } from './text.ts'
 /** Header values that do not belong in the durable transcript. */
 export interface HeaderValues {
   title: string
+  version?: string
   sessionId: string
   cwd: string
   model: string | (() => string)
+  runtime?: {
+    readonly primary: string
+    readonly secondary: string
+  }
+  expanded?: boolean | (() => boolean)
 }
 
-/** Compact Claude-like application header. */
+/** Claude-like application header with expanded new-Session and compact returning states. */
 export class HeaderComponent implements Component {
   constructor(private readonly values: HeaderValues, private readonly palette: Palette) {}
 
@@ -30,11 +36,23 @@ export class HeaderComponent implements Component {
 
   render(width: number): string[] {
     const safeWidth = Math.max(1, width)
-    const logo = [
+    const expanded = typeof this.values.expanded === 'function'
+      ? this.values.expanded()
+      : this.values.expanded === true
+    if (expanded && safeWidth >= 80) return this.renderWelcome(safeWidth)
+    return this.renderCompact(safeWidth)
+  }
+
+  private logo(): string[] {
+    return [
       `${this.palette.brand(' ▐')}${this.palette.brandOnBlack('▛███▜')}${this.palette.brand('▌')}`,
       `${this.palette.brand('▝▜')}${this.palette.brandOnBlack('█████')}${this.palette.brand('▛▘')}`,
       this.palette.brand('  ▘▘ ▝▝  '),
     ]
+  }
+
+  private renderCompact(safeWidth: number): string[] {
+    const logo = this.logo()
     const first = `${logo[0]}   ${this.palette.bold(this.values.title)}`
     const model = typeof this.values.model === 'function' ? this.values.model() : this.values.model
     const second = `${logo[1]}  ${this.palette.dim(`${model} · ${this.values.sessionId}`)}`
@@ -44,6 +62,74 @@ export class HeaderComponent implements Component {
       : joinHeaderBadge(thirdLeft, this.palette.dshBadge(' powered by dsh '), safeWidth)
     return ['', first, second, third].map(line => truncateToWidth(line, safeWidth, '…'))
   }
+
+  /** Full new-Session welcome panel captured from Claude Code's current startup surface. */
+  private renderWelcome(safeWidth: number): string[] {
+    const panelWidth = Math.min(120, safeWidth)
+    const leftWidth = Math.min(45, panelWidth - 3)
+    const rightWidth = panelWidth - leftWidth - 3
+    const edge = (text: string): string => this.palette.brand(text)
+    const innerEdge = (text: string): string => this.palette.faint(this.palette.brand(text))
+    const row = (
+      left: string,
+      right: string,
+      rightAlignment: 'left' | 'right' = 'left',
+    ): string => (
+      `${edge('│')}${fitHeaderCell(left, leftWidth, 'center')}${innerEdge('│')}`
+      + `${fitHeaderCell(
+        right === '' || rightAlignment === 'right' ? right : ` ${right}`,
+        rightWidth,
+        rightAlignment,
+      )}${edge('│')}`
+    )
+    const titlePrefix = truncateToWidth(
+      `${edge(`╭─── ${this.values.title}`)}`
+      + `${this.values.version === undefined ? '' : this.palette.dim(` v${this.values.version}`)}`
+      + edge(' '),
+      Math.max(1, panelWidth - 1),
+      '…',
+    )
+    const top = `${titlePrefix}${edge(
+      `${'─'.repeat(Math.max(0, panelWidth - visibleWidth(titlePrefix) - 1))}╮`,
+    )}`
+    const bottom = edge(`╰${'─'.repeat(panelWidth - 2)}╯`)
+    const rightDivider = edge('─'.repeat(Math.max(0, rightWidth - 2)))
+    const logo = this.logo()
+    const model = typeof this.values.model === 'function' ? this.values.model() : this.values.model
+    return [
+      top,
+      row('', this.palette.bold(this.palette.brand('Tips for getting started'))),
+      row(this.palette.bold('Welcome back!'), this.palette.dim('Run /help for commands and shortcuts')),
+      row('', rightDivider),
+      row(logo[0] ?? '', this.palette.bold(this.palette.brand('Runtime'))),
+      row(logo[1] ?? '', this.palette.dim(
+        this.values.runtime?.primary ?? 'Runtime details unavailable for this direct profile launch',
+      )),
+      row(logo[2] ?? '', this.palette.dim(
+        this.values.runtime?.secondary ?? 'Launch with dsh-claude-tui to show provenance',
+      )),
+      row('', ''),
+      row(this.palette.dim(model), ''),
+      row(
+        this.palette.dim(this.values.cwd),
+        this.palette.dshBadge(' powered by dsh '),
+        'right',
+      ),
+      bottom,
+    ].map(line => truncateToWidth(line, panelWidth, '…'))
+  }
+}
+
+/** Fit one ANSI-styled value into a fixed-width welcome-panel cell. */
+function fitHeaderCell(
+  text: string,
+  width: number,
+  alignment: 'left' | 'center' | 'right',
+): string {
+  const clipped = truncateToWidth(text, Math.max(1, width), '…')
+  const gap = Math.max(0, width - visibleWidth(clipped))
+  const before = alignment === 'center' ? Math.floor(gap / 2) : alignment === 'right' ? gap : 0
+  return `${' '.repeat(before)}${clipped}${' '.repeat(gap - before)}`
 }
 
 /** Keep the official dsh badge visible while allowing live cwd metadata to truncate. */

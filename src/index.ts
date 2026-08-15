@@ -309,6 +309,11 @@ async function boot(
       terminal,
       modelSelection: modelRuntime.selection,
       listWorkspaceEntries: listLocalWorkspaceEntries,
+      welcomeExpanded: resumeSessionId === undefined,
+      tuiVersion: packageVersion(),
+      ...(startup.runtimeSnapshot === undefined
+        ? {}
+        : { runtimeSnapshot: startup.runtimeSnapshot }),
       ...(startup.launchNotice === undefined ? {} : { launchNotice: startup.launchNotice }),
       exit: async (code) => {
         if (exitRequested) return

@@ -29,7 +29,7 @@
       name: dsh-claude-tui
       inject: [claudeTuiStartup]
       config:
-        title: DeepSeek Harness - Claude TUI
+        title: DSH Claude TUI
         color: true
         showReasoning: true
         maxTranscriptRows: 5000

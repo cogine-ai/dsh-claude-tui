@@ -1,5 +1,7 @@
 /** Real pi-tui application behavior over a fake Agent and ANSI terminal. */
 import { readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent, ModelSelection, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
 import { Inbox } from '@deepseek-ai/dsh-agent'
@@ -20,6 +22,7 @@ import type {
 import { afterEach, describe, expect, it } from 'vitest'
 import { ClaudeTuiApplication } from '../src/app.ts'
 import { resolveConfig } from '../src/config.ts'
+import type { ClaudeTuiRuntimeSnapshot } from '../src/runtime-snapshot.ts'
 import { HeadlessTerminal } from './headless-terminal.ts'
 
 interface Bench {
@@ -56,6 +59,10 @@ interface BenchOptions {
   readonly seed?: (session: Session) => void
   readonly seedEvents?: readonly SessionEvent[]
   readonly launchNotice?: string
+  readonly welcomeExpanded?: boolean
+  readonly tuiVersion?: string
+  readonly runtimeSnapshot?: ClaudeTuiRuntimeSnapshot
+  readonly color?: boolean
 }
 
 const contexts: Context[] = []
@@ -182,11 +189,18 @@ function bench(
 
   const terminal = new HeadlessTerminal(columns, rows)
   const exitCodes: number[] = []
-  const app = new ClaudeTuiApplication(ctx, agent, resolveConfig({ color: false }), {
+  const app = new ClaudeTuiApplication(ctx, agent, resolveConfig({ color: options.color ?? false }), {
     terminal,
     exit: (code: number) => { exitCodes.push(code) },
     now,
     ...(options.launchNotice === undefined ? {} : { launchNotice: options.launchNotice }),
+    ...(options.welcomeExpanded === undefined
+      ? {}
+      : { welcomeExpanded: options.welcomeExpanded }),
+    ...(options.tuiVersion === undefined ? {} : { tuiVersion: options.tuiVersion }),
+    ...(options.runtimeSnapshot === undefined
+      ? {}
+      : { runtimeSnapshot: options.runtimeSnapshot }),
     ...(options.models === undefined ? {} : { modelSelection: options.models.selection }),
   } as never)
   return {
@@ -313,6 +327,116 @@ function descriptionColumn(line: string): number {
 }
 
 describe('ClaudeTuiApplication', () => {
+  it('renders the captured full welcome panel for a new Session', async () => {
+    const reference = JSON.parse(readFileSync(
+      new URL('./fixtures/claude-code-2.1.227/welcome-100x30.json', import.meta.url),
+      'utf8',
+    )) as ReferenceFrame
+    const expectedLines = reference.frame.lines.map(line => line.text)
+    const expectedPanelBottom = expectedLines.findIndex(line => line.startsWith('╰'))
+    const expectedDividerColumn = expectedLines[1]?.indexOf('│', 1)
+    const test = bench(100, 30, () => 1_000, {
+      welcomeExpanded: true,
+      color: true,
+      models: modelFixture(),
+      tuiVersion: '0.1.1',
+      runtimeSnapshot: {
+        harnessVersion: '0.1.0-rc.6',
+        runtimeKind: 'bundled',
+        homeKind: 'shared',
+        homePath: join(homedir(), '.dsh'),
+        toolsMode: 'code',
+      },
+    })
+
+    await test.app.start()
+    await test.terminal.settle()
+
+    const lines = test.terminal.lines()
+    const text = test.terminal.text()
+    expect({
+      topBorder: lines[0]?.startsWith('╭─── DSH Claude TUI v0.1.1'),
+      panelBottom: lines.findIndex(line => line.startsWith('╰')),
+      dividerColumn: lines[1]?.indexOf('│', 1),
+      sectionDivider: lines[3],
+      welcomeRow: lines.findIndex(line => line.includes('Welcome back!')),
+      tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
+      runtimeRow: lines.findIndex(line => line.includes('Runtime')),
+      helpVisible: text.includes('Run /help for commands and shortcuts'),
+      harnessVisible: text.includes('Harness 0.1.0-rc.6 · bundled · PTC'),
+      homeVisible: text.includes('Home ~/.dsh · shared'),
+      modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
+      sessionIdVisible: text.includes('terminal-test'),
+      cwdVisible: text.includes('/workspace/project'),
+      badgeVisible: lines[9]?.slice(0, -1).trimEnd().endsWith('powered by dsh'),
+      copiedClaudeReleaseNotes: text.includes("What's new"),
+      innerBorderStyle: test.terminal.cellStyle(1, 46),
+      tipsStyle: test.terminal.cellStyle(1, 48),
+      runtimeStyle: test.terminal.cellStyle(4, 48),
+      guidanceStyle: test.terminal.cellStyle(5, 48),
+      badgeStyle: test.terminal.cellStyle(9, lines[9]?.indexOf('powered by dsh') ?? -1),
+    }).toEqual({
+      topBorder: true,
+      panelBottom: expectedPanelBottom,
+      dividerColumn: expectedDividerColumn,
+      sectionDivider: expectedLines[3],
+      welcomeRow: expectedLines.findIndex(line => line.includes('Welcome back!')),
+      tipsRow: expectedLines.findIndex(line => line.includes('Tips for getting started')),
+      runtimeRow: expectedLines.findIndex(line => line.includes("What's new")),
+      helpVisible: true,
+      harnessVisible: true,
+      homeVisible: true,
+      modelVisible: true,
+      sessionIdVisible: false,
+      cwdVisible: true,
+      badgeVisible: true,
+      copiedClaudeReleaseNotes: false,
+      innerBorderStyle: {
+        fg: '#d77757', bg: 'default', bold: false, dim: true, inverse: false,
+      },
+      tipsStyle: {
+        fg: '#d77757', bg: 'default', bold: true, dim: false, inverse: false,
+      },
+      runtimeStyle: {
+        fg: '#d77757', bg: 'default', bold: true, dim: false, inverse: false,
+      },
+      guidanceStyle: {
+        fg: '#999999', bg: 'default', bold: false, dim: false, inverse: false,
+      },
+      badgeStyle: {
+        fg: '#ffffff', bg: '#4d6bfe', bold: false, dim: false, inverse: false,
+      },
+    })
+
+    await test.app.dispose()
+  })
+
+  it('maps only DSH native, code, and both tools modes into product-facing labels', async () => {
+    const cases = [
+      ['native', 'Standard'],
+      ['code', 'PTC'],
+      ['both', 'Both (Native + PTC)'],
+    ] as const
+    for (const [toolsMode, label] of cases) {
+      const test = bench(100, 30, () => 1_000, {
+        welcomeExpanded: true,
+        tuiVersion: '0.1.1',
+        runtimeSnapshot: {
+          harnessVersion: '0.1.0-rc.6',
+          runtimeKind: 'system',
+          homeKind: 'isolated',
+          homePath: '/tmp/dsh-claude-tui',
+          toolsMode,
+        },
+      })
+
+      await test.app.start()
+      await test.terminal.settle()
+      expect(test.terminal.text()).toContain(`Harness 0.1.0-rc.6 · system · ${label}`)
+      await test.app.dispose()
+    }
+  })
+
   it('shows an isolated-home notice without persisting it to the Session', async () => {
     const test = bench(80, 24, () => 1_000, {
       launchNotice: 'Using isolated DSH_HOME; existing sessions were not copied.',
@@ -428,7 +552,7 @@ describe('ClaudeTuiApplication', () => {
     await test.app.dispose()
   })
 
-  it('keeps the Claude logo below a safe top row and uses the DeepSeek Harness Claude TUI identity', async () => {
+  it('keeps the Claude logo below a safe top row and uses the DSH Claude TUI identity', async () => {
     const test = bench(80, 24)
     await test.app.start()
     await test.terminal.settle()
@@ -444,11 +568,11 @@ describe('ClaudeTuiApplication', () => {
       legacyTargetVisible: test.terminal.text().includes('Claude Code 2.1.227 target'),
     }).toEqual({
       top: '',
-      identity: ' ▐▛███▜▌   DeepSeek Harness - Claude TUI',
+      identity: ' ▐▛███▜▌   DSH Claude TUI',
       route: '▝▜█████▛▘  test/model · terminal-test',
       cwdPreserved: true,
       badgeVisible: true,
-      terminalTitle: 'DeepSeek Harness - Claude TUI',
+      terminalTitle: 'DSH Claude TUI',
       legacyTargetVisible: false,
     })
 
@@ -1875,8 +1999,8 @@ describe('ClaudeTuiApplication', () => {
     await test.terminal.settle()
 
     expect(test.terminal.started).toBe(1)
-    expect(test.terminal.title).toBe('DeepSeek Harness - Claude TUI')
-    expect(test.terminal.text()).toContain('DeepSeek Harness - Claude TUI')
+    expect(test.terminal.title).toBe('DSH Claude TUI')
+    expect(test.terminal.text()).toContain('DSH Claude TUI')
     expect(test.terminal.text()).toContain('/workspace/project')
     expect(test.terminal.text()).toContain('terminal-test')
     expect(test.terminal.text()).toContain('test/model')

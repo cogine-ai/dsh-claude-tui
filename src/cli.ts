@@ -22,11 +22,13 @@ import {
   resolveBundledDshRuntime,
 } from './runtime-discovery.ts'
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
+import type { DshToolsMode } from './runtime-snapshot.ts'
 
 const BUNDLED_DSH_VERSION = '0.1.0-rc.6'
 const RUNTIME_ENV = 'DSH_CLAUDE_TUI_RUNTIME'
 const LAUNCH_NOTICE_ENV = 'DSH_CLAUDE_TUI_LAUNCH_NOTICE'
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
+const RUNTIME_SNAPSHOT_ENV = 'DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT'
 
 const HELP = `Usage: dsh-claude-tui [options] [prompt...]
 
@@ -45,6 +47,10 @@ All other options and arguments are forwarded to the TUI.
 
 interface PackageManifest {
   version?: unknown
+}
+
+function isDshToolsMode(value: string): value is DshToolsMode {
+  return value === 'native' || value === 'code' || value === 'both'
 }
 
 /** Fail before touching Harness state when npm only warned about an invalid engine. */
@@ -123,14 +129,25 @@ function launchAdapter(identity: PackageIdentity): LaunchPlannerAdapter {
 
 /** Run Harness in the foreground while preserving the caller's process boundary. */
 async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<number> {
+  const toolsMode = (process.env.DSH_TOOLS_MODE ?? 'code').trim()
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     DSH_HOME: plan.home.path,
-    DSH_TOOLS_MODE: process.env.DSH_TOOLS_MODE ?? 'code',
+    DSH_TOOLS_MODE: toolsMode,
   }
   delete environment[PROBE_TOKEN_ENV]
   delete environment[LAUNCH_NOTICE_ENV]
+  delete environment[RUNTIME_SNAPSHOT_ENV]
   if (plan.notices.length > 0) environment[LAUNCH_NOTICE_ENV] = plan.notices.join(' ')
+  if (isDshToolsMode(toolsMode)) {
+    environment[RUNTIME_SNAPSHOT_ENV] = JSON.stringify({
+      harnessVersion: plan.runtime.version,
+      runtimeKind: plan.runtime.kind,
+      homeKind: plan.home.kind,
+      homePath: plan.home.path,
+      toolsMode,
+    })
+  }
   const harnessArgs = [plan.runtime.executable, '--profile', plan.profile.name, ...args]
 
   // Supported POSIX Node lines expose execve: replacing this process gives

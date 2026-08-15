@@ -83,6 +83,7 @@ writeFileSync(process.env.DSH_FAKE_READY, JSON.stringify({
   dshHome: process.env.DSH_HOME,
   launchNotice: process.env.DSH_CLAUDE_TUI_LAUNCH_NOTICE,
   toolsMode: process.env.DSH_TOOLS_MODE,
+  runtimeSnapshot: process.env.DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT,
 }))
 if (process.env.DSH_FAKE_EXIT_CODE !== undefined) {
   process.exit(Number(process.env.DSH_FAKE_EXIT_CODE))
@@ -95,7 +96,7 @@ setInterval(() => {}, 1_000)
     rmSync(temporaryDirectory, { recursive: true, force: true })
   })
 
-  it('forwards arguments, cwd, explicit environment, and the Harness exit code', () => {
+  it('forwards arguments, cwd, normalized tools mode, and the Harness exit code', () => {
     const readyPath = join(temporaryDirectory, 'forwarding-record.json')
     const dshHome = join(temporaryDirectory, 'forwarding-dsh-home')
     const workspace = join(temporaryDirectory, 'forwarding-workspace')
@@ -115,7 +116,7 @@ setInterval(() => {}, 1_000)
         DSH_FAKE_READY: readyPath,
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unused-signal.txt'),
         DSH_FAKE_EXIT_CODE: '23',
-        DSH_TOOLS_MODE: 'native',
+        DSH_TOOLS_MODE: ' native ',
       }),
     })
 
@@ -135,6 +136,13 @@ setInterval(() => {}, 1_000)
       cwd: realpathSync(workspace),
       dshHome,
       toolsMode: 'native',
+      runtimeSnapshot: JSON.stringify({
+        harnessVersion: '0.1.0-rc.6',
+        runtimeKind: 'bundled',
+        homeKind: 'shared',
+        homePath: dshHome,
+        toolsMode: 'native',
+      }),
     })
   })
 
@@ -154,8 +162,16 @@ setInterval(() => {}, 1_000)
     })
 
     expect(result.status).toBe(0)
-    const record = JSON.parse(readFileSync(readyPath, 'utf8')) as { toolsMode?: string }
+    const record = JSON.parse(readFileSync(readyPath, 'utf8')) as {
+      toolsMode?: string
+      runtimeSnapshot?: string
+    }
     expect(record.toolsMode).toBe('code')
+    expect(JSON.parse(record.runtimeSnapshot ?? '')).toMatchObject({
+      runtimeKind: 'bundled',
+      homeKind: 'shared',
+      toolsMode: 'code',
+    })
   })
 
   it('rejects an unsupported Node version before creating Harness state', () => {
