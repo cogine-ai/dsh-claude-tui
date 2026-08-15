@@ -1,13 +1,14 @@
 # v0.1.0 Release Hardening
 
-- Status: **Now — implementation and qualification in progress**
+- Status: **Release-approved**
 - Owner: maintainers
-- Confidence: medium
+- Confidence: high
 - Target: npm `0.1.0`
+- Approved: 2026-08-15
 
 ## Decision
 
-`v0.1.0` will not be published until every gate in this document passes. The milestone includes a one-command launcher, so a user with a supported Node.js version can install and enter the TUI with:
+`v0.1.0` passed every gate in this document and was approved for npm publication on 2026-08-15. The milestone includes a one-command launcher, so a user with a supported Node.js version can install and enter the TUI with:
 
 ```sh
 npx dsh-claude-tui
@@ -18,7 +19,7 @@ No separately installed `dsh` command, repository checkout, pnpm installation, o
 This milestone also includes the bounded model/provider surfaces approved for first-run usability: the Claude-shaped interaction is [documented separately](./model-provider-interactions.md), while all catalog, default, effort, and credential semantics remain DSH-owned. Further visual surfaces and interaction features remain deferred until after `v0.1.0`. The release sequence remains:
 
 ```text
-Release hardening -> npm 0.1.0 -> GitHub Release/GIF -> public launch -> feedback-led iteration
+Release hardening ✓ -> merge to main -> publish from the exact merged main commit -> verify registry metadata and a clean npx launch -> GitHub Release/GIF -> public launch -> feedback-led iteration
 ```
 
 ## Release gates
@@ -83,13 +84,14 @@ The existing Gate 3 runtime evidence remains the semantic baseline: local determ
 | Profile ownership | Reconciliation must distinguish launcher-owned state from user-owned customization. |
 | `npx` cache and offline behavior | Errors must identify whether package resolution, Harness setup, or provider access failed. |
 | npm authentication and 2FA | Code may be ready while publication remains operationally blocked. |
-| CI activation | The workflow is configured and enabled, but `v0.1.0` cannot rely on it until a release-candidate run succeeds. |
+| CI activation | The release candidate passed the full Ubuntu matrix on Node.js `22.19.0`, `22.22.3`, `24.0.0`, and `24.14.0`. |
 
 ## Completion rule
 
-Release Hardening is complete only when the release commit passes every gate above from a clean environment and the exact packed artifact is approved for publication. Passing source-level tests alone is insufficient.
+Release Hardening was approved only after the release commit passed every gate above from a clean environment and the exact packed artifact passed local-mock, process-boundary, Session-resume, and real DeepSeek qualification. Passing source-level tests alone was insufficient.
 
 ## Roadmap change log
 
 - Before: release packaging beyond checkout installation was an undifferentiated future item.
-- After: `v0.1.0 Release Hardening` is the active milestone, and `npx dsh-claude-tui` is a blocking release promise with explicit first-run, repeat-run, safety, and packed-artifact gates.
+- After: `v0.1.0 Release Hardening` made `npx dsh-claude-tui` a blocking release promise with explicit first-run, repeat-run, safety, and packed-artifact gates.
+- Approved: the pinned artifact passed the four-version CI matrix, production dependency audit, publish dry-run, and packed real-API smoke required for npm publication.

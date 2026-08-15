@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://github.com/cogine-ai/dsh-claude-tui/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/cogine-ai/dsh-claude-tui?style=flat-square&logo=github" /></a>
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
+  <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
   <img alt="66 tests" src="https://img.shields.io/badge/tests-66%2F66-4eba65?style=flat-square" />
@@ -45,6 +46,13 @@ or manual profile setup is required.
 
 ```bash
 npx dsh-claude-tui
+```
+
+For repeat use, an optional global installation exposes the same launcher:
+
+```bash
+npm install --global dsh-claude-tui@0.1.0
+dsh-claude-tui
 ```
 
 Sending a real model request requires the credentials for the Harness model provider you select.
@@ -151,15 +159,15 @@ Dynamic capture scenarios use an isolated Claude config, a dummy key, and a loop
 
 ## Roadmap
 
-**Now — v0.1.0 Release Hardening**
+**v0.1.0 — release-qualified baseline**
 
-- ship a publishable package from a clean checkout;
-- make `npx dsh-claude-tui` the complete install-and-launch path;
-- qualify first-run setup, repeat-run idempotence, and packed-tarball execution.
+- publishes a clean, shrinkwrap-pinned npm artifact;
+- makes `npx dsh-claude-tui` the complete install-and-launch path;
+- qualifies first-run setup, repeat-run idempotence, packed-tarball execution, and real DeepSeek access.
 
-The milestone and its release gates are tracked in the [v0.1.0 Release Hardening plan](./docs/release-hardening-v0.1.0.md).
+The completed qualification gates are recorded in the [v0.1.0 Release Hardening report](./docs/release-hardening-v0.1.0.md).
 
-**Next — after v0.1.0**
+**Next — feedback-led v0.1.x**
 
 - richer attachment and completion surfaces;
 - broader session management and rename flows;
