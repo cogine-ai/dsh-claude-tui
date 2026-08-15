@@ -9,12 +9,16 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { DshRuntime } from '../src/launch-plan.ts'
 import type { PackageIdentity } from '../src/managed-profile.ts'
 import { resolveBundledDshRuntime } from '../src/runtime-discovery.ts'
-import { probeRuntimeCompatibility } from '../src/runtime-probe.ts'
+import {
+  probeRuntimeCompatibility,
+  runtimeProbeInternals,
+} from '../src/runtime-probe.ts'
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 
@@ -36,6 +40,7 @@ function fixture(
   const record = join(root, 'record.json')
   mkdirSync(packageRoot)
   mkdirSync(tuiRoot)
+  writeFileSync(join(packageRoot, 'package.json'), '{"type":"module"}\n')
   writeFileSync(join(tuiRoot, 'package.json'), '{"name":"dsh-claude-tui","version":"0.1.0"}\n')
   writeFileSync(executable, source.replaceAll('__RECORD__', JSON.stringify(record)))
   chmodSync(executable, 0o755)
@@ -149,6 +154,64 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
       compatible: false,
       reason: expect.stringContaining('timed out'),
     })
+  })
+
+  it.skipIf(process.platform === 'win32')(
+    'terminates descendants when a bounded probe times out',
+    async () => {
+      const { runtime, identity, record } = fixture(`
+import { spawn } from 'node:child_process'
+
+const record = __RECORD__
+const childSource = "const fs = require('node:fs');"
+  + "fs.writeFileSync(" + JSON.stringify(record + '.started') + ", 'started');"
+  + "setTimeout(() => fs.writeFileSync(" + JSON.stringify(record) + ", 'survived'), 1000);"
+  + "setInterval(() => {}, 1000);"
+spawn(process.execPath, ['-e', childSource], { stdio: 'ignore' })
+setInterval(() => {}, 1_000)
+`)
+
+      const result = await probeRuntimeCompatibility(runtime, identity, { timeoutMs: 300 })
+
+      expect(result).toEqual({
+        compatible: false,
+        reason: expect.stringContaining('timed out'),
+      })
+      expect(existsSync(`${record}.started`)).toBe(true)
+      await delay(900)
+      expect(existsSync(record)).toBe(false)
+    },
+    5_000,
+  )
+
+  it('contains cleanup failures and rejects the non-disposable candidate', async () => {
+    const { runtime, identity, record } = fixture(`
+import { writeFileSync } from 'node:fs'
+
+writeFileSync(__RECORD__, process.env.TMPDIR)
+process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
+  token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
+  package: 'dsh-claude-tui',
+  version: '0.1.0',
+  services: ['agentDefaultModel', 'agents', 'sessions'],
+}) + '\\n')
+`)
+    const removeProbeRoot = runtimeProbeInternals.removeProbeRoot
+    runtimeProbeInternals.removeProbeRoot = () => {
+      throw Object.assign(new Error('probe root is busy'), { code: 'EBUSY' })
+    }
+
+    try {
+      const result = await probeRuntimeCompatibility(runtime, identity)
+
+      expect(result).toEqual({
+        compatible: false,
+        reason: expect.stringContaining('probe cleanup failed'),
+      })
+    } finally {
+      runtimeProbeInternals.removeProbeRoot = removeProbeRoot
+      if (existsSync(record)) removeProbeRoot(readFileSync(record, 'utf8'))
+    }
   })
 
   it('bounds child output', async () => {

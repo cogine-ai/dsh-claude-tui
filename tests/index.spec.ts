@@ -99,6 +99,10 @@ describe('launcher compatibility probe', () => {
     try {
       expect(() => apply(ctx, {})).not.toThrow()
       expect(effect).toHaveBeenCalledOnce()
+      expect(effect).toHaveBeenCalledWith(
+        expect.any(Function),
+        'claude-tui.compatibility-probe()',
+      )
     } finally {
       internals.isTty = previousTty
       vi.unstubAllEnvs()

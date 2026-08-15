@@ -422,7 +422,7 @@ describe('ClaudeTuiApplication', () => {
 
     const status = test.terminal.lines().find(line => line.includes('cache 60%'))
     expect(status?.trim()).toBe(
-      'cache 60% · ↑100 ↓10 · TTFT 250ms · 10.0 tok/s · reasoning on · transcript compact',
+      'cache 60% · ↑100 ↓10 · TTFT 1.0s · 40.0 tok/s · reasoning on · transcript compact',
     )
 
     await test.app.dispose()

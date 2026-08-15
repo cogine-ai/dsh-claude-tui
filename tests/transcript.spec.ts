@@ -1,7 +1,7 @@
 /** Durable transcript projection and terminal-control safety. */
 import { describe, expect, it } from 'vitest'
 import { CallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { displayText, prettyArguments } from '../src/text.ts'
 import { TranscriptModel } from '../src/transcript.ts'
 
@@ -98,5 +98,83 @@ describe('TranscriptModel', () => {
     model.replay(session.events)
 
     expect(model.items).toEqual([])
+  })
+
+  it('uses the DSH token boundary for tool-only response timing', () => {
+    const message = createAssistantMessage({
+      content: [{
+        type: 'tool-call',
+        id: CallId('call-timing'),
+        name: 'bash',
+        arguments: '{}',
+      }],
+      source: { provider: 'test', model: 'model' },
+    })
+    const events = [
+      { type: 'step/start', seq: 0, time: 100, data: { turn: 1, step: 1 } },
+      {
+        type: 'assistant/chunk',
+        seq: 1,
+        time: 110,
+        data: { turn: 1, step: 1, chunk: { type: 'block-start', index: 0, blockType: 'tool-call' } },
+      },
+      {
+        type: 'assistant/chunk',
+        seq: 2,
+        time: 120,
+        data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: '' } },
+      },
+      {
+        type: 'assistant/chunk',
+        seq: 3,
+        time: 130,
+        data: {
+          turn: 1,
+          step: 1,
+          chunk: {
+            type: 'tool-call-delta',
+            index: 0,
+            id: CallId('call-timing'),
+            argumentsDelta: '',
+          },
+        },
+      },
+      {
+        type: 'assistant/chunk',
+        seq: 4,
+        time: 300,
+        data: {
+          turn: 1,
+          step: 1,
+          chunk: {
+            type: 'tool-call-delta',
+            index: 0,
+            id: CallId('call-timing'),
+            name: 'bash',
+            argumentsDelta: '',
+          },
+        },
+      },
+      {
+        type: 'assistant/message',
+        seq: 5,
+        time: 500,
+        data: {
+          turn: 1,
+          step: 1,
+          message,
+          usage: { inputTokens: 10, outputTokens: 4 },
+        },
+        sourceEventSeqs: [1, 2, 3, 4],
+      },
+    ] satisfies SessionEvent[]
+    const model = new TranscriptModel()
+
+    model.replay(events)
+
+    expect(model.performance).toEqual({
+      timeToFirstTokenMs: 200,
+      outputTokensPerSecond: 20,
+    })
   })
 })

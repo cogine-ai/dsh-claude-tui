@@ -80,15 +80,15 @@ function inspectProfile(
   profileDirectory: string,
   profileName: ManagedState['profile'],
 ): ProfileAssessment {
-  if (!pathEntryExists(profileDirectory)) return { kind: 'absent' }
-  const directoryStat = lstatSync(profileDirectory)
-  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
-    return { kind: 'unowned' }
-  }
-  const statePath = join(profileDirectory, MANAGED_STATE_FILENAME)
-  if (!pathEntryExists(statePath)) return { kind: 'unowned' }
-
   try {
+    if (!pathEntryExists(profileDirectory)) return { kind: 'absent' }
+    const directoryStat = lstatSync(profileDirectory)
+    if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+      return { kind: 'unowned' }
+    }
+    const statePath = join(profileDirectory, MANAGED_STATE_FILENAME)
+    if (!pathEntryExists(statePath)) return { kind: 'unowned' }
+
     const stateStat = lstatSync(statePath)
     if (!stateStat.isFile() || stateStat.isSymbolicLink()) {
       throw new Error(`managed state ${statePath} must be a regular file`)

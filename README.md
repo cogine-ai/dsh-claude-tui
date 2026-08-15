@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="106 tests" src="https://img.shields.io/badge/tests-106%2F106-4eba65?style=flat-square" />
+  <img alt="115 tests" src="https://img.shields.io/badge/tests-115%2F115-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -65,9 +65,9 @@ Sending a real model request requires the credentials for the Harness model prov
 
 In the default `auto` mode, the launcher first tries a compatible DSH already
 associated with the selected `$DSH_HOME`, then a verifiable `dsh` on `PATH`.
-External DSH must be in `>=0.1.0-rc.6 <0.1.1` and pass an isolated, credential-
-free Agent/Session compatibility probe. If neither qualifies, the launcher
-uses its pinned `0.1.0-rc.6` runtime. Set
+External DSH must be in `>=0.1.0-rc.6 <0.1.1` and pass an isolated,
+credential-free Agent/Session compatibility probe. If neither qualifies, the
+launcher uses its pinned `0.1.0-rc.6` runtime. Set
 `DSH_CLAUDE_TUI_RUNTIME=system|bundled` to require an external runtime or
 bypass external discovery.
 
@@ -125,7 +125,7 @@ Use `/model` for the same model picker and `/provider` to inspect or update cred
 Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
 
 - **23** reference frames and **21** automated visual/semantic anchors.
-- **106/106** tests, including terminal behavior at `80x24` and `100x30`.
+- **115/115** tests, including terminal behavior at `80x24` and `100x30`.
 - Real Harness runs for approvals, questions, and foreground/background subagents.
 - One intentional difference: a blank top row prevents logo clipping.
 

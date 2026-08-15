@@ -115,6 +115,7 @@ export function inspectDshPackage(
 function pathExecutables(
   pathEnvironment: string,
   platform: NodeJS.Platform,
+  diagnostics: string[],
 ): string[] {
   const executables: string[] = []
   const names = platform === 'win32' ? ['dsh.cmd', 'dsh.exe', 'dsh'] : ['dsh']
@@ -128,7 +129,9 @@ function pathExecutables(
         break
       } catch (error) {
         const code = (error as NodeJS.ErrnoException).code
-        if (code !== 'ENOENT' && code !== 'EACCES') throw error
+        if (code === 'ENOENT' || code === 'EACCES') continue
+        diagnostics.push(diagnostic('path', error))
+        break
       }
     }
   }
@@ -189,11 +192,16 @@ export function discoverExternalRuntimes(request: RuntimeDiscoveryRequest): Runt
   }
 
   const associated = join(request.home, 'profiles/node_modules/@deepseek-ai/dsh')
-  if (pathEntryExists(associated)) add(associated, 'home')
+  try {
+    if (pathEntryExists(associated)) add(associated, 'home')
+  } catch (error) {
+    diagnostics.push(diagnostic('home', error))
+  }
 
   const commands = pathExecutables(
     request.pathEnvironment ?? process.env.PATH ?? '',
     request.platform ?? process.platform,
+    diagnostics,
   )
   for (const command of commands) {
     try {

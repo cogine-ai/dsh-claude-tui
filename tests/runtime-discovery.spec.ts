@@ -95,6 +95,35 @@ describe('DeepSeek Harness runtime discovery', () => {
     expect(discovery.diagnostics.join('\n')).toContain('expected package name @deepseek-ai/dsh')
   })
 
+  it('reports a malformed DSH home without aborting discovery', () => {
+    const root = temporaryDirectory()
+    const home = join(root, 'home-file')
+    writeFileSync(home, 'not a directory')
+
+    const discovery = discoverExternalRuntimes({ home, pathEnvironment: '' })
+
+    expect(discovery.runtimes).toEqual([])
+    expect(discovery.diagnostics).toEqual([
+      expect.stringMatching(/Ignored home DeepSeek Harness candidate:.*home-file/u),
+    ])
+  })
+
+  it('reports a malformed PATH entry without aborting discovery', () => {
+    const root = temporaryDirectory()
+    const pathEntry = join(root, 'path-file')
+    writeFileSync(pathEntry, 'not a directory')
+
+    const discovery = discoverExternalRuntimes({
+      home: join(root, 'home'),
+      pathEnvironment: pathEntry,
+    })
+
+    expect(discovery.runtimes).toEqual([])
+    expect(discovery.diagnostics).toEqual([
+      expect.stringMatching(/Ignored path DeepSeek Harness candidate:.*path-file/u),
+    ])
+  })
+
   it('deduplicates a PATH entry that resolves to the home-associated package', () => {
     const root = temporaryDirectory()
     const home = join(root, 'home')

@@ -13,6 +13,12 @@ const DEFAULT_OUTPUT_LIMIT_BYTES = 64 * 1024
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
 const PROBE_RESULT_PREFIX = 'DSH_CLAUDE_TUI_PROBE_RESULT '
 
+export const runtimeProbeInternals = {
+  removeProbeRoot(path: string): void {
+    rmSync(path, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 })
+  },
+}
+
 export interface RuntimeProbeOptions {
   environment?: NodeJS.ProcessEnv | undefined
   timeoutMs?: number | undefined
@@ -77,7 +83,12 @@ async function runProbeProcess(
     const child = spawn(
       process.execPath,
       [runtime.executable, '--profile', profile],
-      { cwd, env: environment, stdio: ['ignore', 'pipe', 'pipe'] },
+      {
+        cwd,
+        env: environment,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: process.platform !== 'win32',
+      },
     )
     let stdout = ''
     let stderr = ''
@@ -89,7 +100,20 @@ async function runProbeProcess(
     const stop = (reason: string): void => {
       if (failure !== undefined) return
       failure = reason
-      child.kill('SIGKILL')
+      if (process.platform !== 'win32' && child.pid !== undefined) {
+        try {
+          process.kill(-child.pid, 'SIGKILL')
+          return
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
+          failure += `; could not terminate probe process group: ${String(error)}`
+        }
+      }
+      try {
+        child.kill('SIGKILL')
+      } catch (error) {
+        failure += `; could not terminate probe process: ${String(error)}`
+      }
     }
     child.stdout.on('data', (chunk: Buffer) => {
       stdoutBytes += chunk.byteLength
@@ -173,18 +197,24 @@ function briefOutput(stderr: string): string {
   return normalized === '' ? '' : `: ${normalized.slice(0, 2_000)}`
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 /** Probe one candidate in disposable state, with no provider credentials or user patches. */
 export async function probeRuntimeCompatibility(
   runtime: DshRuntime,
   identity: PackageIdentity,
   options: RuntimeProbeOptions = {},
 ): Promise<RuntimeProbe> {
-  const probeRoot = mkdtempSync(join(tmpdir(), 'dsh-claude-tui-probe-'))
-  const dshHome = join(probeRoot, 'dsh-home')
-  const userHome = join(probeRoot, 'user-home')
-  const workspace = join(probeRoot, 'workspace')
-  const token = randomUUID()
+  let probeRoot: string | undefined
+  let result: RuntimeProbe
   try {
+    probeRoot = mkdtempSync(join(tmpdir(), 'dsh-claude-tui-probe-'))
+    const dshHome = join(probeRoot, 'dsh-home')
+    const userHome = join(probeRoot, 'user-home')
+    const workspace = join(probeRoot, 'workspace')
+    const token = randomUUID()
     mkdirSync(userHome)
     mkdirSync(workspace)
     ensureManagedProfile(
@@ -208,30 +238,40 @@ export async function probeRuntimeCompatibility(
       options.outputLimitBytes ?? DEFAULT_OUTPUT_LIMIT_BYTES,
     )
     if (outcome.failure !== undefined) {
-      return { compatible: false, reason: outcome.failure }
-    }
-    if (outcome.code !== 0) {
+      result = { compatible: false, reason: outcome.failure }
+    } else if (outcome.code !== 0) {
       const status = outcome.signal === null
         ? `exit code ${String(outcome.code)}`
         : `signal ${outcome.signal}`
-      return {
+      result = {
         compatible: false,
         reason: `probe exited with ${status}${briefOutput(outcome.stderr)}`,
       }
-    }
-    if (!expectedProbeResult(parseProbeResult(outcome.stdout), token, identity.version)) {
-      return {
+    } else if (!expectedProbeResult(parseProbeResult(outcome.stdout), token, identity.version)) {
+      result = {
         compatible: false,
         reason: 'unexpected probe result; the selected DSH did not load this TUI artifact',
       }
+    } else {
+      result = { compatible: true }
     }
-    return { compatible: true }
   } catch (error) {
-    return {
+    result = {
       compatible: false,
-      reason: `probe setup failed: ${error instanceof Error ? error.message : String(error)}`,
+      reason: `probe setup failed: ${errorMessage(error)}`,
     }
-  } finally {
-    rmSync(probeRoot, { recursive: true, force: true })
   }
+
+  if (probeRoot !== undefined) {
+    try {
+      runtimeProbeInternals.removeProbeRoot(probeRoot)
+    } catch (error) {
+      const priorFailure = result.compatible ? '' : `${result.reason}; `
+      return {
+        compatible: false,
+        reason: `${priorFailure}probe cleanup failed: ${errorMessage(error)}`,
+      }
+    }
+  }
+  return result
 }

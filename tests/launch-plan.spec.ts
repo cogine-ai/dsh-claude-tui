@@ -128,6 +128,31 @@ describe('launcher environment planning', () => {
     expect(plan.notices.join('\n')).toContain('probe rejected 0.1.0')
   })
 
+  it('falls back to the pinned bundled runtime when discovery throws', async () => {
+    const boundary = adapter()
+    vi.mocked(boundary.discoverExternalRuntimes)
+      .mockRejectedValueOnce(new Error('PATH inspection failed'))
+
+    const plan = await createLaunchPlanner(boundary).resolve(request())
+
+    expect(plan.runtime).toEqual(bundled)
+    expect(plan.notices.join('\n')).toContain('PATH inspection failed')
+  })
+
+  it('continues to the next candidate when a compatibility probe throws', async () => {
+    const first = system('0.1.0-rc.6', 'home', 'first')
+    const second = system('0.1.0', 'path', 'second')
+    const boundary = adapter({ candidates: [first, second] })
+    vi.mocked(boundary.probeRuntime)
+      .mockRejectedValueOnce(new Error('cleanup failed'))
+      .mockResolvedValueOnce({ compatible: true })
+
+    const plan = await createLaunchPlanner(boundary).resolve(request())
+
+    expect(plan.runtime).toEqual(second)
+    expect(plan.notices.join('\n')).toContain('cleanup failed')
+  })
+
   it('fails deterministically in system mode when no external runtime qualifies', async () => {
     const boundary = adapter({
       candidates: [system('0.1.1', 'path')],
@@ -137,6 +162,16 @@ describe('launcher environment planning', () => {
     await expect(
       createLaunchPlanner(boundary).resolve(request({ runtimePreference: 'system' })),
     ).rejects.toThrow(/no compatible system DeepSeek Harness.*ignored malformed/u)
+  })
+
+  it('reports a discovery exception when forced system mode cannot continue', async () => {
+    const boundary = adapter()
+    vi.mocked(boundary.discoverExternalRuntimes)
+      .mockRejectedValueOnce(new Error('home traversal failed'))
+
+    await expect(
+      createLaunchPlanner(boundary).resolve(request({ runtimePreference: 'system' })),
+    ).rejects.toThrow(/no compatible system DeepSeek Harness.*home traversal failed/u)
   })
 
   it('does not discover or probe external runtimes in bundled mode', async () => {

@@ -303,9 +303,10 @@ describe('dsh-claude-tui bundle', () => {
     })
     expect(manifest.keywords).toContain('deepseek-harness')
     expect(manifest.dependencies?.['@aws-sdk/credential-provider-node']).toBe('3.972.79')
-    expect(Object.entries(manifest.peerDependencies ?? {})
+    const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
-      .every(([, range]) => range === '>=0.1.0-rc.6 <0.1.1')).toBe(true)
+    expect(dshPeers.length).toBeGreaterThan(0)
+    expect(dshPeers.every(([, range]) => range === '>=0.1.0-rc.6 <0.1.1')).toBe(true)
     expect(statSync(join(packageDirectory, 'lib/cli.js')).mode & 0o111).not.toBe(0)
 
     const shrinkwrap = JSON.parse(

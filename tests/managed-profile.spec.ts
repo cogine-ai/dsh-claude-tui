@@ -71,6 +71,23 @@ describe('launcher-managed profiles', () => {
     })
   })
 
+  it('classifies a malformed DSH home as a conflict instead of throwing', () => {
+    const root = temporaryDirectory()
+    const home = join(root, 'home-file')
+    writeFileSync(home, 'not a directory')
+
+    const assessment = inspectManagedProfiles(home)
+
+    expect(assessment.legacy).toEqual({
+      kind: 'conflict',
+      reason: expect.stringContaining(home),
+    })
+    expect(assessment.namespaced).toEqual({
+      kind: 'conflict',
+      reason: expect.stringContaining(home),
+    })
+  })
+
   it('creates the namespaced profile without changing an unowned legacy profile', () => {
     const root = temporaryDirectory()
     const home = join(root, 'home')

@@ -6,7 +6,7 @@ import {
   wrapTextWithAnsi,
   type Component,
 } from '@earendil-works/pi-tui'
-import type { TokenUsage } from '@deepseek-ai/dsh-llm'
+import { isTokenDelta, type TokenUsage } from '@deepseek-ai/dsh-llm'
 import {
   isReplacementSurfaceEvent,
   type SessionEvent,
@@ -159,7 +159,7 @@ export class TranscriptModel {
       }
       case 'assistant/chunk': {
         const chunk = event.data.chunk
-        if (chunk.type !== 'usage' && chunk.type !== 'finish') {
+        if (isTokenDelta(chunk)) {
           const key = stepKey(event.data.turn, event.data.step)
           this.outputChunkTimes.set(event.seq, event.time)
           if (!this.firstOutputAtByStep.has(key)) this.firstOutputAtByStep.set(key, event.time)

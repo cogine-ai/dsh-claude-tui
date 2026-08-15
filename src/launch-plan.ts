@@ -92,6 +92,10 @@ function isUnsafe(choice: ProfileChoice): choice is { unsafe: string } {
   return 'unsafe' in choice
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 /** Resolve the runtime after manifest/range checks and an isolated compatibility probe. */
 async function chooseRuntime(
   adapter: LaunchPlannerAdapter,
@@ -100,7 +104,15 @@ async function chooseRuntime(
 ): Promise<DshRuntime> {
   if (request.runtimePreference === 'bundled') return adapter.bundledRuntime()
 
-  const discovery = await adapter.discoverExternalRuntimes(request.sharedHome)
+  let discovery: RuntimeDiscovery
+  try {
+    discovery = await adapter.discoverExternalRuntimes(request.sharedHome)
+  } catch (error) {
+    notices.push(
+      `Ignored external DeepSeek Harness discovery failure: ${errorMessage(error)}.`,
+    )
+    discovery = { runtimes: [], diagnostics: [] }
+  }
   notices.push(...discovery.diagnostics)
   const seen = new Set<string>()
   for (const runtime of discovery.runtimes) {
@@ -112,9 +124,15 @@ async function chooseRuntime(
       )
       continue
     }
-    const probe = await adapter.probeRuntime(runtime)
-    if (probe.compatible) return runtime
-    notices.push(`Ignored ${runtime.source} DeepSeek Harness ${runtime.version}: ${probe.reason}.`)
+    try {
+      const probe = await adapter.probeRuntime(runtime)
+      if (probe.compatible) return runtime
+      notices.push(`Ignored ${runtime.source} DeepSeek Harness ${runtime.version}: ${probe.reason}.`)
+    } catch (error) {
+      notices.push(
+        `Ignored ${runtime.source} DeepSeek Harness ${runtime.version}: compatibility probe failed: ${errorMessage(error)}.`,
+      )
+    }
   }
 
   if (request.runtimePreference === 'system') {
