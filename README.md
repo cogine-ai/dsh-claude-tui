@@ -44,6 +44,8 @@ Prerequisite: Node.js `22.19+` or `24+`. The command carries its qualified
 DeepSeek Harness version; no global `dsh`, repository checkout, pnpm install,
 or manual profile setup is required.
 
+The current published baseline is [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0).
+
 ```bash
 npx dsh-claude-tui
 ```
@@ -159,7 +161,7 @@ Dynamic capture scenarios use an isolated Claude config, a dummy key, and a loop
 
 ## Roadmap
 
-**v0.1.0 — release-qualified baseline**
+**v0.1.0 — published baseline**
 
 - publishes a clean, shrinkwrap-pinned npm artifact;
 - makes `npx dsh-claude-tui` the complete install-and-launch path;
