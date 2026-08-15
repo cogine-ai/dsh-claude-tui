@@ -3,6 +3,7 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import {
   existsSync,
   lstatSync,
+  lutimesSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -34,6 +35,7 @@ async function waitForFile(path: string, timeoutMs = 3_000): Promise<void> {
 
 describe('packed dsh-claude-tui launcher', () => {
   let temporaryDirectory: string
+  let packageDirectory: string
   let executable: string
 
   beforeAll(() => {
@@ -48,7 +50,7 @@ describe('packed dsh-claude-tui launcher', () => {
     if (tarball === undefined) throw new Error('pnpm pack did not produce a tarball')
     execFileSync('tar', ['-xzf', join(temporaryDirectory, tarball), '-C', temporaryDirectory])
 
-    const packageDirectory = join(temporaryDirectory, 'package')
+    packageDirectory = join(temporaryDirectory, 'package')
     executable = join(packageDirectory, 'lib/cli.js')
     const fakeHarnessDirectory = join(packageDirectory, 'node_modules/@deepseek-ai/dsh')
     mkdirSync(fakeHarnessDirectory, { recursive: true })
@@ -62,6 +64,10 @@ describe('packed dsh-claude-tui launcher', () => {
     writeFileSync(join(fakeHarnessDirectory, 'bin.js'), `
 import { writeFileSync } from 'node:fs'
 
+process.on('SIGTERM', () => {
+  writeFileSync(process.env.DSH_FAKE_SIGNAL, 'SIGTERM')
+  process.exit(0)
+})
 writeFileSync(process.env.DSH_FAKE_READY, JSON.stringify({
   pid: process.pid,
   args: process.argv.slice(2),
@@ -71,10 +77,6 @@ writeFileSync(process.env.DSH_FAKE_READY, JSON.stringify({
 if (process.env.DSH_FAKE_EXIT_CODE !== undefined) {
   process.exit(Number(process.env.DSH_FAKE_EXIT_CODE))
 }
-process.on('SIGTERM', () => {
-  writeFileSync(process.env.DSH_FAKE_SIGNAL, 'SIGTERM')
-  process.exit(0)
-})
 setInterval(() => {}, 1_000)
 `)
   }, 30_000)
@@ -196,10 +198,21 @@ setInterval(() => {}, 1_000)
       dshHome,
       'profiles/claude-tui/.dsh-claude-tui-managed.json',
     )
+    const bundleLink = join(
+      dshHome,
+      'profiles/claude-tui/node_modules/dsh-claude-tui',
+    )
     const referenceTime = new Date('2000-01-01T00:00:00.000Z')
     utimesSync(markerPath, referenceTime, referenceTime)
+    lutimesSync(bundleLink, referenceTime, referenceTime)
     const before = statSync(markerPath).mtimeMs
-    const second = spawnSync(process.execPath, [executable], {
+    const bundleBefore = lstatSync(bundleLink).mtimeMs
+    const packageAlias = join(temporaryDirectory, 'idempotent-package-alias')
+    symlinkSync(packageDirectory, packageAlias, 'dir')
+    const second = spawnSync(process.execPath, [
+      '--preserve-symlinks-main',
+      join(packageAlias, 'lib/cli.js'),
+    ], {
       cwd: temporaryDirectory,
       encoding: 'utf8',
       env: environment,
@@ -207,6 +220,7 @@ setInterval(() => {}, 1_000)
 
     expect(second.status).toBe(0)
     expect(statSync(markerPath).mtimeMs).toBe(before)
+    expect(lstatSync(bundleLink).mtimeMs).toBe(bundleBefore)
   })
 
   it('refuses to adopt an existing unowned claude-tui profile', () => {

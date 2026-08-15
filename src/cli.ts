@@ -9,6 +9,7 @@ import {
   mkdtempSync,
   readFileSync,
   readlinkSync,
+  realpathSync,
   renameSync,
   rmSync,
   symlinkSync,
@@ -251,7 +252,8 @@ function reconcileManagedProfile(profileDirectory: string, identity: PackageIden
         `launcher-owned bundle path ${bundleLink} is not a symlink; refusing to overwrite it`,
       )
     }
-    staleBundleLink = resolve(dirname(bundleLink), readlinkSync(bundleLink)) !== identity.root
+    const linkTarget = resolve(dirname(bundleLink), readlinkSync(bundleLink))
+    staleBundleLink = realpathSync(linkTarget) !== realpathSync(identity.root)
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
     staleBundleLink = true

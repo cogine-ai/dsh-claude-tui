@@ -48,7 +48,8 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
     request.setEncoding('utf8')
     request.on('data', chunk => { raw += chunk })
     request.on('end', () => {
-      if (request.method !== 'POST' || request.url !== '/chat/completions') {
+      const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
+      if (request.method !== 'POST' || pathname !== '/chat/completions') {
         response.writeHead(404).end()
         return
       }
@@ -57,7 +58,14 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
         response.end(JSON.stringify({ error: { message: 'invalid test credential' } }))
         return
       }
-      const body = JSON.parse(raw) as Record<string, unknown>
+      let body: Record<string, unknown>
+      try {
+        body = JSON.parse(raw) as Record<string, unknown>
+      } catch {
+        response.writeHead(400, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({ error: { message: 'invalid test request body' } }))
+        return
+      }
       requests.push({ headers: request.headers, body })
       const tools = Array.isArray(body.tools) ? body.tools : []
       const messages = Array.isArray(body.messages) ? body.messages : []
@@ -142,11 +150,21 @@ async function runPackedTui(
     name: 'xterm-256color',
   })
   child.onData(data => { output += data })
+  let exitOutcome: { exitCode: number; signal: number } | undefined
   const exited = new Promise<{ exitCode: number; signal: number }>((resolveExit) => {
-    child.onExit(({ exitCode, signal }) => { resolveExit({ exitCode, signal: signal ?? 0 }) })
+    child.onExit(({ exitCode, signal }) => {
+      exitOutcome = { exitCode, signal: signal ?? 0 }
+      resolveExit(exitOutcome)
+    })
   })
   const deadline = Date.now() + 30_000
   while (!output.includes(expectedText)) {
+    if (exitOutcome !== undefined) {
+      throw new Error(
+        `packed TUI exited early (code ${exitOutcome.exitCode}, signal ${exitOutcome.signal}) `
+        + `before rendering ${JSON.stringify(expectedText)}\n${output}`,
+      )
+    }
     if (Date.now() >= deadline) {
       child.kill('SIGKILL')
       throw new Error(`packed TUI did not render ${JSON.stringify(expectedText)}\n${output}`)
@@ -157,13 +175,18 @@ async function runPackedTui(
   child.write('\u0004')
   await delay(100)
   child.write('\u0004')
+  let exitTimeout: NodeJS.Timeout | undefined
   const exit = await Promise.race([
     exited,
-    delay(10_000).then(() => {
-      child.kill('SIGKILL')
-      throw new Error(`packed TUI did not exit after Ctrl+D\n${output}`)
+    new Promise<never>((_resolve, reject) => {
+      exitTimeout = setTimeout(() => {
+        child.kill('SIGKILL')
+        reject(new Error(`packed TUI did not exit after Ctrl+D\n${output}`))
+      }, 10_000)
     }),
-  ])
+  ]).finally(() => {
+    if (exitTimeout !== undefined) clearTimeout(exitTimeout)
+  })
   return { output, ...exit }
 }
 
@@ -485,5 +508,5 @@ describe('dsh-claude-tui bundle', () => {
     } finally {
       await server.close()
     }
-  }, 60_000)
+  }, 120_000)
 })
