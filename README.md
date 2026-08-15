@@ -1,12 +1,12 @@
-<h1 align="center">DeepSeek Harness — Claude TUI</h1>
+<h1 align="center">DSH Claude TUI</h1>
 
-<p align="center"><strong>Claude Code muscle memory. DeepSeek Harness underneath.</strong></p>
+<p align="center"><strong>A Claude Code-style terminal workflow, powered by DeepSeek Harness.</strong></p>
 
 <p align="center">English · <a href="./README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
-  An unofficial, high-fidelity Claude Code-style terminal interface for DeepSeek Harness,<br />
-  reconstructed from real PTY captures and verified cell by cell.
+  Start in one command. Use real DSH models, Sessions, tools, approvals, and subagents<br />
+  through a familiar, high-fidelity terminal interface.
 </p>
 
 <p align="center">
@@ -19,181 +19,108 @@
 </p>
 
 <p align="center">
-  <img width="1100" alt="DeepSeek Harness Claude TUI terminal preview" src="./docs/assets/terminal-preview.svg" />
+  <img width="1100" alt="DSH Claude TUI terminal preview" src="./docs/assets/terminal-preview.svg" />
 </p>
 
 > [!NOTE]
-> This is an independent community project. It is not affiliated with, endorsed by, or sponsored by Anthropic or DeepSeek. “Claude Code” identifies the version-pinned compatibility target; no Anthropic source code is included. See the [trademark and compatibility notice](./DISCLAIMER.md).
+> This is an independent community project. It is not affiliated with, endorsed by, or sponsored by Anthropic or DeepSeek. “Claude Code” identifies the version-pinned interaction target; no Anthropic source code is included. See the [trademark and compatibility notice](./DISCLAIMER.md).
 
-## Why this exists
+## Start in one command
 
-DeepSeek Harness has a composable Agent, Session, tool, approval, question, and subagent runtime. Claude Code has a terminal workflow many developers already know by muscle memory.
-
-This plugin joins those two ideas without forking Harness core:
-
-- **Feels familiar:** Claude-shaped shell, prompt, menus, transcript, approvals, questions, and agent states.
-- **Runs on Harness:** live Harness models, durable Sessions, commands, permissions, tools, and subagents.
-- **Proves fidelity:** 24 frames captured from a real Claude Code `2.1.227` PTY; 22 are automated comparison anchors.
-- **Tests the terminal, not a mockup:** buffer choice, cell geometry, RGB styles, hardware cursor, and interaction transitions.
-
-It is an external Harness bundle—not a web skin and not a hardcoded terminal recording.
-
-## Try it
-
-Prerequisite: Node.js `22.19+` or `24+`. The command carries its qualified
-DeepSeek Harness version; no global `dsh`, repository checkout, pnpm install,
-or manual profile setup is required.
-
-The current published baseline is [`dsh-claude-tui@0.1.0`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.0).
-The corresponding source release is [`v0.1.0`](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.0).
-The environment-compatibility behavior described below is implemented in the
-current `0.1.1` source and is intended for the next patch release; published
-`0.1.0` retains the original pinned-only launcher.
+Requires Node.js `22.19+` or `24+`.
 
 ```bash
 npx dsh-claude-tui
 ```
 
-For repeat use, an optional global installation exposes the same launcher:
+That command installs and opens the TUI. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. The current release is [`dsh-claude-tui@0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1).
+
+A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among models and effort levels exposed by DSH.
+
+For repeat use:
 
 ```bash
-npm install --global dsh-claude-tui@0.1.0
+npm install --global dsh-claude-tui@0.1.1
 dsh-claude-tui
 ```
 
-Sending a real model request requires the credentials for the Harness model provider you select.
+Resume work with `dsh-claude-tui --resume` for the session picker, or `--resume <session-id>` for an exact Session.
 
-In the default `auto` mode, the launcher first tries a compatible DSH already
-associated with the selected `$DSH_HOME`, then a verifiable `dsh` on `PATH`.
-External DSH must be in `>=0.1.0-rc.6 <0.1.1` and pass an isolated,
-credential-free Agent/Session compatibility probe. If neither qualifies, the
-launcher uses its pinned `0.1.0-rc.6` runtime. Set
-`DSH_CLAUDE_TUI_RUNTIME=system|bundled` to require an external runtime or
-bypass external discovery.
+## What you get
 
-Existing credentials, Sessions, settings, and unrelated profiles remain
-available whenever the selected home can be shared safely. An unowned legacy
-`claude-tui` profile is left untouched; the launcher uses its namespaced
-`dsh-claude-tui` profile instead. A corrupt launcher marker in an implicit
-`~/.dsh` causes an automatic bundled fallback to `~/.dsh-claude-tui`, with a
-visible notice that credentials and Sessions were not copied. A non-empty,
-explicit `DSH_HOME` is never silently replaced: an unsafe conflict fails with
-an actionable error.
-
-Harness is still pre-release and does not promise migration between every
-on-disk state version. Move data only through an explicitly supported Harness
-migration path. The exact launcher algorithm, probe isolation, ownership
-states, and recovery overrides are documented in
-[Launcher environment compatibility](./docs/launcher-environment-compatibility.md).
-
-Do not run different Harness versions concurrently against the same
-`$DSH_HOME`: Harness owns a shared profile-module fallback and either process
-may reconcile it for its own dependency tree. Sequential use is qualified;
-for concurrent use, give this launcher an isolated `DSH_HOME`.
-
-## What already works
-
-| Surface | Implemented behavior |
+| Area | User-facing behavior |
 | --- | --- |
-| Main shell | normal-buffer scrollback, expanded new-Session welcome panel with verified DSH runtime provenance, compact resumed-Session header, editor, status footer |
-| Prompt | multiline editing, submit/steer, cancellation, reverse history search |
-| Completion | slash commands and bounded `@` workspace file mentions |
-| Models | live DSH provider/model catalog, exact advertised effort levels, current-Agent and saved-default selection |
-| Providers | live DSH credential source/writability state, masked API-key entry, narrow first-run setup |
-| Transcript | user, assistant, reasoning, tool call/result, usage, request and turn outcomes |
-| Protocols | real Harness approval and structured-question providers |
-| Agents | foreground/background subagent states, expandable output, active-agent roster |
-| Sessions | create, exact-id resume, interactive picker, graceful flush and terminal restoration |
+| Familiar terminal | Claude-shaped welcome panel, prompt, menus, transcript, status rows, approvals, questions, and Agent states |
+| Real Harness runtime | DSH-owned models, durable Sessions, commands, approval policies, tools, structured questions, and subagents |
+| Live model setup | Provider/model catalog, advertised effort levels, saved defaults, masked API-key entry, and credential-source visibility |
+| Productive prompting | Multiline editing, submit or steer, cancellation, history search, slash completion, and bounded `@` file mentions |
+| Clear execution | Reasoning and tool activity, compact/expanded results, cache hit rate, token totals, TTFT, throughput, and turn outcome |
+| Session and Agent flow | New or resumed Sessions, graceful flush, foreground/background subagents, and an active-agent roster |
+| Verified runtime identity | Welcome panel shows the actual TUI/Harness version, bundled or system runtime, DSH Home, and tool mode |
 
-Useful controls:
+The TUI reads runtime capabilities from DSH rather than shipping hardcoded model, effort, credential, or approval behavior.
 
-| Key | Action |
+## Everyday controls
+
+| Key or command | Action |
 | --- | --- |
-| `Enter` | submit while idle or steer a running Agent |
-| `Shift+Enter` | insert a newline |
-| `Esc` / `Ctrl+C` | interrupt a running turn |
-| `Ctrl+R` | search prompt history |
-| `Ctrl+O` | expand or compact tool details |
-| `Option+P` / `Alt+P` | open the live DSH model picker |
-| `Left Arrow` | hide or show the active-agent roster |
-| `Ctrl+D` | press twice on an empty prompt to exit cleanly |
+| `Enter` | Submit while idle or steer a running Agent |
+| `Shift+Enter` | Insert a newline |
+| `Esc` / `Ctrl+C` | Interrupt the active turn |
+| `Ctrl+R` | Search prompt history |
+| `Ctrl+O` | Expand or compact tool details |
+| `Option+P` / `Alt+P` or `/model` | Open the live DSH model picker |
+| `/provider` | Inspect or update DSH provider credentials |
+| `Left Arrow` | Hide or show the active-agent roster |
+| `Ctrl+D` | Press twice on an empty prompt to exit cleanly |
 
-Use `/model` for the same model picker and `/provider` to inspect or update credentials exposed by DSH. Model names, effort levels, defaults, credential references, source priority, and writability are never hardcoded by this TUI. See the [model/provider interaction boundary](./docs/model-provider-interactions.md).
+Run `/help` inside the TUI for the current command list.
 
-## Fidelity
+## Works with an existing DSH setup
 
-Verified against Claude Code `2.1.227` in a true-color xterm-compatible PTY:
+The default launcher mode is designed to get users into the TUI without making them choose an installation strategy:
 
-- **24** reference frames and **22** automated visual/semantic anchors.
-- **118/118** tests, including terminal behavior at `80x24` and `100x30`.
-- Real Harness runs for approvals, questions, and foreground/background subagents.
-- The expanded new-Session panel follows the captured bordered geometry and shows the selected Harness/Home/tool mode plus `powered by dsh`; the compact returning state keeps its approved top safety inset.
+1. Reuse a compatible DSH already associated with the selected `$DSH_HOME`, or a verifiable `dsh` on `PATH`.
+2. Probe it in an isolated, credential-free temporary Home.
+3. Fall back to the bundled, shrinkwrap-pinned DSH `0.1.0-rc.6` when no external runtime qualifies.
 
-[Full qualification report](./docs/visual-qualification-2.1.227.md)
+Compatible external DSH currently means `>=0.1.0-rc.6 <0.1.1` plus a successful Agent/Session probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
 
-## Architecture
+Useful environment controls:
 
-```text
-@deepseek-ai/dsh-base
-  → dsh-claude-tui bundle
-    → startup argument service
-    → worker-thread code runtime
-    → one terminal-owned root Agent
-      → durable Session event projection
-      → pi-tui normal-buffer renderer
-      → approval + question protocol adapters
-      → subagent lifecycle + active-run roster
-```
+| Variable | Behavior |
+| --- | --- |
+| `DSH_CLAUDE_TUI_RUNTIME=auto` | Default: try compatible system DSH, then bundled DSH |
+| `DSH_CLAUDE_TUI_RUNTIME=system` | Require a compatible external DSH |
+| `DSH_CLAUDE_TUI_RUNTIME=bundled` | Always use the packaged DSH |
+| `DSH_HOME=/path` | Use an explicit DSH data Home |
+| `DSH_TOOLS_MODE=native\|code\|both` | DSH tool presentation shown as Standard, PTC, or Both |
 
-The plugin waits for Loader settlement, binds every event to the exact root Agent, delegates unknown slash commands to Harness, and reverses registrations before restoring raw terminal state.
+Do not run different Harness versions concurrently against the same `$DSH_HOME`; use separate Homes for concurrent processes. Harness is pre-release, so move data only through an explicitly supported Harness migration path. See [Launcher environment compatibility](./docs/launcher-environment-compatibility.md) for the full selection and recovery contract.
 
-## Compatibility
+## Compatibility and verification
 
-Targets the observed Claude Code `2.1.227` TUI only. Harness remains the source of truth for runtime data and capabilities; unsupported Claude-only states are not simulated. New versions require requalification.
+The interaction target is the observed Claude Code `2.1.227` TUI. Harness remains the source of truth; Claude-only model behavior, cloud services, account state, and private permission semantics are not simulated.
 
-External Harness reuse currently targets the DSH `0.1.0` series
-(`>=0.1.0-rc.6 <0.1.1`) and still requires the runtime probe; version matching
-alone is not treated as compatibility.
+Current qualification:
 
-The `v0.1.0` qualification matrix targets macOS arm64 and Linux x64 with a
-true-color xterm-compatible terminal. The Windows launcher path is present but
-is not yet release-qualified.
+- macOS arm64 and Linux x64;
+- true-color, xterm-compatible terminals;
+- **24** independently captured PTY reference frames and **22** automated visual/semantic anchors;
+- **118/118** tests, including `80x24`, `100x30`, packed-tarball execution, Session resume, approvals, questions, and foreground/background subagents.
 
-## Development
+The Windows launcher path exists but is not yet release-qualified. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [v0.1.0 artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
+
+## Develop and contribute
 
 ```bash
 corepack pnpm install --frozen-lockfile
 corepack pnpm check
 ```
 
-The check gate runs TypeScript no-emit validation, all Vitest terminal tests, and the production build.
+The check gate runs TypeScript validation, all Vitest terminal tests, and the production build. Focused issues and pull requests are welcome; visual-parity changes should include an independently captured reference or a documented Harness-semantic boundary.
 
-To refresh the reference corpus with the locally installed Claude Code `2.1.227` executable:
-
-```bash
-corepack pnpm capture:claude-reference -- --cwd /path/to/a/trusted/workspace
-```
-
-Dynamic capture scenarios use an isolated Claude config, a dummy key, and a loopback-only Anthropic mock. They make no external model request and do not require a user API key.
-
-## Roadmap
-
-**v0.1.0 — published baseline**
-
-- publishes a clean, shrinkwrap-pinned npm artifact;
-- makes `npx dsh-claude-tui` the complete install-and-launch path;
-- qualifies first-run setup, repeat-run idempotence, packed-tarball execution, and real DeepSeek access.
-
-The completed qualification gates are recorded in the [v0.1.0 Release Hardening report](./docs/release-hardening-v0.1.0.md).
-
-**Next — feedback-led v0.1.x**
-
-- richer attachment and completion surfaces;
-- broader session management and rename flows;
-- additional plan, todo, and background-job states;
-- more terminal emulators and operating-system qualification.
-
-Issues and focused pull requests are welcome. Visual-parity changes should include an independently captured reference or an explicit, documented Harness-semantic boundary.
+Near-term work includes richer attachments and completion, broader Session management, more plan/todo/background-job states, and qualification across more terminals and operating systems.
 
 ## License
 
