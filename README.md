@@ -33,14 +33,14 @@ Requires Node.js `22.19+` or `24+`.
 npx dsh-claude-tui
 ```
 
-That command installs and opens the TUI. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. The next release is `dsh-claude-tui@0.1.2`; the current published release remains [`0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1) until `0.1.2` is published.
+That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this documentation release exactly, run `npx dsh-claude-tui@0.1.3`.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among models and effort levels exposed by DSH.
 
 For repeat use:
 
 ```bash
-npm install --global dsh-claude-tui@0.1.2
+npm install --global dsh-claude-tui@0.1.3
 dshtui
 ```
 

@@ -32,14 +32,14 @@
 npx dsh-claude-tui
 ```
 
-这条命令会完成安装并进入 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。下一版本为 `dsh-claude-tui@0.1.2`；在 `0.1.2` 发布前，npm 当前发布版仍为 [`0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1)。
+这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次文档修正版，运行 `npx dsh-claude-tui@0.1.3`。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
 如果会反复使用：
 
 ```bash
-npm install --global dsh-claude-tui@0.1.2
+npm install --global dsh-claude-tui@0.1.3
 dshtui
 ```
 
