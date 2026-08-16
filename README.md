@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="118 tests" src="https://img.shields.io/badge/tests-118%2F118-4eba65?style=flat-square" />
+  <img alt="119 tests" src="https://img.shields.io/badge/tests-119%2F119-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -33,18 +33,20 @@ Requires Node.js `22.19+` or `24+`.
 npx dsh-claude-tui
 ```
 
-That command installs and opens the TUI. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. The current release is [`dsh-claude-tui@0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1).
+That command installs and opens the TUI. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. The next release is `dsh-claude-tui@0.1.2`; the current published release remains [`0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1) until `0.1.2` is published.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among models and effort levels exposed by DSH.
 
 For repeat use:
 
 ```bash
-npm install --global dsh-claude-tui@0.1.1
-dsh-claude-tui
+npm install --global dsh-claude-tui@0.1.2
+dshtui
 ```
 
-Resume work with `dsh-claude-tui --resume` for the session picker, or `--resume <session-id>` for an exact Session.
+The global install exposes both `dshtui` and the canonical `dsh-claude-tui` command; they run the same CLI entry point.
+
+Resume work with `dshtui --resume` for the session picker, or `--resume <session-id>` for an exact Session.
 
 ## What you get
 
@@ -107,7 +109,7 @@ Current qualification:
 - macOS arm64 and Linux x64;
 - true-color, xterm-compatible terminals;
 - **24** independently captured PTY reference frames and **22** automated visual/semantic anchors;
-- **118/118** tests, including `80x24`, `100x30`, packed-tarball execution, Session resume, approvals, questions, and foreground/background subagents.
+- **119/119** tests, including `80x24`, `100x30`, packed-tarball execution, both installed command names, Session resume, approvals, questions, and foreground/background subagents.
 
 The Windows launcher path exists but is not yet release-qualified. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [v0.1.0 artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
 

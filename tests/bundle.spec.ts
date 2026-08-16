@@ -291,8 +291,11 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.1',
-      bin: { 'dsh-claude-tui': 'lib/cli.js' },
+      version: '0.1.2',
+      bin: {
+        'dsh-claude-tui': 'lib/cli.js',
+        dshtui: 'lib/cli.js',
+      },
       dependencies: {
         '@deepseek-ai/dsh': '0.1.0-rc.6',
         semver: '7.8.5',
@@ -382,6 +385,33 @@ describe('dsh-claude-tui bundle', () => {
     expect(existsSync(dshHome)).toBe(false)
   }, 30_000)
 
+  it('installs canonical and short command names for the same CLI', () => {
+    const manifest = JSON.parse(
+      readFileSync(join(packageDirectory, 'package.json'), 'utf8'),
+    ) as { bin?: Record<string, string> }
+    expect(manifest.bin).toEqual({
+      'dsh-claude-tui': 'lib/cli.js',
+      dshtui: 'lib/cli.js',
+    })
+
+    for (const command of ['dsh-claude-tui', 'dshtui']) {
+      const dshHome = join(packDirectory, `${command}-version-dsh-home`)
+      const installedCommand = join(installDirectory, 'node_modules/.bin', command)
+      expect(realpathSync(installedCommand)).toBe(realpathSync(installedExecutable))
+
+      const result = spawnSync(installedCommand, ['--version'], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          DSH_HOME: dshHome,
+          DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+        },
+      })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.2\n', stderr: '' })
+      expect(existsSync(dshHome)).toBe(false)
+    }
+  }, 30_000)
+
   it('prints the package version without creating Harness state', () => {
     const dshHome = join(packDirectory, 'version-dsh-home')
     const result = spawnSync(process.execPath, [join(packageDirectory, 'lib/cli.js'), '--version'], {
@@ -393,7 +423,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.1\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.2\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -520,7 +550,7 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.1')
+      expect(first.output).toContain('v0.1.2')
       expect(first.output).toContain('Harness 0.1.0-rc.6 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
