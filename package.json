@@ -1,6 +1,6 @@
 {
   "name": "dsh-claude-tui",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Unofficial, high-fidelity Claude Code-style TUI for DeepSeek Harness, verified against real PTY captures",
   "keywords": [
     "deepseek",
@@ -22,7 +22,8 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
-    "dsh-claude-tui": "lib/cli.js"
+    "dsh-claude-tui": "lib/cli.js",
+    "dshtui": "lib/cli.js"
   },
   "exports": {
     ".": {

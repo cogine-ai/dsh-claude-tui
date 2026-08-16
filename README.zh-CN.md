@@ -14,7 +14,7 @@
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="118 tests" src="https://img.shields.io/badge/tests-118%2F118-4eba65?style=flat-square" />
+  <img alt="119 tests" src="https://img.shields.io/badge/tests-119%2F119-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -32,18 +32,20 @@
 npx dsh-claude-tui
 ```
 
-这条命令会完成安装并进入 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。当前版本为 [`dsh-claude-tui@0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1)。
+这条命令会完成安装并进入 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。下一版本为 `dsh-claude-tui@0.1.2`；在 `0.1.2` 发布前，npm 当前发布版仍为 [`0.1.1`](https://www.npmjs.com/package/dsh-claude-tui/v/0.1.1)。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
 如果会反复使用：
 
 ```bash
-npm install --global dsh-claude-tui@0.1.1
-dsh-claude-tui
+npm install --global dsh-claude-tui@0.1.2
+dshtui
 ```
 
-使用 `dsh-claude-tui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
+全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`；两者运行同一个 CLI 入口。
+
+使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
 ## 你能获得什么
 
@@ -106,7 +108,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。
 - macOS arm64 与 Linux x64；
 - true-color、xterm-compatible 终端；
 - **24** 个独立捕获的 PTY 参考帧，**22** 个自动视觉/语义锚点；
-- **118/118** 个测试，覆盖 `80x24`、`100x30`、真实 tarball、Session 恢复、审批、问题和前后台子代理。
+- **119/119** 个测试，覆盖 `80x24`、`100x30`、真实 tarball、两个已安装命令入口、Session 恢复、审批、问题和前后台子代理。
 
 Windows 启动路径已经实现，但尚未纳入发布资格验证。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和 [v0.1.0 制品加固基线](./docs/release-hardening-v0.1.0.md)。
 

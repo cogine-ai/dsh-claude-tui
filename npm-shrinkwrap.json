@@ -1,12 +1,12 @@
 {
   "name": "dsh-claude-tui",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "dsh-claude-tui",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "license": "MIT",
       "dependencies": {
         "@aws-sdk/credential-provider-node": "3.972.79",
@@ -20,7 +20,8 @@
         "semver": "7.8.5"
       },
       "bin": {
-        "dsh-claude-tui": "lib/cli.js"
+        "dsh-claude-tui": "lib/cli.js",
+        "dshtui": "lib/cli.js"
       },
       "engines": {
         "node": "^22.19.0 || >=24.0.0"
