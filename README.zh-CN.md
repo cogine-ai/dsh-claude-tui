@@ -35,7 +35,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 
 这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.4`。
 
-`legacy-peer-deps` 是针对 rc8 上游密集 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc8 TUI 闭包；只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
+`legacy-peer-deps` 是针对 rc8 上游密集 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc8 TUI 闭包，其中也包含上游已发布 Web 包传递暴露出的 React 18 兼容 peer。只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径：发布 gate 会执行完整的 `npm ls --all`，并拒绝任何 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
@@ -54,7 +54,7 @@ dshtui
 
 - 命令桥接已改用 rc8 的附件感知接口 `execute(agent, line, images, signal)`。当前终端输入器会明确提交空图片批次；图片选择尚未作为 TUI 已完成功能宣传。
 - 运行时资格探针现在验证默认模型、Agent、命令和 Session 四项服务，并用 rc8 四参数信封真实执行一个临时命令；只有 rc7 形状、仅版本字符串看似匹配的运行时无法通过。
-- 包内依赖图显式提供 TUI 所需的全部 DeepSeek peer，发布 shrinkwrap 只存在一条 DSH 版本线：rc8，不在深层依赖中隐藏 rc6/rc7 回退。
+- 包内依赖图显式提供 TUI 所需的全部 DeepSeek peer，并补齐上游 Web 图传递暴露出的 React 18 peer；发布 shrinkwrap 只存在一条 DSH 版本线：rc8，不在深层依赖中隐藏 rc6/rc7 回退。跨平台可选 Sharp 父包被过滤时，npm 10 的完整依赖树可能把 `@img/sharp-wasm32` 与 `@emnapi/runtime` 标成 extraneous；`npm ls --all` 仍必须成功退出，发布 gate 只允许这两个可选叶节点，其他任何依赖问题都会失败。
 - 组合 profile 使用相应服务时，用户会获得 rc8 的取消回复前缀持久化、默认五次重试、图片安全限制及其他 Harness 修复。
 
 > [!WARNING]

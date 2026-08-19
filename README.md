@@ -36,7 +36,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 
 That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this release exactly, add `@0.1.4` to the package name.
 
-The `legacy-peer-deps` flag is a temporary npm installation workaround for rc8's dense upstream peer graph. It tells npm to skip peer-conflict enforcement and use this release's explicitly pinned rc8 TUI closure. Use this path only with the packed-install-validated release shown here. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag does not change the DSH runtime version or TUI behavior.
+The `legacy-peer-deps` flag is a temporary npm installation workaround for rc8's dense upstream peer graph. It tells npm to skip peer-conflict enforcement and use this release's explicitly pinned rc8 TUI closure, including the React 18 compatibility peers transitively exposed by upstream's published Web packages. Use this path only with the packed-install-validated release shown here: its gate runs the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag does not change the DSH runtime version or TUI behavior.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among the models and effort levels exposed by DSH.
 
@@ -55,7 +55,7 @@ This release pins the complete bundled runtime to DeepSeek Harness `0.1.0-rc.8` 
 
 - The command bridge now calls rc8's attachment-aware `execute(agent, line, images, signal)` contract. The current terminal composer deliberately sends an empty image batch; image selection is not being presented as finished TUI functionality.
 - Runtime qualification now proves the default-model, Agent, command, and Session services. Its temporary command is executed through the rc8 four-argument envelope, so an rc7-shaped runtime cannot pass by version string alone.
-- The bundled graph materializes every required DeepSeek peer used by the TUI, and the published shrinkwrap contains one DSH version line only: rc8. No rc6/rc7 fallback is hidden inside the package.
+- The bundled graph materializes every required DeepSeek peer used by the TUI plus React 18 peers transitively exposed by upstream's Web graph, and the published shrinkwrap contains one DSH version line only: rc8. No rc6/rc7 fallback is hidden inside the package. A full npm 10 tree may label `@img/sharp-wasm32` and `@emnapi/runtime` as extraneous when their cross-platform optional Sharp parent is filtered; `npm ls --all` must still exit successfully, and the release gate permits only those optional leaves while rejecting every other dependency problem.
 - Users inherit rc8's durable cancelled-response prefix, five-retry default, image safety limits, and other Harness fixes wherever the composed profile uses those services.
 
 > [!WARNING]

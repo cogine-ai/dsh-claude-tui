@@ -200,7 +200,9 @@ describe('dsh-claude-tui bundle', () => {
   let installedExecutable: string
 
   beforeAll(() => {
-    packDirectory = mkdtempSync(join(tmpdir(), 'dsh-claude-tui-pack-'))
+    packDirectory = realpathSync(
+      mkdtempSync(join(tmpdir(), 'dsh-claude-tui-pack-')),
+    )
     execFileSync('corepack', ['pnpm', 'pack', '--pack-destination', packDirectory], {
       cwd: repositoryRoot,
       stdio: 'pipe',
@@ -304,6 +306,8 @@ describe('dsh-claude-tui bundle', () => {
       },
       dependencies: {
         '@deepseek-ai/dsh': '0.1.0-rc.8',
+        react: '18.3.1',
+        'react-dom': '18.3.1',
         semver: '7.8.5',
       },
       repository: { url: 'git+https://github.com/cogine-ai/dsh-claude-tui.git' },
@@ -343,6 +347,8 @@ describe('dsh-claude-tui bundle', () => {
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
+    expect(shrinkwrap.packages?.['node_modules/react']?.version).toBe('18.3.1')
+    expect(shrinkwrap.packages?.['node_modules/react-dom']?.version).toBe('18.3.1')
     const dshVersions = Object.entries(shrinkwrap.packages ?? {})
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
@@ -363,6 +369,12 @@ describe('dsh-claude-tui bundle', () => {
     ) as { version?: string }
     expect(installedDsh.version).toBe('0.1.0-rc.8')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
+    expect(JSON.parse(
+      readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
+    )).toMatchObject({ version: '18.3.1' })
+    expect(JSON.parse(
+      readFileSync(installedRequire.resolve('react-dom/package.json'), 'utf8'),
+    )).toMatchObject({ version: '18.3.1' })
 
     const installedDeepSeekScope = join(installDirectory, 'node_modules/@deepseek-ai')
     const requiredDeepSeekPeers = new Set<string>()
@@ -384,6 +396,22 @@ describe('dsh-claude-tui bundle', () => {
       return !existsSync(join(installDirectory, 'node_modules', peer, 'package.json'))
     }))
       .toEqual([])
+
+    const fullNpmTree = spawnSync(
+      'npm',
+      ['ls', '--all', '--json', '--prefix', installDirectory],
+      { encoding: 'utf8' },
+    )
+    expect(fullNpmTree.status, fullNpmTree.stderr).toBe(0)
+    const fullNpmProblems = (
+      JSON.parse(fullNpmTree.stdout) as { problems?: string[] }
+    ).problems ?? []
+    // npm 10 can retain these leaves after filtering their cross-platform
+    // optional Sharp parent. Any other dependency-tree problem is a failure.
+    expect(fullNpmProblems.filter(problem => {
+      return !/^extraneous: (?:@emnapi\/runtime@1\.11\.3|@img\/sharp-wasm32@0\.35\.3) /u
+        .test(problem)
+    })).toEqual([])
 
     const publishedText = entries
       .filter(entry => !entry.endsWith('.svg'))
