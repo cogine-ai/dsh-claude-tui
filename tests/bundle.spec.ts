@@ -23,6 +23,8 @@ import * as pty from 'node-pty'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)))
+const usesDefaultNpmPeerResolution =
+  process.env.DSH_CLAUDE_TUI_INSTALL_MODE === 'default'
 
 interface MockRequest {
   headers: IncomingMessage['headers']
@@ -222,7 +224,7 @@ describe('dsh-claude-tui bundle', () => {
       'install',
       '--no-audit',
       '--no-fund',
-      ...process.env.DSH_CLAUDE_TUI_INSTALL_MODE === 'default'
+      ...usesDefaultNpmPeerResolution
         ? []
         : ['--legacy-peer-deps'],
       '--cache',
@@ -235,7 +237,7 @@ describe('dsh-claude-tui bundle', () => {
       installDirectory,
       'node_modules/dsh-claude-tui/lib/cli.js',
     )
-  }, 600_000)
+  }, usesDefaultNpmPeerResolution ? 900_000 : 600_000)
 
   afterAll(() => {
     rmSync(packDirectory, { recursive: true, force: true })

@@ -67,7 +67,7 @@
     "clean": "node -e \"for (const path of ['lib', 'dist']) require('node:fs').rmSync(path, { recursive: true, force: true })\"",
     "prepack": "tsdown",
     "test": "tsdown && vitest run --no-file-parallelism",
-    "test:bundle:default": "DSH_CLAUDE_TUI_INSTALL_MODE=default tsdown && vitest run tests/bundle.spec.ts --no-file-parallelism",
+    "test:bundle:default": "tsdown && DSH_CLAUDE_TUI_INSTALL_MODE=default vitest run tests/bundle.spec.ts --no-file-parallelism",
     "typecheck": "tsc --noEmit",
     "check": "tsc --noEmit && tsdown && vitest run --no-file-parallelism"
   },
