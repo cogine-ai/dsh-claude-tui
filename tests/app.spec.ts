@@ -30,6 +30,12 @@ interface Bench {
   app: ClaudeTuiApplication
   terminal: HeadlessTerminal
   followups: UserMessage[]
+  commandCalls: Array<{
+    agent: Agent
+    line: string
+    attachments: readonly unknown[]
+    signal: AbortSignal
+  }>
   exitCodes: number[]
   setStatus(status: Agent['status']): void
   askQuestions(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer>
@@ -54,6 +60,7 @@ interface CredentialFixture {
 }
 
 interface BenchOptions {
+  readonly commands?: ReadonlyArray<{ name: string; description: string }>
   readonly models?: ModelFixture
   readonly credentials?: CredentialFixture
   readonly seed?: (session: Session) => void
@@ -80,9 +87,18 @@ function bench(
   const ctx = new Context()
   contexts.push(ctx)
   let questionProvider: UserQuestionProvider | undefined
+  const commandCalls: Bench['commandCalls'] = []
   ctx.provide('commands', {
-    list: () => [],
-    execute: () => Promise.resolve(undefined),
+    list: () => options.commands ?? [],
+    execute: (
+      agent: Agent,
+      line: string,
+      attachments: readonly unknown[],
+      signal: AbortSignal,
+    ) => {
+      commandCalls.push({ agent, line, attachments, signal })
+      return Promise.resolve(undefined)
+    },
   } as never)
   ctx.provide('userQuestions', {
     registerProvider: (provider: UserQuestionProvider) => {
@@ -208,6 +224,7 @@ function bench(
     app,
     terminal,
     followups,
+    commandCalls,
     exitCodes,
     setStatus: nextStatus => { status = nextStatus },
     askQuestions: request => {
@@ -341,7 +358,7 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.1.0-rc.6',
+        harnessVersion: '0.1.0-rc.8',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
@@ -363,7 +380,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.1.0-rc.6 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.1.0-rc.8 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -422,7 +439,7 @@ describe('ClaudeTuiApplication', () => {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.1.0-rc.6',
+          harnessVersion: '0.1.0-rc.8',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -432,7 +449,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.1.0-rc.6 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.1.0-rc.8 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -851,6 +868,26 @@ describe('ClaudeTuiApplication', () => {
     await test.terminal.settle()
 
     expect(test.terminal.text()).toContain('transcript expanded')
+
+    await test.app.dispose()
+  })
+
+  it('uses the rc8 command envelope with an empty image attachment batch', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      commands: [{ name: 'plan', description: 'Enter plan mode' }],
+    })
+    await test.app.start()
+    for (const character of '/plan') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.commandCalls).toHaveLength(1)
+    expect(test.commandCalls[0]).toMatchObject({
+      agent: test.app.agent,
+      line: '/plan',
+      attachments: [],
+    })
+    expect(test.commandCalls[0]?.signal.aborted).toBe(false)
 
     await test.app.dispose()
   })

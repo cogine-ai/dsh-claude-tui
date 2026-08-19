@@ -2,5 +2,5 @@ export interface CompatibilityProbeResult {
   token: string
   package: 'dsh-claude-tui'
   version: string
-  services: ['agentDefaultModel', 'agents', 'sessions']
+  services: ['agentDefaultModel', 'agents', 'commands', 'sessions']
 }

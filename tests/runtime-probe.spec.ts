@@ -99,7 +99,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token,
   package: 'dsh-claude-tui',
   version: '0.1.0',
-  services: ['agentDefaultModel', 'agents', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
 }) + '\\n')
 `)
 
@@ -133,6 +133,24 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
   package: 'dsh-claude-tui',
   version: 'different-version',
+  services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+}) + '\\n')
+`)
+
+    const result = await probeRuntimeCompatibility(runtime, identity)
+
+    expect(result).toEqual({
+      compatible: false,
+      reason: expect.stringContaining('unexpected probe result'),
+    })
+  })
+
+  it('rejects an rc7-shaped result that did not exercise the command contract', async () => {
+    const { runtime, identity } = fixture(`
+process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
+  token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
+  package: 'dsh-claude-tui',
+  version: '0.1.0',
   services: ['agentDefaultModel', 'agents', 'sessions'],
 }) + '\\n')
 `)
@@ -193,7 +211,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
   package: 'dsh-claude-tui',
   version: '0.1.0',
-  services: ['agentDefaultModel', 'agents', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
 }) + '\\n')
 `)
     const removeProbeRoot = runtimeProbeInternals.removeProbeRoot

@@ -220,6 +220,7 @@ describe('dsh-claude-tui bundle', () => {
       'install',
       '--no-audit',
       '--no-fund',
+      '--legacy-peer-deps',
       '--cache',
       join(packDirectory, 'npm-cache'),
       '--prefix',
@@ -246,7 +247,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.1.0-rc.6',
+      '0.1.0-rc.8',
     )
   }, 30_000)
 
@@ -259,6 +260,8 @@ describe('dsh-claude-tui bundle', () => {
       'package/LICENSE',
       'package/README.md',
       'package/README.zh-CN.md',
+      'package/CONTRIBUTING.md',
+      'package/CONTRIBUTING.zh-CN.md',
       'package/DISCLAIMER.md',
       'package/cordis.patch.yml',
       'package/docs/assets/terminal-preview.svg',
@@ -284,6 +287,7 @@ describe('dsh-claude-tui bundle', () => {
       bin?: Record<string, string>
       dependencies?: Record<string, string>
       peerDependencies?: Record<string, string>
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>
       repository?: { url?: string }
       homepage?: string
       bugs?: { url?: string }
@@ -291,13 +295,13 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.3',
+      version: '0.1.4',
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.1.0-rc.6',
+        '@deepseek-ai/dsh': '0.1.0-rc.8',
         semver: '7.8.5',
       },
       repository: { url: 'git+https://github.com/cogine-ai/dsh-claude-tui.git' },
@@ -309,7 +313,11 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.1.0-rc.6 <0.1.1')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.1.0-rc.8 <0.1.1')).toBe(true)
+    expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
+      .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
+    expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
+      .toBe(true)
     expect(statSync(join(packageDirectory, 'lib/cli.js')).mode & 0o111).not.toBe(0)
 
     const shrinkwrap = JSON.parse(
@@ -320,14 +328,16 @@ describe('dsh-claude-tui bundle', () => {
         version?: string
         dependencies?: Record<string, string>
         peerDependencies?: Record<string, string>
+        peerDependenciesMeta?: Record<string, { optional?: boolean }>
       }>
     }
     expect(shrinkwrap.lockfileVersion).toBe(3)
     expect(shrinkwrap.packages?.['']?.dependencies).toEqual(manifest.dependencies)
     expect(shrinkwrap.packages?.['']?.peerDependencies).toEqual(manifest.peerDependencies)
+    expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.1.0-rc.6',
+      '@deepseek-ai/dsh': '0.1.0-rc.8',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
@@ -335,7 +345,7 @@ describe('dsh-claude-tui bundle', () => {
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.1.0-rc.6']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.1.0-rc.8']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -349,8 +359,29 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.1.0-rc.6')
+    expect(installedDsh.version).toBe('0.1.0-rc.8')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
+
+    const installedDeepSeekScope = join(installDirectory, 'node_modules/@deepseek-ai')
+    const requiredDeepSeekPeers = new Set<string>()
+    for (const packageName of readdirSync(installedDeepSeekScope)) {
+      const installedManifest = JSON.parse(
+        readFileSync(join(installedDeepSeekScope, packageName, 'package.json'), 'utf8'),
+      ) as {
+        peerDependencies?: Record<string, string>
+        peerDependenciesMeta?: Record<string, { optional?: boolean }>
+      }
+      for (const peer of Object.keys(installedManifest.peerDependencies ?? {})) {
+        if (
+          peer.startsWith('@deepseek-ai/')
+          && installedManifest.peerDependenciesMeta?.[peer]?.optional !== true
+        ) requiredDeepSeekPeers.add(peer)
+      }
+    }
+    expect([...requiredDeepSeekPeers].filter(peer => {
+      return !existsSync(join(installDirectory, 'node_modules', peer, 'package.json'))
+    }))
+      .toEqual([])
 
     const publishedText = entries
       .filter(entry => !entry.endsWith('.svg'))
@@ -407,7 +438,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.3\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.4\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -423,7 +454,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.3\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.4\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -550,8 +581,8 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.3')
-      expect(first.output).toContain('Harness 0.1.0-rc.6 · bundled · PTC')
+      expect(first.output).toContain('v0.1.4')
+      expect(first.output).toContain('Harness 0.1.0-rc.8 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -613,7 +644,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.1.0-rc.6 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.1.0-rc.8 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))

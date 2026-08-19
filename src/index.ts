@@ -159,7 +159,7 @@ function packageVersion(): string {
   return manifest.version
 }
 
-/** Exercise the injected Agent/Session contracts without sending a model request. */
+/** Exercise the injected Agent, command, and Session contracts without a model request. */
 export async function runCompatibilityProbe(
   ctx: Context,
   token: string,
@@ -170,35 +170,60 @@ export async function runCompatibilityProbe(
   signal.throwIfAborted()
 
   const agents = ctx.get('agents')
+  const commands = ctx.get('commands')
   const defaultModel = ctx.get('agentDefaultModel')
   const sessions = ctx.get('sessions')
-  if (agents === undefined || defaultModel === undefined || sessions === undefined) {
-    throw new Error('claude-tui: compatibility probe is missing Agent or Session services')
+  if (agents === undefined || commands === undefined || defaultModel === undefined || sessions === undefined) {
+    throw new Error('claude-tui: compatibility probe is missing Agent, command, or Session services')
   }
 
   const defaults = defaultModel.currentSelection()
   const modelRuntime = selectionSetup(defaults, undefined)
-  const handle = await agents.create({
-    sessionId: SessionId(`dsh-claude-tui-probe-${randomUUID()}`),
-    meta: { cwd: internals.cwd() },
-    agentOptions: { provider: defaults.provider, model: defaults.model },
-    setup: modelRuntime.setup,
-    signal,
+  let commandInvoked = false
+  const unregisterCommand = commands.register({
+    name: 'dsh-claude-tui-probe',
+    description: 'Verify the dsh-claude-tui command adapter contract',
+    handler: ({ attachments, signal: commandSignal }) => {
+      commandSignal.throwIfAborted()
+      if (attachments.length !== 0) {
+        throw new Error('claude-tui: compatibility probe received unexpected attachments')
+      }
+      commandInvoked = true
+      return { kind: 'success' }
+    },
   })
+  let handle: AgentHandle | undefined
   try {
+    handle = await agents.create({
+      sessionId: SessionId(`dsh-claude-tui-probe-${randomUUID()}`),
+      meta: { cwd: internals.cwd() },
+      agentOptions: { provider: defaults.provider, model: defaults.model },
+      setup: modelRuntime.setup,
+      signal,
+    })
     signal.throwIfAborted()
     await handle.agent.whenIdle()
     signal.throwIfAborted()
+    const execution = await commands.execute(
+      handle.agent,
+      '/dsh-claude-tui-probe',
+      [],
+      signal,
+    )
+    if (!commandInvoked || execution?.result.kind !== 'success') {
+      throw new Error('claude-tui: compatibility probe command did not execute successfully')
+    }
     await sessions.flush(handle.agent.session)
   } finally {
-    await handle.dispose()
+    unregisterCommand()
+    await handle?.dispose()
   }
 
   return {
     token,
     package: 'dsh-claude-tui',
     version,
-    services: ['agentDefaultModel', 'agents', 'sessions'],
+    services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
   }
 }
 

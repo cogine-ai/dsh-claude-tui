@@ -14,11 +14,11 @@ whole decision before changing the selected user DSH home:
 2. Look for `@deepseek-ai/dsh` associated with that home under
    `profiles/node_modules`, then for a verifiable `dsh` executable on `PATH`.
 3. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
-   `>=0.1.0-rc.6 <0.1.1` and whose declared bin exists inside the package.
+   `>=0.1.0-rc.8 <0.1.1` and whose declared bin exists inside the package.
 4. Run each otherwise eligible external candidate through the current packed
    TUI's compatibility probe.
 5. Use the first candidate that passes; otherwise use the launcher-pinned
-   `@deepseek-ai/dsh@0.1.0-rc.6`.
+   `@deepseek-ai/dsh@0.1.0-rc.8`.
 6. Create or reconcile only the selected launcher-owned profile, then replace
    the launcher process with the selected Harness process.
 
@@ -102,9 +102,9 @@ candidate cannot modify the requested user DSH home.
 Examples:
 
 ```sh
-DSH_CLAUDE_TUI_RUNTIME=bundled npx dsh-claude-tui
-DSH_CLAUDE_TUI_RUNTIME=system npx dsh-claude-tui
-DSH_HOME=~/.dsh-team npx dsh-claude-tui
+DSH_CLAUDE_TUI_RUNTIME=bundled npx --yes --legacy-peer-deps dsh-claude-tui
+DSH_CLAUDE_TUI_RUNTIME=system npx --yes --legacy-peer-deps dsh-claude-tui
+DSH_HOME=~/.dsh-team npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
 ## Remaining boundary

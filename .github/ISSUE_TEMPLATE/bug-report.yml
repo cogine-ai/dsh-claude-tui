@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible launcher, runtime, or terminal problem
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve DSH Claude TUI. Remove credentials, private Session data, and private repository content before submitting.
+  - type: input
+    id: tui-version
+    attributes:
+      label: TUI version
+      description: Output of `dsh-claude-tui --version`.
+      placeholder: 0.1.4
+    validations:
+      required: true
+  - type: input
+    id: harness-version
+    attributes:
+      label: Harness version and runtime kind
+      description: Copy the Harness version and bundled/system kind from the welcome panel.
+      placeholder: 0.1.0-rc.8, bundled
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, OS/architecture, terminal name, and terminal dimensions.
+      placeholder: Node 22.22.3, macOS arm64, iTerm2, 100x30
+    validations:
+      required: true
+  - type: dropdown
+    id: home
+    attributes:
+      label: DSH Home selection
+      options:
+        - Default Home
+        - Explicit DSH_HOME
+        - Isolated fallback Home
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: List the smallest exact command or key sequence that reproduces the problem.
+      placeholder: |
+        1. Run ...
+        2. Press ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include a minimal redacted capture or log when safe.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed API keys, credentials, private Session data, and private repository content.
+          required: true
+        - label: I searched existing issues for the same problem.
+          required: true

@@ -1,0 +1,63 @@
+name: Feature or improvement
+description: Propose a focused terminal or Harness integration improvement
+title: "[Proposal]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start with the user problem and evidence. For larger ideas, agreeing on the runtime/UI boundary before implementation saves review time.
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who encounters the problem, and what are they unable to do efficiently or safely?
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior and evidence
+      description: Describe the current TUI/DSH behavior, including a capture, reference, or reproducible flow when available.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the user-visible result, not only an implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Terminal interaction
+        - DSH runtime integration
+        - Sessions and resume
+        - Models and providers
+        - Tools, approvals, or questions
+        - Subagents and background work
+        - Launcher and installation
+        - Accessibility
+        - Documentation or translation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Proposed boundary
+      description: What should the TUI own, what should DSH own, and what should remain explicitly unsupported?
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Contribution interest
+      description: Tell us whether you can test, design, document, or implement part of this proposal.
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Existing work
+      options:
+        - label: I searched existing issues and pull requests for the same request.
+          required: true
