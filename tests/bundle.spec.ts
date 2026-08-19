@@ -26,6 +26,21 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const usesDefaultNpmPeerResolution =
   process.env.DSH_CLAUDE_TUI_INSTALL_MODE === 'default'
 
+/** npm's tar mode drops node-pty's reviewed helper executable bit on macOS. */
+function ensureNodePtyHelper(): void {
+  const entry = fileURLToPath(import.meta.resolve('node-pty'))
+  const packageRoot = dirname(dirname(entry))
+  const candidates = [
+    join(packageRoot, 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper'),
+    join(packageRoot, 'build', 'Release', 'spawn-helper'),
+  ]
+  for (const helper of candidates) {
+    if (existsSync(helper)) chmodSync(helper, 0o755)
+  }
+}
+
+ensureNodePtyHelper()
+
 interface MockRequest {
   headers: IncomingMessage['headers']
   body: Record<string, unknown>
