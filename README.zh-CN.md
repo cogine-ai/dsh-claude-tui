@@ -35,7 +35,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 
 这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.4`。
 
-`legacy-peer-deps` 是针对 rc8 上游密集 peer 图的临时 npm 安装规避。本包已经显式固定 TUI 必需的 peer 闭包，快速路径也通过了真实安装后的 PTY、工具回合和 Session 恢复测试。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数只改变 npm 的依赖放置算法，不改变 DSH 运行版本或 TUI 行为。
+`legacy-peer-deps` 是针对 rc8 上游密集 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc8 TUI 闭包；只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 

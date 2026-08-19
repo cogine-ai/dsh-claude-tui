@@ -113,6 +113,17 @@ describe('launcher compatibility probe', () => {
     expect(flush).toHaveBeenCalledWith(session)
     expect(unregisterCommand).toHaveBeenCalledOnce()
     expect(dispose).toHaveBeenCalledOnce()
+
+    const unregisterFailure = new Error('command unregister failed')
+    unregisterCommand.mockImplementationOnce(() => { throw unregisterFailure })
+    await expect(runCompatibilityProbe(
+      ctx as never,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      controller.signal,
+    ))
+      .rejects.toThrow(unregisterFailure)
+    expect(dispose).toHaveBeenCalledTimes(2)
   })
 
   it('enters the hidden probe branch before enforcing the interactive TTY contract', () => {

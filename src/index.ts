@@ -215,8 +215,11 @@ export async function runCompatibilityProbe(
     }
     await sessions.flush(handle.agent.session)
   } finally {
-    unregisterCommand()
-    await handle?.dispose()
+    try {
+      unregisterCommand()
+    } finally {
+      await handle?.dispose()
+    }
   }
 
   return {

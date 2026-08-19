@@ -36,7 +36,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 
 That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this release exactly, add `@0.1.4` to the package name.
 
-The `legacy-peer-deps` flag is a temporary npm installation workaround for rc8's dense upstream peer graph. This package explicitly pins the required TUI peer closure, and the fast path is tested through a real installed PTY, tool round, and resumed Session. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag changes npm's placement algorithm, not the DSH runtime version or TUI behavior.
+The `legacy-peer-deps` flag is a temporary npm installation workaround for rc8's dense upstream peer graph. It tells npm to skip peer-conflict enforcement and use this release's explicitly pinned rc8 TUI closure. Use this path only with the packed-install-validated release shown here. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag does not change the DSH runtime version or TUI behavior.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among the models and effort levels exposed by DSH.
 

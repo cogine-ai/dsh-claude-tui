@@ -43,6 +43,8 @@ corepack pnpm check
 
 `pnpm check` runs TypeScript validation, a clean production build, and the complete serial Vitest suite. Most tests do not need a provider credential. Never commit credentials or a populated DSH Home.
 
+Release maintainers also run `corepack pnpm test:bundle:default` to qualify plain npm peer resolution. That gate intentionally does not use the README workaround and can take close to ten minutes on npm 10 with the rc8 graph; routine CI uses the equally complete packed-install path with the pinned TUI closure.
+
 For a quick local launch from the repository:
 
 ```bash

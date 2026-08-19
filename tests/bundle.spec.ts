@@ -220,7 +220,9 @@ describe('dsh-claude-tui bundle', () => {
       'install',
       '--no-audit',
       '--no-fund',
-      '--legacy-peer-deps',
+      ...process.env.DSH_CLAUDE_TUI_INSTALL_MODE === 'default'
+        ? []
+        : ['--legacy-peer-deps'],
       '--cache',
       join(packDirectory, 'npm-cache'),
       '--prefix',
