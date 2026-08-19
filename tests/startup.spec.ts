@@ -40,7 +40,7 @@ describe('claude-tui startup grammar', () => {
 
   it('accepts only a valid launcher runtime snapshot', () => {
     vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', JSON.stringify({
-      harnessVersion: '0.1.0-rc.6',
+      harnessVersion: '0.1.0-rc.8',
       runtimeKind: 'bundled',
       homeKind: 'shared',
       homePath: '/tmp/test-dsh-home',
@@ -49,7 +49,7 @@ describe('claude-tui startup grammar', () => {
     try {
       expect(parse([])).toMatchObject({
         runtimeSnapshot: {
-          harnessVersion: '0.1.0-rc.6',
+          harnessVersion: '0.1.0-rc.8',
           runtimeKind: 'bundled',
           homeKind: 'shared',
           homePath: '/tmp/test-dsh-home',

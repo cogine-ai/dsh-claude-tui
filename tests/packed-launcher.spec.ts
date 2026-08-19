@@ -64,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.0-rc.6',
+      version: '0.1.0-rc.8',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -137,7 +137,7 @@ setInterval(() => {}, 1_000)
       dshHome,
       toolsMode: 'native',
       runtimeSnapshot: JSON.stringify({
-        harnessVersion: '0.1.0-rc.6',
+        harnessVersion: '0.1.0-rc.8',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: dshHome,
@@ -286,7 +286,7 @@ setInterval(() => {}, 1_000)
     mkdirSync(systemPackage, { recursive: true })
     writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.0-rc.6',
+      version: '0.1.0-rc.8',
       type: 'module',
       bin: { dsh: 'bin.js' },
     }, undefined, 2)}\n`)
@@ -304,7 +304,7 @@ if (token !== undefined) {
     token,
     package: 'dsh-claude-tui',
     version: manifest.version,
-    services: ['agentDefaultModel', 'agents', 'sessions'],
+    services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
   }) + '\\n')
 } else {
   writeFileSync(${JSON.stringify(systemRecord)}, JSON.stringify({

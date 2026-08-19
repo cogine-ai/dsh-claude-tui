@@ -11,7 +11,7 @@ import {
 const bundled: DshRuntime = {
   kind: 'bundled',
   source: 'bundled',
-  version: '0.1.0-rc.6',
+  version: '0.1.0-rc.8',
   packageRoot: '/package/node_modules/@deepseek-ai/dsh',
   executable: '/package/node_modules/@deepseek-ai/dsh/lib/bin.js',
 }
@@ -91,7 +91,7 @@ function adapter(options: {
 
 describe('launcher environment planning', () => {
   it('prefers a compatible DSH associated with the shared home', async () => {
-    const homeRuntime = system('0.1.0-rc.6', 'home', 'home-runtime')
+    const homeRuntime = system('0.1.0-rc.8', 'home', 'home-runtime')
     const pathRuntime = system('0.1.0', 'path', 'path-runtime')
     const boundary = adapter({ candidates: [homeRuntime, pathRuntime] })
 
@@ -104,7 +104,7 @@ describe('launcher environment planning', () => {
   })
 
   it('skips an out-of-range candidate and tries the next compatible runtime', async () => {
-    const oldHomeRuntime = system('0.1.0-rc.5', 'home', 'old-home-runtime')
+    const oldHomeRuntime = system('0.1.0-rc.7', 'home', 'old-home-runtime')
     const pathRuntime = system('0.1.0', 'path', 'path-runtime')
     const boundary = adapter({ candidates: [oldHomeRuntime, pathRuntime] })
 
@@ -140,7 +140,7 @@ describe('launcher environment planning', () => {
   })
 
   it('continues to the next candidate when a compatibility probe throws', async () => {
-    const first = system('0.1.0-rc.6', 'home', 'first')
+    const first = system('0.1.0-rc.8', 'home', 'first')
     const second = system('0.1.0', 'path', 'second')
     const boundary = adapter({ candidates: [first, second] })
     vi.mocked(boundary.probeRuntime)

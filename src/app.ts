@@ -474,7 +474,7 @@ export class ClaudeTuiApplication {
   private runHarnessCommand(line: string): void {
     const controller = new AbortController()
     this.commandControllers.add(controller)
-    void this.ctx.commands.execute(this.agent, line, controller.signal).then((execution) => {
+    void this.ctx.commands.execute(this.agent, line, [], controller.signal).then((execution) => {
       if (this.closed) return
       if (execution === undefined) {
         this.transcript.addNotice(`Unknown command: ${displayText(line.split(/\s/u, 1)[0] ?? line)}. Use /help.`, 'warning')

@@ -47,13 +47,30 @@ describe('launcher compatibility probe', () => {
     const session = { id: 'probe-session' }
     const whenIdle = vi.fn(async () => undefined)
     const dispose = vi.fn(async () => undefined)
-    const create = vi.fn(async () => ({ agent: { session, whenIdle }, dispose }))
+    const agent = { session, whenIdle }
+    const create = vi.fn(async () => ({ agent, dispose }))
     const flush = vi.fn(async () => undefined)
     const localAwait = vi.fn(async () => undefined)
+    const unregisterCommand = vi.fn()
+    let commandHandler: ((invocation: never) => unknown) | undefined
+    const register = vi.fn((definition: { handler: (invocation: never) => unknown }) => {
+      commandHandler = definition.handler
+      return unregisterCommand
+    })
+    const execute = vi.fn(async (
+      target: typeof agent,
+      line: string,
+      attachments: readonly unknown[],
+      signal: AbortSignal,
+    ) => {
+      const result = await commandHandler?.({ attachments, signal } as never)
+      return result === undefined ? undefined : { commandId: 'probe-command', result }
+    })
     const ctx = {
       fiber: { entry: { parent: { tree: { await: localAwait } } } },
       get: vi.fn((service: string) => {
         if (service === 'agents') return { create }
+        if (service === 'commands') return { execute, register }
         if (service === 'agentDefaultModel') {
           return { currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }) }
         }
@@ -74,7 +91,7 @@ describe('launcher compatibility probe', () => {
       token: '01234567-89ab-cdef-0123-456789abcdef',
       package: 'dsh-claude-tui',
       version: '0.1.0',
-      services: ['agentDefaultModel', 'agents', 'sessions'],
+      services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
     })
     expect(localAwait).toHaveBeenCalledOnce()
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
@@ -83,8 +100,30 @@ describe('launcher compatibility probe', () => {
       signal: controller.signal,
     }))
     expect(whenIdle).toHaveBeenCalledOnce()
+    expect(register).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'dsh-claude-tui-probe',
+      handler: expect.any(Function),
+    }))
+    expect(execute).toHaveBeenCalledWith(
+      agent,
+      '/dsh-claude-tui-probe',
+      [],
+      controller.signal,
+    )
     expect(flush).toHaveBeenCalledWith(session)
+    expect(unregisterCommand).toHaveBeenCalledOnce()
     expect(dispose).toHaveBeenCalledOnce()
+
+    const unregisterFailure = new Error('command unregister failed')
+    unregisterCommand.mockImplementationOnce(() => { throw unregisterFailure })
+    await expect(runCompatibilityProbe(
+      ctx as never,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      controller.signal,
+    ))
+      .rejects.toThrow(unregisterFailure)
+    expect(dispose).toHaveBeenCalledTimes(2)
   })
 
   it('enters the hidden probe branch before enforcing the interactive TTY contract', () => {

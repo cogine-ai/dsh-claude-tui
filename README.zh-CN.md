@@ -13,8 +13,9 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
+  <img alt="DeepSeek Harness rc8" src="https://img.shields.io/badge/DSH-0.1.0--rc.8-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="119 tests" src="https://img.shields.io/badge/tests-119%2F119-4eba65?style=flat-square" />
+  <img alt="121 tests" src="https://img.shields.io/badge/tests-121%2F121-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -29,23 +30,37 @@
 需要 Node.js `22.19+` 或 `24+`。
 
 ```bash
-npx dsh-claude-tui
+npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次文档修正版，运行 `npx dsh-claude-tui@0.1.3`。
+这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.4`。
+
+`legacy-peer-deps` 是针对 rc8 上游密集 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc8 TUI 闭包，其中也包含上游已发布 Web 包传递暴露出的 React 18 兼容 peer。只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径：发布 gate 会执行完整的 `npm ls --all`，并拒绝任何 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
 如果会反复使用：
 
 ```bash
-npm install --global dsh-claude-tui@0.1.3
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.4
 dshtui
 ```
 
-全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`；两者运行同一个 CLI 入口。
+全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`。使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
-使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
+## v0.1.4：真正的 rc8 适配
+
+本版本将完整的包内运行时固定到 DeepSeek Harness `0.1.0-rc.8`，并把外部运行时最低要求提升为 `>=0.1.0-rc.8 <0.1.1`。
+
+- 命令桥接已改用 rc8 的附件感知接口 `execute(agent, line, images, signal)`。当前终端输入器会明确提交空图片批次；图片选择尚未作为 TUI 已完成功能宣传。
+- 运行时资格探针现在验证默认模型、Agent、命令和 Session 四项服务，并用 rc8 四参数信封真实执行一个临时命令；只有 rc7 形状、仅版本字符串看似匹配的运行时无法通过。
+- 包内依赖图显式提供 TUI 所需的全部 DeepSeek peer，并补齐上游 Web 图传递暴露出的 React 18 peer；发布 shrinkwrap 只存在一条 DSH 版本线：rc8，不在深层依赖中隐藏 rc6/rc7 回退。跨平台可选 Sharp 父包被过滤时，npm 10 的完整依赖树可能把 `@img/sharp-wasm32` 与 `@emnapi/runtime` 标成 extraneous；`npm ls --all` 仍必须成功退出，发布 gate 只允许这两个可选叶节点，其他任何依赖问题都会失败。
+- 组合 profile 使用相应服务时，用户会获得 rc8 的取消回复前缀持久化、默认五次重试、图片安全限制及其他 Harness 修复。
+
+> [!WARNING]
+> rc8 的 SQLite 持久化格式存在不兼容变更。不要让不同 Harness 版本并发使用同一个 `$DSH_HOME`；除非 DeepSeek Harness 明确给出受支持的迁移路径，也不要把已由 rc8 使用的 Home 直接降级。测试其他版本请使用独立 Home。
+
+上游完整变化见 [DeepSeek Harness rc8 官方发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.0-rc.8)。本项目刻意缩小承诺范围：这里只描述该 TUI 实际组合并验证的能力。
 
 ## 你能获得什么
 
@@ -59,7 +74,7 @@ dshtui
 | Session 与 Agent | 新建/恢复 Session、安全 flush、前后台子代理和活动 Agent roster |
 | 可验证运行环境 | 欢迎面板显示真实 TUI/Harness 版本、system/bundled 来源、DSH Home 与工具模式 |
 
-TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。
+TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Harness 是运行能力的事实来源；项目不会模拟 Claude 私有的云服务、账号状态、模型行为或权限语义。
 
 ## 常用操作
 
@@ -79,15 +94,13 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。
 
 ## 兼容已有 DSH 环境
 
-默认启动逻辑让用户无需先选择安装策略：
+默认启动逻辑让用户无需预先选择安装策略：
 
 1. 优先复用所选 `$DSH_HOME` 已关联的兼容 DSH，或 `PATH` 中来源可验证的 `dsh`；
 2. 在不继承凭据的临时 Home 中执行兼容探针；
-3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.0-rc.6`。
+3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.0-rc.8`。
 
-外部 DSH 当前须满足 `>=0.1.0-rc.6 <0.1.1` 并通过 Agent/Session 探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
-
-常用环境变量：
+兼容性同时要求版本满足 `>=0.1.0-rc.8 <0.1.1` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
 
 | 变量 | 行为 |
 | --- | --- |
@@ -97,31 +110,46 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。
 | `DSH_HOME=/path` | 指定 DSH 数据 Home |
 | `DSH_TOOLS_MODE=native\|code\|both` | DSH 工具呈现模式，对应 Standard、PTC、Both |
 
-不同 Harness 版本不要并发使用同一个 `$DSH_HOME`；并发运行请使用独立 Home。Harness 仍处于预发布阶段，数据移动只能走其明确支持的迁移路径。完整选择和恢复规则见[启动器环境兼容说明](./docs/launcher-environment-compatibility.md)。
+完整选择、所有权和恢复规则见[启动器环境兼容说明](./docs/launcher-environment-compatibility.md)。
 
 ## 兼容与验证
 
-当前交互目标是已观测的 Claude Code `2.1.227` TUI。运行能力以 Harness 为准，不模拟 Claude 私有的模型行为、云服务、账号状态或权限语义。
-
-当前资格范围：
+当前交互目标是已观测的 Claude Code `2.1.227` TUI。当前资格范围包括：
 
 - macOS arm64 与 Linux x64；
 - true-color、xterm-compatible 终端；
 - **24** 个独立捕获的 PTY 参考帧，**22** 个自动视觉/语义锚点；
-- **119/119** 个测试，覆盖 `80x24`、`100x30`、真实 tarball、两个已安装命令入口、Session 恢复、审批、问题和前后台子代理。
+- **121/121** 个测试，覆盖 `80x24`、`100x30`、rc8 命令信封和真实 profile 探针、tarball 安装、两个命令入口、Session 恢复、审批、问题和前后台子代理。
 
-Windows 启动路径已经实现，但尚未纳入发布资格验证。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和 [v0.1.0 制品加固基线](./docs/release-hardening-v0.1.0.md)。
+Windows 启动路径已经实现，但尚未纳入发布资格验证。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 
-## 开发与参与
+## 一起把它做得更好
+
+这个项目不应只是覆盖在运行时上的一层主题。我们的目标是做一个快速、可审查、尊重 DSH 语义的终端客户端，也让开发者能在这里共同改善 Harness 的使用体验。
+
+参与不要求先读懂整个运行时，可以从这些入口开始：
+
+| 参与方向 | 适合第一份贡献的任务 |
+| --- | --- |
+| 终端资格验证 | 在明确的终端、系统和窗口尺寸下复现布局或快捷键问题 |
+| 运行时集成 | 为某个 DSH 命令、Session、审批或子代理边界补一项聚焦测试 |
+| 交互设计 | 在不掩盖未支持状态的前提下，探索附件、引用、补全或 Session 管理 |
+| 稳定性 | 减少启动歧义、强化安装包验证，或把现场问题变成确定性 fixture |
+| 文档与语言 | 改善上手说明、解释架构边界，或保持中英文文档同步 |
+| 无障碍 | 改善无颜色模式、纯键盘流程、读屏输出或窄终端表现 |
+
+先阅读[贡献指南](./CONTRIBUTING.zh-CN.md)，然后提交一个[边界清晰的 issue](https://github.com/cogine-ai/dsh-claude-tui/issues/new/choose) 或 pull request。较大的改动请先说明用户问题和证据，让维护者与贡献者一起确定合适的实现边界。
+
+## 本地开发
 
 ```bash
 corepack pnpm install --frozen-lockfile
 corepack pnpm check
 ```
 
-资格门包含 TypeScript 检查、全部 Vitest 终端测试和生产构建。欢迎提交聚焦的 issue 与 pull request；视觉一致性修改应附独立捕获的参考证据，或明确记录 Harness 语义边界。
+发布门禁依次执行 TypeScript 检查、干净的生产构建和完整串行 Vitest。视觉一致性修改必须附独立捕获的参考证据，或明确记录 Harness 语义边界；运行时修改必须验证安装包路径，不能只证明源码 import 可用。
 
-近期方向包括更丰富的附件与补全、更完整的 Session 管理、更多 plan/todo/后台任务状态，以及更多终端和操作系统资格验证。
+近期可参与方向包括终端原生图片附件、文件与 Session 引用补全、更完整的 Session 管理、更多 plan/todo/后台任务状态，以及更多终端和操作系统资格验证。这些是贡献方向，不代表功能已经交付。
 
 ## License
 
