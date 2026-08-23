@@ -43,7 +43,7 @@ corepack pnpm check
 
 `pnpm check` 会执行 TypeScript 检查、干净的生产构建和完整串行 Vitest。绝大多数测试不需要 Provider 凭据。不要提交凭据或已有数据的 DSH Home。
 
-发布维护者还会运行 `corepack pnpm test:bundle:default`，单独验证普通 npm 的 peer 求解。该门禁刻意不使用 README 中的规避参数；npm 10 面对 rc8 依赖图时可能耗时接近十分钟。日常 CI 则使用同样覆盖完整、但基于已固定 TUI 闭包的 packed-install 路径。
+发布维护者还会运行 `corepack pnpm test:bundle:default`，单独验证普通 npm 的 peer 求解。该门禁刻意不使用 README 中的规避参数；npm 10 面对 rc2 依赖图时可能耗时接近十分钟。日常 CI 则使用同样覆盖完整、但基于已固定 TUI 闭包的 packed-install 路径。
 
 从仓库快速启动：
 

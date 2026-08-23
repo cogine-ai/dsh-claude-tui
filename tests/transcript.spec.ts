@@ -3,9 +3,44 @@ import { describe, expect, it } from 'vitest'
 import { CallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { displayText, prettyArguments } from '../src/text.ts'
-import { TranscriptModel } from '../src/transcript.ts'
+import { createPalette } from '../src/theme.ts'
+import { TranscriptComponent, TranscriptModel } from '../src/transcript.ts'
 
 describe('TranscriptModel', () => {
+  it('retains durable image count for Claude-like Session replay without polluting prompt text', () => {
+    const session = Session.create(SessionId('image-projection'))
+    const attachment = {
+      attachmentId: 'image-1' as never,
+      mediaType: 'image/png' as const,
+      bytes: 8,
+      width: 1,
+      height: 1,
+    }
+    session.append('user/message', createUserMessage({
+      content: [
+        { type: 'image', attachment },
+        { type: 'text', text: 'inspect this' },
+        { type: 'image', attachment: { ...attachment, attachmentId: 'image-2' as never } },
+      ],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+
+    const model = new TranscriptModel()
+    model.replay(session.events)
+
+    expect(model.items).toEqual([
+      expect.objectContaining({
+        kind: 'user',
+        text: 'inspect this',
+        imageCount: 2,
+      }),
+    ])
+    const rendered = new TranscriptComponent(model, createPalette(false), 100, 10, true)
+      .render(80)
+      .join('\n')
+    expect(rendered).toContain('❯ [Image #1] [Image #2] inspect this')
+  })
+
   it('replays user, assistant, tool, usage, and turn outcomes in log order', () => {
     const session = Session.create(SessionId('projection'))
     const user = createUserMessage({

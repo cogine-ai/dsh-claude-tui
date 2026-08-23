@@ -14,11 +14,11 @@ whole decision before changing the selected user DSH home:
 2. Look for `@deepseek-ai/dsh` associated with that home under
    `profiles/node_modules`, then for a verifiable `dsh` executable on `PATH`.
 3. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
-   `>=0.1.0-rc.8 <0.1.1` and whose declared bin exists inside the package.
+   `>=0.1.1-rc.2 <0.1.2` and whose declared bin exists inside the package.
 4. Run each otherwise eligible external candidate through the current packed
    TUI's compatibility probe.
 5. Use the first candidate that passes; otherwise use the launcher-pinned
-   `@deepseek-ai/dsh@0.1.0-rc.8`.
+   `@deepseek-ai/dsh@0.1.1-rc.2`.
 6. Create or reconcile only the selected launcher-owned profile, then replace
    the launcher process with the selected Harness process.
 
@@ -115,7 +115,7 @@ Harness maintains a home-level module fallback that either process may
 reconcile. Use sequential launches, or give concurrent runtimes separate
 `DSH_HOME` values.
 
-Compatibility is intentionally limited to the DSH `0.1.0` series above. A
+Compatibility is intentionally limited to the DSH `0.1.1` series above. A
 future DSH package may satisfy a wider-looking semantic range yet change an
 injected service contract; the runtime probe is therefore required in addition
 to the manifest version check.

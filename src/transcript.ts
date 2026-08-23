@@ -12,7 +12,7 @@ import {
   type SessionEvent,
   type TurnEndReason,
 } from '@deepseek-ai/dsh-session'
-import { contentText, displayText, prettyArguments } from './text.ts'
+import { contentText, displayText, imageLabels, prettyArguments } from './text.ts'
 import { markdownTheme, type Palette } from './theme.ts'
 
 /** Transcript nodes shown to the human. */
@@ -32,6 +32,7 @@ interface BaseItem {
 export interface UserItem extends BaseItem {
   readonly kind: 'user'
   text: string
+  imageCount: number
 }
 
 /** One model step, including its in-flight deltas. */
@@ -141,6 +142,7 @@ export class TranscriptModel {
             key: `event-${event.seq}`,
             revision: 0,
             text: contentText(event.data.content, 'text'),
+            imageCount: event.data.content.filter(block => block.type === 'image').length,
           })
         } else if (source.kind === 'plugin' && source.form === 'notice') {
           this.items.push({
@@ -482,7 +484,8 @@ export class TranscriptComponent implements Component {
 
   /** Full-width gray prompt block captured from Claude Code's committed input row. */
   private renderUser(item: UserItem, width: number): string[] {
-    const rows = wrapTextWithAnsi(item.text, Math.max(1, width - 2))
+    const visible = [imageLabels(item.imageCount), item.text].filter(value => value !== '').join(' ')
+    const rows = wrapTextWithAnsi(visible, Math.max(1, width - 2))
     return (rows.length === 0 ? [''] : rows).map((row, index) => {
       const prefix = index === 0 ? '❯ ' : '  '
       const fill = ' '.repeat(Math.max(0, width - 2 - visibleWidth(row)))
