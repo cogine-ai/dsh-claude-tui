@@ -498,6 +498,10 @@ export class ClaudeTuiApplication {
     if (this.closed || isKeyRelease(data)) return undefined
     if (this.historySearch !== undefined) return this.handleHistorySearchInput(data)
     if (this.tui.hasOverlay()) return undefined
+    if (matchesKey(data, Key.shift(Key.tab))) {
+      this.runHarnessCommand(this.planModeActive ? '/plan off' : '/plan')
+      return { consume: true }
+    }
     if (matchesKey(data, Key.alt('p'))) {
       this.openModelPicker()
       return { consume: true }
@@ -885,7 +889,7 @@ export class ClaudeTuiApplication {
         (refresh) => {
           const disposers = [
             this.ctx.on('llm/adapters-updated', refresh),
-            this.ctx.on('credentials/updated', () => { refresh() }),
+            this.ctx.on('credentials/reference-updated', () => { refresh() }),
             this.ctx.on('settings/updated', () => { refresh() }),
           ]
           return () => { for (const dispose of disposers.reverse()) dispose() }

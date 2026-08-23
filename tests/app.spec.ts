@@ -358,7 +358,7 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.1.0-rc.8',
+        harnessVersion: '0.1.1-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
@@ -380,7 +380,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.1.0-rc.8 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.1.1-rc.2 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -439,7 +439,7 @@ describe('ClaudeTuiApplication', () => {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.1.0-rc.8',
+          harnessVersion: '0.1.1-rc.2',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -449,7 +449,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.1.0-rc.8 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.1.1-rc.2 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -872,7 +872,7 @@ describe('ClaudeTuiApplication', () => {
     await test.app.dispose()
   })
 
-  it('uses the rc8 command envelope with an empty image attachment batch', async () => {
+  it('uses the rc2 command envelope with an empty image attachment batch', async () => {
     const test = bench(80, 24, () => 1_000, {
       commands: [{ name: 'plan', description: 'Enter plan mode' }],
     })
@@ -888,6 +888,33 @@ describe('ClaudeTuiApplication', () => {
       attachments: [],
     })
     expect(test.commandCalls[0]?.signal.aborted).toBe(false)
+
+    await test.app.dispose()
+  })
+
+  it('toggles DSH plan mode when macOS sends legacy Shift+Tab', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      commands: [{ name: 'plan', description: 'Enter or leave plan mode' }],
+    })
+    await test.app.start()
+
+    test.terminal.send('\u001B[Z')
+    await test.terminal.settle()
+
+    expect(test.commandCalls.map(call => call.line)).toEqual(['/plan'])
+
+    const sessionWithPlanEvents = test.app.agent.session as unknown as {
+      append(type: string, data: unknown): SessionEvent
+    }
+    const event = sessionWithPlanEvents.append('plan/mode', { active: true })
+    test.app.agent.ctx.emit('session/event', test.app.agent.session, event)
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('plan mode on')
+
+    test.terminal.send('\u001B[Z')
+    await test.terminal.settle()
+
+    expect(test.commandCalls.map(call => call.line)).toEqual(['/plan', '/plan off'])
 
     await test.app.dispose()
   })

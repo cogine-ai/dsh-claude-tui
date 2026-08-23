@@ -159,6 +159,11 @@ async function runPackedTui(
   cwd: string,
   env: Record<string, string>,
   expectedText: string,
+  interact?: (controls: {
+    write(data: string): void
+    waitForText(text: string): Promise<void>
+    output(): string
+  }) => Promise<void>,
 ): Promise<{ output: string; exitCode: number; signal: number }> {
   let output = ''
   const child = pty.spawn(process.execPath, [executable, ...args], {
@@ -176,21 +181,29 @@ async function runPackedTui(
       resolveExit(exitOutcome)
     })
   })
-  const deadline = Date.now() + 30_000
-  while (!output.includes(expectedText)) {
-    if (exitOutcome !== undefined) {
-      throw new Error(
-        `packed TUI exited early (code ${exitOutcome.exitCode}, signal ${exitOutcome.signal}) `
-        + `before rendering ${JSON.stringify(expectedText)}\n${output}`,
-      )
+  const waitForText = async (text: string): Promise<void> => {
+    const deadline = Date.now() + 30_000
+    while (!output.includes(text)) {
+      if (exitOutcome !== undefined) {
+        throw new Error(
+          `packed TUI exited early (code ${exitOutcome.exitCode}, signal ${exitOutcome.signal}) `
+          + `before rendering ${JSON.stringify(text)}\n${output}`,
+        )
+      }
+      if (Date.now() >= deadline) {
+        child.kill('SIGKILL')
+        throw new Error(`packed TUI did not render ${JSON.stringify(text)}\n${output}`)
+      }
+      await delay(25)
     }
-    if (Date.now() >= deadline) {
-      child.kill('SIGKILL')
-      throw new Error(`packed TUI did not render ${JSON.stringify(expectedText)}\n${output}`)
-    }
-    await delay(25)
   }
+  await waitForText(expectedText)
   await delay(300)
+  await interact?.({
+    write: data => { child.write(data) },
+    waitForText,
+    output: () => output,
+  })
   child.write('\u0004')
   await delay(100)
   child.write('\u0004')
@@ -268,7 +281,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.1.0-rc.8',
+      '0.1.1-rc.2',
     )
   }, 30_000)
 
@@ -316,13 +329,14 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.4',
+      version: '0.1.5',
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.1.0-rc.8',
+        '@deepseek-ai/dsh': '0.1.1-rc.2',
+        '@deepseek-ai/dsh-authorization': '0.1.1-rc.2',
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
@@ -336,7 +350,7 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.1.0-rc.8 <0.1.1')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.1.1-rc.2 <0.1.2')).toBe(true)
     expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
       .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
     expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
@@ -360,7 +374,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.1.0-rc.8',
+      '@deepseek-ai/dsh': '0.1.1-rc.2',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
@@ -370,7 +384,7 @@ describe('dsh-claude-tui bundle', () => {
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.1.0-rc.8']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.1.1-rc.2']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -384,7 +398,7 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.1.0-rc.8')
+    expect(installedDsh.version).toBe('0.1.1-rc.2')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
@@ -485,7 +499,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.4\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.5\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -501,7 +515,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.4\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.5\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -628,8 +642,8 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.4')
-      expect(first.output).toContain('Harness 0.1.0-rc.8 · bundled · PTC')
+      expect(first.output).toContain('v0.1.5')
+      expect(first.output).toContain('Harness 0.1.1-rc.2 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -656,6 +670,48 @@ describe('dsh-claude-tui bundle', () => {
     } finally {
       await server.close()
     }
+  }, 120_000)
+
+  it('toggles and resumes plan mode through macOS Shift+Tab in the installed PTY', async () => {
+    const dshHome = join(packDirectory, 'shift-tab-dsh-home')
+    const workspace = join(packDirectory, 'shift-tab-workspace')
+    mkdirSync(workspace)
+    const env = stringEnvironment({
+      DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      DSH_TELEMETRY_DISABLED: '1',
+      DEEPSEEK_API_KEY: 'packed-shift-tab-key',
+      TERM: 'xterm-256color',
+      COLORTERM: 'truecolor',
+    })
+
+    const first = await runPackedTui(
+      installedExecutable,
+      ['--session-id', 'packed-shift-tab-session'],
+      workspace,
+      env,
+      'Run /help for commands and shortcuts',
+      async ({ write, waitForText }) => {
+        write('\u001b[Z')
+        await waitForText('Plan mode on. Use /plan off to leave.')
+        await waitForText('plan mode on')
+      },
+    )
+    expect(first).toMatchObject({ exitCode: 0, signal: 0 })
+
+    const resumed = await runPackedTui(
+      installedExecutable,
+      ['--resume', 'packed-shift-tab-session'],
+      workspace,
+      env,
+      'plan mode on',
+      async ({ write, waitForText }) => {
+        write('\u001b[Z')
+        await waitForText('Plan mode off.')
+      },
+    )
+    expect(resumed).toMatchObject({ exitCode: 0, signal: 0 })
+    expect(resumed.output).not.toContain('packed-shift-tab-key')
   }, 120_000)
 
   it('completes a packed tool turn through a physically separate compatible DSH', async () => {
@@ -691,7 +747,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.1.0-rc.8 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.1.1-rc.2 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))
