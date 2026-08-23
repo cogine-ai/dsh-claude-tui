@@ -10,11 +10,32 @@ afterEach(() => {
 })
 
 describe('readSystemClipboardImage', () => {
+  it('times out a clipboard helper that never exits', async () => {
+    const controller = new AbortController()
+    clipboardInternals.commandTimeoutMs = () => 20
+
+    const pending = originalInternals.runCommand(
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1_000)'],
+      controller.signal,
+    )
+    const outcome = await Promise.race([
+      pending.then(() => 'completed', (error: unknown) => error),
+      new Promise<string>(resolve => setTimeout(() => { resolve('still pending') }, 100)),
+    ])
+    if (outcome === 'still pending') controller.abort(new Error('test cleanup'))
+    await pending.catch(() => undefined)
+
+    expect(outcome).toBeInstanceOf(Error)
+    expect((outcome as Error).message).toContain('timed out')
+  })
+
   it('uses macOS PNG clipboard coercion and removes its private temporary directory', async () => {
     const remove = vi.fn(async () => undefined)
     const calls: Array<{ command: string; args: readonly string[] }> = []
     clipboardInternals.platform = () => 'darwin'
     clipboardInternals.createTemporaryDirectory = async () => '/private/tmp/clipboard-test'
+    clipboardInternals.fileSize = async () => png.byteLength
     clipboardInternals.readFile = async () => png
     clipboardInternals.removeTemporaryDirectory = remove
     clipboardInternals.runCommand = async (command, args) => {
@@ -39,6 +60,7 @@ describe('readSystemClipboardImage', () => {
     const writes: Array<{ path: string; data: string }> = []
     clipboardInternals.platform = () => 'win32'
     clipboardInternals.createTemporaryDirectory = async () => 'C:\\Temp\\clipboard-test'
+    clipboardInternals.fileSize = async () => png.byteLength
     clipboardInternals.readFile = async () => png
     clipboardInternals.writeTextFile = async (path, data) => { writes.push({ path, data }) }
     clipboardInternals.removeTemporaryDirectory = async () => undefined
@@ -67,6 +89,24 @@ describe('readSystemClipboardImage', () => {
     expect(writes[0]?.data).toContain('Clipboard]::ContainsImage()')
     expect(writes[0]?.data).toContain('$image.Save($OutputPath')
     expect(writes[0]?.data).not.toContain('$args[0]')
+  })
+
+  it('rejects an oversized Windows clipboard file before loading it into memory', async () => {
+    const read = vi.fn(async () => { throw new Error('oversized file was read') })
+    clipboardInternals.fileSize = async () => (64 * 1024 * 1024) + 1
+    clipboardInternals.platform = () => 'win32'
+    clipboardInternals.createTemporaryDirectory = async () => 'C:\\Temp\\oversized-clipboard'
+    clipboardInternals.readFile = read
+    clipboardInternals.writeTextFile = async () => undefined
+    clipboardInternals.removeTemporaryDirectory = async () => undefined
+    clipboardInternals.runCommand = async () => ({
+      kind: 'completed',
+      code: 0,
+      stdout: new Uint8Array(),
+    })
+
+    await expect(readSystemClipboardImage(new AbortController().signal)).rejects.toThrow('64 MiB')
+    expect(read).not.toHaveBeenCalled()
   })
 
   it('reads Linux image bytes directly through wl-paste before trying xclip', async () => {

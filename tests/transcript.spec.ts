@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { CallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { displayText, imageLabels, prettyArguments } from '../src/text.ts'
-import { TranscriptModel } from '../src/transcript.ts'
+import { displayText, prettyArguments } from '../src/text.ts'
+import { createPalette } from '../src/theme.ts'
+import { TranscriptComponent, TranscriptModel } from '../src/transcript.ts'
 
 describe('TranscriptModel', () => {
   it('retains durable image count for Claude-like Session replay without polluting prompt text', () => {
@@ -34,7 +35,10 @@ describe('TranscriptModel', () => {
         imageCount: 2,
       }),
     ])
-    expect(imageLabels(2)).toBe('[Image #1] [Image #2]')
+    const rendered = new TranscriptComponent(model, createPalette(false), 100, 10, true)
+      .render(80)
+      .join('\n')
+    expect(rendered).toContain('❯ [Image #1] [Image #2] inspect this')
   })
 
   it('replays user, assistant, tool, usage, and turn outcomes in log order', () => {

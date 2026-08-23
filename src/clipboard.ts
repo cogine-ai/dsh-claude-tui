@@ -1,6 +1,6 @@
 /** Cross-platform image clipboard intake behind Claude Code's Ctrl+V gesture. */
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ImageMediaType, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
@@ -18,7 +18,9 @@ interface ClipboardCommandResult {
 
 interface ClipboardInternals {
   platform(): NodeJS.Platform
+  commandTimeoutMs(): number
   createTemporaryDirectory(): Promise<string>
+  fileSize(path: string): Promise<number>
   readFile(path: string): Promise<Uint8Array>
   writeTextFile(path: string, data: string): Promise<void>
   removeTemporaryDirectory(path: string): Promise<void>
@@ -30,6 +32,7 @@ interface ClipboardInternals {
 }
 
 const MAX_CLIPBOARD_OUTPUT_BYTES = 64 * 1024 * 1024
+const CLIPBOARD_COMMAND_TIMEOUT_MS = 10_000
 
 /** Run one clipboard helper without invoking a shell or retaining its diagnostics. */
 async function runClipboardCommand(
@@ -46,12 +49,14 @@ async function runClipboardCommand(
     const chunks: Buffer[] = []
     let bytes = 0
     let settled = false
+    let timeout: NodeJS.Timeout | undefined
     const finish = (
       outcome: ClipboardCommandResult | undefined,
       error?: unknown,
     ): void => {
       if (settled) return
       settled = true
+      if (timeout !== undefined) clearTimeout(timeout)
       signal.removeEventListener('abort', onAbort)
       if (error !== undefined) reject(error)
       else resolve(outcome!)
@@ -61,6 +66,11 @@ async function runClipboardCommand(
       finish(undefined, signal.reason ?? new Error('Clipboard image read aborted'))
     }
     signal.addEventListener('abort', onAbort, { once: true })
+    const timeoutMs = clipboardInternals.commandTimeoutMs()
+    timeout = setTimeout(() => {
+      child.kill()
+      finish(undefined, new Error(`Clipboard image helper timed out after ${timeoutMs} ms`))
+    }, timeoutMs)
     child.stdout.on('data', (chunk: Buffer) => {
       bytes += chunk.byteLength
       if (bytes > MAX_CLIPBOARD_OUTPUT_BYTES) {
@@ -86,7 +96,9 @@ async function runClipboardCommand(
 /** Mutable only so platform command paths can be covered without touching a real clipboard. */
 export const clipboardInternals: ClipboardInternals = {
   platform: () => process.platform,
+  commandTimeoutMs: () => CLIPBOARD_COMMAND_TIMEOUT_MS,
   createTemporaryDirectory: async () => await mkdtemp(join(tmpdir(), 'dsh-claude-tui-clipboard-')),
+  fileSize: async path => (await stat(path)).size,
   readFile: async path => await readFile(path),
   writeTextFile: async (path, data) => { await writeFile(path, data, 'utf8') },
   removeTemporaryDirectory: async path => { await rm(path, { recursive: true, force: true }) },
@@ -129,6 +141,14 @@ function clipboardImage(data: Uint8Array): SaveImageAttachment | undefined {
   }
 }
 
+/** Reject an oversized file before allocating a buffer for its contents. */
+async function clipboardImageFile(path: string): Promise<SaveImageAttachment | undefined> {
+  if (await clipboardInternals.fileSize(path) > MAX_CLIPBOARD_OUTPUT_BYTES) {
+    throw new Error('Clipboard image exceeds the 64 MiB intake buffer')
+  }
+  return clipboardImage(await clipboardInternals.readFile(path))
+}
+
 const MACOS_CLIPBOARD_SCRIPT = [
   'on run argv',
   'set pngData to (the clipboard as «class PNGf»)',
@@ -157,7 +177,7 @@ async function readMacClipboard(signal: AbortSignal): Promise<SaveImageAttachmen
       signal,
     )
     if (result.kind !== 'completed' || result.code !== 0) return undefined
-    return clipboardImage(await clipboardInternals.readFile(outputPath))
+    return await clipboardImageFile(outputPath)
   } finally {
     await clipboardInternals.removeTemporaryDirectory(directory)
   }
@@ -187,7 +207,7 @@ async function readWindowsClipboard(signal: AbortSignal): Promise<SaveImageAttac
       signal,
     )
     if (result.kind !== 'completed' || result.code !== 0) return undefined
-    return clipboardImage(await clipboardInternals.readFile(outputPath))
+    return await clipboardImageFile(outputPath)
   } finally {
     await clipboardInternals.removeTemporaryDirectory(directory)
   }
