@@ -1,6 +1,11 @@
 /** Terminal-safe text helpers shared by the projector and renderer. */
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 
+/** Format the stable Claude-style labels used for pending and durable images. */
+export function imageLabels(count: number): string {
+  return Array.from({ length: count }, (_, index) => `[Image #${index + 1}]`).join(' ')
+}
+
 /** Render terminal control bytes visibly while preserving line feeds. */
 export function displayText(input: string): string {
   let output = ''

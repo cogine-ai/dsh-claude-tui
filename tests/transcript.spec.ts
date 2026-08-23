@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { CallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { displayText, prettyArguments } from '../src/text.ts'
+import { displayText, imageLabels, prettyArguments } from '../src/text.ts'
 import { TranscriptModel } from '../src/transcript.ts'
 
 describe('TranscriptModel', () => {
@@ -34,6 +34,7 @@ describe('TranscriptModel', () => {
         imageCount: 2,
       }),
     ])
+    expect(imageLabels(2)).toBe('[Image #1] [Image #2]')
   })
 
   it('replays user, assistant, tool, usage, and turn outcomes in log order', () => {

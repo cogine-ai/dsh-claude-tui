@@ -12,7 +12,7 @@ import {
   type SessionEvent,
   type TurnEndReason,
 } from '@deepseek-ai/dsh-session'
-import { contentText, displayText, prettyArguments } from './text.ts'
+import { contentText, displayText, imageLabels, prettyArguments } from './text.ts'
 import { markdownTheme, type Palette } from './theme.ts'
 
 /** Transcript nodes shown to the human. */
@@ -484,11 +484,7 @@ export class TranscriptComponent implements Component {
 
   /** Full-width gray prompt block captured from Claude Code's committed input row. */
   private renderUser(item: UserItem, width: number): string[] {
-    const imageLabels = Array.from(
-      { length: item.imageCount },
-      (_, index) => `[Image #${index + 1}]`,
-    ).join(' ')
-    const visible = [imageLabels, item.text].filter(value => value !== '').join(' ')
+    const visible = [imageLabels(item.imageCount), item.text].filter(value => value !== '').join(' ')
     const rows = wrapTextWithAnsi(visible, Math.max(1, width - 2))
     return (rows.length === 0 ? [''] : rows).map((row, index) => {
       const prefix = index === 0 ? '❯ ' : '  '

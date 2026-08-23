@@ -12,7 +12,7 @@ import type { AgentStatus } from '@deepseek-ai/dsh-agent'
 import type { WorkspaceEntry } from './files.ts'
 import type { ResponsePerformance, UsageTotals } from './transcript.ts'
 import type { Palette } from './theme.ts'
-import { displayText } from './text.ts'
+import { displayText, imageLabels } from './text.ts'
 
 /** Header values that do not belong in the durable transcript. */
 export interface HeaderValues {
@@ -171,10 +171,7 @@ export class ClaudePromptEditorComponent implements Component, Focusable {
       const selected = displayText(this.searchValue() ?? '')
       return [divider, truncateToWidth(`❯\u00a0${selected}`, safeWidth, '…'), divider]
     }
-    const imageLabel = Array.from(
-      { length: this.imageCount() },
-      (_, index) => `[Image #${index + 1}]`,
-    ).join(' ')
+    const imageLabel = imageLabels(this.imageCount())
     const availableWidth = Math.max(1, safeWidth - prefixWidth)
     const imageSeparator = this.editor.getText() === '' ? '' : ' '
     const visibleImageLabel = imageLabel === ''

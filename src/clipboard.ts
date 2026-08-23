@@ -1,6 +1,6 @@
 /** Cross-platform image clipboard intake behind Claude Code's Ctrl+V gesture. */
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ImageMediaType, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
@@ -20,6 +20,7 @@ interface ClipboardInternals {
   platform(): NodeJS.Platform
   createTemporaryDirectory(): Promise<string>
   readFile(path: string): Promise<Uint8Array>
+  writeTextFile(path: string, data: string): Promise<void>
   removeTemporaryDirectory(path: string): Promise<void>
   runCommand(
     command: string,
@@ -87,6 +88,7 @@ export const clipboardInternals: ClipboardInternals = {
   platform: () => process.platform,
   createTemporaryDirectory: async () => await mkdtemp(join(tmpdir(), 'dsh-claude-tui-clipboard-')),
   readFile: async path => await readFile(path),
+  writeTextFile: async (path, data) => { await writeFile(path, data, 'utf8') },
   removeTemporaryDirectory: async path => { await rm(path, { recursive: true, force: true }) },
   runCommand: runClipboardCommand,
 }
@@ -162,11 +164,12 @@ async function readMacClipboard(signal: AbortSignal): Promise<SaveImageAttachmen
 }
 
 const WINDOWS_CLIPBOARD_SCRIPT = [
+  'param([string]$OutputPath)',
   'Add-Type -AssemblyName System.Windows.Forms',
   'if (-not [System.Windows.Forms.Clipboard]::ContainsImage()) { exit 3 }',
   '$image = [System.Windows.Forms.Clipboard]::GetImage()',
   'try {',
-  '  $image.Save($args[0], [System.Drawing.Imaging.ImageFormat]::Png)',
+  '  $image.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)',
   '} finally {',
   '  $image.Dispose()',
   '}',
@@ -174,11 +177,13 @@ const WINDOWS_CLIPBOARD_SCRIPT = [
 
 async function readWindowsClipboard(signal: AbortSignal): Promise<SaveImageAttachment | undefined> {
   const directory = await clipboardInternals.createTemporaryDirectory()
+  const scriptPath = join(directory, 'read-clipboard.ps1')
   const outputPath = join(directory, 'clipboard.png')
   try {
+    await clipboardInternals.writeTextFile(scriptPath, WINDOWS_CLIPBOARD_SCRIPT)
     const result = await clipboardInternals.runCommand(
       'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-Sta', '-Command', WINDOWS_CLIPBOARD_SCRIPT, outputPath],
+      ['-NoProfile', '-NonInteractive', '-Sta', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, outputPath],
       signal,
     )
     if (result.kind !== 'completed' || result.code !== 0) return undefined

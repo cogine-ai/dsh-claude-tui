@@ -36,9 +36,11 @@ describe('readSystemClipboardImage', () => {
 
   it('uses the Windows STA clipboard API and writes an intermediate PNG', async () => {
     const calls: Array<{ command: string; args: readonly string[] }> = []
+    const writes: Array<{ path: string; data: string }> = []
     clipboardInternals.platform = () => 'win32'
     clipboardInternals.createTemporaryDirectory = async () => 'C:\\Temp\\clipboard-test'
     clipboardInternals.readFile = async () => png
+    clipboardInternals.writeTextFile = async (path, data) => { writes.push({ path, data }) }
     clipboardInternals.removeTemporaryDirectory = async () => undefined
     clipboardInternals.runCommand = async (command, args) => {
       calls.push({ command, args })
@@ -54,9 +56,17 @@ describe('readSystemClipboardImage', () => {
       '-NoProfile',
       '-NonInteractive',
       '-Sta',
-      '-Command',
+      '-File',
     ]))
-    expect(calls[0]?.args.join(' ')).toContain('Clipboard]::ContainsImage()')
+    expect(calls[0]?.args).not.toContain('-Command')
+    expect(calls[0]?.args.at(-2)).toContain('read-clipboard.ps1')
+    expect(calls[0]?.args.at(-1)).toContain('clipboard.png')
+    expect(writes).toHaveLength(1)
+    expect(writes[0]?.path).toContain('read-clipboard.ps1')
+    expect(writes[0]?.data).toContain('param([string]$OutputPath)')
+    expect(writes[0]?.data).toContain('Clipboard]::ContainsImage()')
+    expect(writes[0]?.data).toContain('$image.Save($OutputPath')
+    expect(writes[0]?.data).not.toContain('$args[0]')
   })
 
   it('reads Linux image bytes directly through wl-paste before trying xclip', async () => {
@@ -104,7 +114,11 @@ describe('readSystemClipboardImage', () => {
 
     const controller = new AbortController()
     controller.abort(new Error('cancelled'))
+    const createTemporaryDirectory = vi.fn(async () => '/private/tmp/cancelled')
+    clipboardInternals.platform = () => 'darwin'
+    clipboardInternals.createTemporaryDirectory = createTemporaryDirectory
     await expect(readSystemClipboardImage(controller.signal)).rejects.toThrow('cancelled')
+    expect(createTemporaryDirectory).not.toHaveBeenCalled()
     expect(run).not.toHaveBeenCalled()
   })
 })
