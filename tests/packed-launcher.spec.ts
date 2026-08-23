@@ -304,7 +304,7 @@ if (token !== undefined) {
     token,
     package: 'dsh-claude-tui',
     version: manifest.version,
-    services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+    services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
   }) + '\\n')
 } else {
   writeFileSync(${JSON.stringify(systemRecord)}, JSON.stringify({

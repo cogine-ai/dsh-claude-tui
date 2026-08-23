@@ -43,6 +43,20 @@ describe('awaitCompositionSettlement', () => {
 })
 
 describe('launcher compatibility probe', () => {
+  it('rejects a runtime that does not compose the durable attachment service', async () => {
+    const ctx = {
+      fiber: { entry: { parent: { tree: { await: async () => undefined } } } },
+      get: (service: string) => service === 'attachments' ? undefined : {},
+    } as unknown as Context
+
+    await expect(runCompatibilityProbe(
+      ctx,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      new AbortController().signal,
+    )).rejects.toThrow('attachment')
+  })
+
   it('creates, flushes, and disposes a temporary Agent without starting the terminal', async () => {
     const session = { id: 'probe-session' }
     const whenIdle = vi.fn(async () => undefined)
@@ -50,6 +64,15 @@ describe('launcher compatibility probe', () => {
     const agent = { session, whenIdle }
     const create = vi.fn(async () => ({ agent, dispose }))
     const flush = vi.fn(async () => undefined)
+    const imageRef = {
+      attachmentId: 'probe-image',
+      mediaType: 'image/png',
+      bytes: 68,
+      width: 1,
+      height: 1,
+    }
+    const saveImages = vi.fn(async () => [imageRef])
+    const readImage = vi.fn(async () => ({ ref: imageRef, data: new Uint8Array([1]) }))
     const localAwait = vi.fn(async () => undefined)
     const unregisterCommand = vi.fn()
     let commandHandler: ((invocation: never) => unknown) | undefined
@@ -71,6 +94,7 @@ describe('launcher compatibility probe', () => {
       get: vi.fn((service: string) => {
         if (service === 'agents') return { create }
         if (service === 'commands') return { execute, register }
+        if (service === 'attachments') return { saveImages, readImage }
         if (service === 'agentDefaultModel') {
           return { currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }) }
         }
@@ -91,7 +115,7 @@ describe('launcher compatibility probe', () => {
       token: '01234567-89ab-cdef-0123-456789abcdef',
       package: 'dsh-claude-tui',
       version: '0.1.0',
-      services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+      services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
     })
     expect(localAwait).toHaveBeenCalledOnce()
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
@@ -100,6 +124,10 @@ describe('launcher compatibility probe', () => {
       signal: controller.signal,
     }))
     expect(whenIdle).toHaveBeenCalledOnce()
+    expect(saveImages).toHaveBeenCalledWith([
+      expect.objectContaining({ mediaType: 'image/png', name: 'probe.png' }),
+    ])
+    expect(readImage).toHaveBeenCalledWith(imageRef, controller.signal)
     expect(register).toHaveBeenCalledWith(expect.objectContaining({
       name: 'dsh-claude-tui-probe',
       handler: expect.any(Function),

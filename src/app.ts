@@ -13,11 +13,13 @@ import {
 } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
-import { createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
+import type { EncodedImageAttachment, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
+import { createUserMessage, errorChain, type ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import type { AskUserQuestionRequest } from '@deepseek-ai/dsh-user-questions'
 import type {} from '@deepseek-ai/dsh-subagent'
 import type { ResolvedConfig } from './config.ts'
+import type { ReadClipboardImage } from './clipboard.ts'
 import { ModalQueue, askApproval, askUserQuestions } from './dialogs.ts'
 import type { ListWorkspaceEntries, WorkspaceEntry } from './files.ts'
 import { confirmModelSwitch, loadModelCatalog, showModelPicker } from './model-picker.ts'
@@ -60,6 +62,8 @@ export interface ClaudeTuiRuntime {
   tuiVersion?: string
   /** Launcher-verified DSH provenance; absent for direct profile launches. */
   runtimeSnapshot?: ClaudeTuiRuntimeSnapshot
+  /** Desktop image clipboard boundary bound to Ctrl+V, separate from terminal text paste. */
+  readClipboardImage?: ReadClipboardImage
 }
 
 /** Inline reverse-search state matching Claude Code's prompt-history surface. */
@@ -151,6 +155,12 @@ export class ClaudeTuiApplication {
   private planModeActive = false
   private readonly activeSubagents = new Map<string, ActiveSubagent>()
   private agentsVisible = true
+  private readonly pendingImages: SaveImageAttachment[] = []
+  private imagePasteQueue: Promise<void> = Promise.resolve()
+  private readonly imagePasteControllers = new Set<AbortController>()
+  private imageSubmissionToken: symbol | undefined
+  private composerGeneration = 0
+  private imageCommandController: AbortController | undefined
 
   /** Build the component tree without touching the terminal. */
   constructor(
@@ -182,6 +192,7 @@ export class ClaudeTuiApplication {
       this.palette,
       () => this.historySearch !== undefined,
       () => this.selectedHistory(),
+      () => this.pendingImages.length,
     )
 
     const safeTitle = displayText(config.title)
@@ -405,16 +416,25 @@ export class ClaudeTuiApplication {
   private submit(value: string): void {
     if (this.closed) return
     const text = value.trim()
-    if (text === '') {
+    if (this.imagePasteControllers.size > 0) {
+      this.promptNotice = 'Wait for the image paste to finish, then press Enter again'
+      this.tui.requestRender()
+      return
+    }
+    if (this.imageSubmissionToken !== undefined) return
+    if (text === '' && this.pendingImages.length === 0) {
       this.resetExitGesture()
       return
     }
     this.resetExitGesture()
-    this.editor.addToHistory(text)
-    if (this.promptHistory.at(-1) !== text) this.promptHistory.push(text)
     this.editor.setText('')
     if (text.startsWith('/')) {
-      if (!this.runLocalCommand(text)) this.runHarnessCommand(text)
+      this.rememberPrompt(text)
+      if (!this.runLocalCommand(text)) this.runHarnessCommand(text, [...this.pendingImages])
+      return
+    }
+    if (this.pendingImages.length > 0) {
+      void this.submitImageMessage(value, text, [...this.pendingImages])
       return
     }
     try {
@@ -424,9 +444,61 @@ export class ClaudeTuiApplication {
       })
       if (this.agent.status === 'running') this.agent.steer(message)
       else this.agent.followup(message)
+      this.rememberPrompt(text)
     } catch (error: unknown) {
       this.transcript.addNotice(errorChain(error), 'error')
       this.tui.requestRender()
+    }
+  }
+
+  /** Keep terminal and local reverse-search histories aligned after a successful dispatch. */
+  private rememberPrompt(text: string): void {
+    if (text === '') return
+    this.editor.addToHistory(text)
+    if (this.promptHistory.at(-1) !== text) this.promptHistory.push(text)
+  }
+
+  /** Persist raw clipboard bytes before publishing their references in one UserMessage. */
+  private async submitImageMessage(
+    draft: string,
+    text: string,
+    images: readonly SaveImageAttachment[],
+  ): Promise<void> {
+    const generation = this.composerGeneration
+    const submissionToken = Symbol('image-message')
+    this.imageSubmissionToken = submissionToken
+    this.promptNotice = images.length === 1 ? 'Sending image…' : `Sending ${images.length} images…`
+    this.tui.requestRender()
+    try {
+      const attachments = this.ctx.get('attachments')
+      if (attachments === undefined) {
+        throw new Error('claude-tui: DSH attachment service is unavailable')
+      }
+      const refs = await attachments.saveImages(images)
+      if (this.closed || generation !== this.composerGeneration) return
+      if (refs.length !== images.length) {
+        throw new Error('claude-tui: DSH attachment service returned an incomplete image batch')
+      }
+      const content: ContentBlock[] = refs.map(attachment => ({ type: 'image', attachment }))
+      if (text !== '') content.push({ type: 'text', text })
+      const message = createUserMessage({ content, source: { kind: 'user' } })
+      if (this.agent.status === 'running') this.agent.steer(message)
+      else this.agent.followup(message)
+      this.pendingImages.splice(0, images.length)
+      this.rememberPrompt(text)
+    } catch (error: unknown) {
+      if (!this.closed && generation === this.composerGeneration) {
+        if (text !== '' && this.editor.getText() === '') this.editor.setText(draft)
+        this.transcript.addNotice(`Unable to send image: ${errorChain(error)}`, 'error')
+      }
+    } finally {
+      if (this.imageSubmissionToken === submissionToken) {
+        this.imageSubmissionToken = undefined
+        if (!this.closed) {
+          this.promptNotice = undefined
+          this.tui.requestRender()
+        }
+      }
     }
   }
 
@@ -442,6 +514,7 @@ export class ClaudeTuiApplication {
         const registered = this.ctx.commands.list(this.agent)
           .map(item => `/${item.name} — ${item.description}`)
         this.transcript.addNotice([
+          'Ctrl+V — paste an image; terminal text paste remains separate',
           '/model — select a live DSH model for this session',
           '/provider — inspect or update DSH provider credentials',
           '/transcript — expand or compact tool details',
@@ -471,17 +544,37 @@ export class ClaudeTuiApplication {
   }
 
   /** Execute one plugin-owned slash command and render its direct outcome. */
-  private runHarnessCommand(line: string): void {
+  private runHarnessCommand(
+    line: string,
+    images: readonly SaveImageAttachment[] = [],
+  ): void {
     const controller = new AbortController()
     this.commandControllers.add(controller)
-    void this.ctx.commands.execute(this.agent, line, [], controller.signal).then((execution) => {
-      if (this.closed) return
+    const encodedImages: EncodedImageAttachment[] = images.map(image => ({
+      mediaType: image.mediaType,
+      data: Buffer.from(image.data).toString('base64'),
+      ...(image.name === undefined ? {} : { name: image.name }),
+    }))
+    const submissionToken = images.length > 0 ? Symbol('image-command') : undefined
+    if (images.length > 0) {
+      this.imageSubmissionToken = submissionToken
+      this.imageCommandController = controller
+      this.promptNotice = images.length === 1
+        ? 'Running command with image…'
+        : `Running command with ${images.length} images…`
+      this.tui.requestRender()
+    }
+    void this.ctx.commands.execute(this.agent, line, encodedImages, controller.signal).then((execution) => {
+      if (this.closed || controller.signal.aborted) return
       if (execution === undefined) {
         this.transcript.addNotice(`Unknown command: ${displayText(line.split(/\s/u, 1)[0] ?? line)}. Use /help.`, 'warning')
       } else if (execution.result.kind === 'error') {
         this.transcript.addNotice(execution.result.text, 'error')
-      } else if (execution.result.text !== undefined && execution.result.text !== '') {
-        this.transcript.addNotice(execution.result.text)
+      } else {
+        if (execution.result.text !== undefined && execution.result.text !== '') {
+          this.transcript.addNotice(execution.result.text)
+        }
+        if (images.length > 0) this.pendingImages.splice(0, images.length)
       }
       this.tui.requestRender()
     }, (error: unknown) => {
@@ -490,6 +583,17 @@ export class ClaudeTuiApplication {
       this.tui.requestRender()
     }).finally(() => {
       this.commandControllers.delete(controller)
+      if (
+        submissionToken !== undefined
+        && this.imageSubmissionToken === submissionToken
+      ) {
+        this.imageSubmissionToken = undefined
+        if (this.imageCommandController === controller) this.imageCommandController = undefined
+        if (!this.closed) {
+          this.promptNotice = undefined
+          this.tui.requestRender()
+        }
+      }
     })
   }
 
@@ -498,6 +602,21 @@ export class ClaudeTuiApplication {
     if (this.closed || isKeyRelease(data)) return undefined
     if (this.historySearch !== undefined) return this.handleHistorySearchInput(data)
     if (this.tui.hasOverlay()) return undefined
+    if (matchesKey(data, Key.ctrl('v'))) {
+      this.pasteClipboardImage()
+      return { consume: true }
+    }
+    if (
+      matchesKey(data, Key.backspace)
+      && this.editor.getText() === ''
+      && this.pendingImages.length > 0
+      && this.imageSubmissionToken === undefined
+    ) {
+      this.pendingImages.pop()
+      this.resetExitGesture()
+      this.tui.requestRender()
+      return { consume: true }
+    }
     if (matchesKey(data, Key.shift(Key.tab))) {
       this.runHarnessCommand(this.planModeActive ? '/plan off' : '/plan')
       return { consume: true }
@@ -549,13 +668,74 @@ export class ClaudeTuiApplication {
         this.tui.requestRender()
         return { consume: true }
       }
-      if (this.editor.getText() === '') {
+      if (this.editor.getText() === '' && this.pendingImages.length === 0) {
         this.handleEmptyExit()
         return { consume: true }
       }
       return undefined
     }
     return undefined
+  }
+
+  /** Queue one desktop clipboard read while preserving Ctrl+V paste order. */
+  private pasteClipboardImage(): void {
+    if (this.imageSubmissionToken !== undefined) {
+      this.promptNotice = 'Wait for the current image submission to finish'
+      this.tui.requestRender()
+      return
+    }
+    const readImage = this.runtime.readClipboardImage
+    if (readImage === undefined) {
+      this.promptNotice = 'Image paste is unavailable on this platform'
+      this.tui.requestRender()
+      return
+    }
+    this.resetExitGesture()
+    const controller = new AbortController()
+    this.imagePasteControllers.add(controller)
+    const generation = this.composerGeneration
+    this.promptNotice = 'Pasting image…'
+    this.tui.requestRender()
+    this.imagePasteQueue = this.imagePasteQueue.then(async () => {
+      try {
+        const image = await readImage(AbortSignal.any([
+          this.interactionAbort.signal,
+          controller.signal,
+        ]))
+        if (this.closed || generation !== this.composerGeneration) return
+        if (image === undefined) {
+          this.promptNotice = 'No image found in clipboard'
+          return
+        }
+        const limit = this.ctx.get('attachments')?.imageLimits?.maxImagesPerMessage
+        if (limit !== undefined && this.pendingImages.length >= limit) {
+          this.promptNotice = `A message can contain at most ${limit} images`
+          return
+        }
+        this.pendingImages.push({
+          ...image,
+          data: Uint8Array.from(image.data),
+        })
+        this.promptNotice = undefined
+      } catch {
+        if (
+          !this.closed
+          && generation === this.composerGeneration
+          && !this.interactionAbort.signal.aborted
+        ) {
+          this.promptNotice = 'Unable to read an image from the clipboard'
+        }
+      } finally {
+        this.imagePasteControllers.delete(controller)
+        if (!this.closed) {
+          if (
+            generation === this.composerGeneration
+            && this.imagePasteControllers.size > 0
+          ) this.promptNotice = 'Pasting image…'
+          this.tui.requestRender()
+        }
+      }
+    })
   }
 
   /** Current local and plugin-contributed slash suggestions for the editor token. */
@@ -950,9 +1130,25 @@ export class ClaudeTuiApplication {
       this.agent.cancel({ kind: 'user' })
       return
     }
-    if (this.editor.getText() !== '') {
+    if (
+      this.editor.getText() !== ''
+      || this.pendingImages.length > 0
+      || this.imagePasteControllers.size > 0
+      || this.imageSubmissionToken !== undefined
+    ) {
+      this.composerGeneration += 1
+      for (const controller of this.imagePasteControllers) {
+        controller.abort(new Error('Clipboard image paste cancelled by user'))
+      }
+      this.imagePasteControllers.clear()
+      this.imageCommandController?.abort(new Error('Image command cancelled by user'))
+      this.imageCommandController = undefined
+      this.imageSubmissionToken = undefined
       this.editor.setText('')
+      this.pendingImages.length = 0
+      this.promptNotice = undefined
       this.resetExitGesture()
+      this.tui.requestRender()
       return
     }
     const now = this.runtime.now?.() ?? Date.now()
@@ -1002,6 +1198,7 @@ export class ClaudeTuiApplication {
     this.interactionAbort.abort(new Error('Claude-like TUI disposed'))
     for (const controller of this.commandControllers) controller.abort(new Error('Claude-like TUI disposed'))
     this.commandControllers.clear()
+    await this.imagePasteQueue
     while (this.tui.hasOverlay()) this.tui.hideOverlay()
     this.runtime.terminal.setProgress(false)
     try {

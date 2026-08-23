@@ -15,11 +15,13 @@ import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-cmdline'
 import type {} from '@deepseek-ai/dsh-commands'
+import type {} from '@deepseek-ai/dsh-attachment'
 import { errorChain } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-user-approval'
 import type {} from '@deepseek-ai/dsh-user-questions'
 import { ClaudeTuiApplication } from './app.ts'
+import { readSystemClipboardImage } from './clipboard.ts'
 import { listLocalWorkspaceEntries } from './files.ts'
 import { ClaudeSessionPicker, loadSessionPickerEntries } from './session-picker.ts'
 import { createPalette } from './theme.ts'
@@ -34,6 +36,10 @@ import type { CompatibilityProbeResult } from './probe-contract.ts'
 
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
 const PROBE_RESULT_PREFIX = 'DSH_CLAUDE_TUI_PROBE_RESULT '
+const PROBE_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+  'base64',
+)
 
 /** Stable Cordis plugin name. */
 export const name = 'claude-tui'
@@ -45,6 +51,7 @@ export const inject = [
   'sessions',
   'sessionQuery',
   'commands',
+  'attachments',
   'credentials',
   'approval',
   'llm',
@@ -170,11 +177,33 @@ export async function runCompatibilityProbe(
   signal.throwIfAborted()
 
   const agents = ctx.get('agents')
+  const attachments = ctx.get('attachments')
   const commands = ctx.get('commands')
   const defaultModel = ctx.get('agentDefaultModel')
   const sessions = ctx.get('sessions')
-  if (agents === undefined || commands === undefined || defaultModel === undefined || sessions === undefined) {
-    throw new Error('claude-tui: compatibility probe is missing Agent, command, or Session services')
+  if (
+    agents === undefined
+    || attachments === undefined
+    || commands === undefined
+    || defaultModel === undefined
+    || sessions === undefined
+  ) {
+    throw new Error(
+      'claude-tui: compatibility probe is missing Agent, attachment, command, or Session services',
+    )
+  }
+
+  const [imageRef] = await attachments.saveImages([{
+    data: PROBE_PNG,
+    mediaType: 'image/png',
+    name: 'probe.png',
+  }])
+  if (imageRef === undefined) {
+    throw new Error('claude-tui: compatibility probe attachment was not persisted')
+  }
+  const storedImage = await attachments.readImage(imageRef, signal)
+  if (storedImage.ref.attachmentId !== imageRef.attachmentId || storedImage.data.byteLength === 0) {
+    throw new Error('claude-tui: compatibility probe attachment could not be read back')
   }
 
   const defaults = defaultModel.currentSelection()
@@ -226,7 +255,7 @@ export async function runCompatibilityProbe(
     token,
     package: 'dsh-claude-tui',
     version,
-    services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+    services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
   }
 }
 
@@ -337,6 +366,7 @@ async function boot(
       terminal,
       modelSelection: modelRuntime.selection,
       listWorkspaceEntries: listLocalWorkspaceEntries,
+      readClipboardImage: readSystemClipboardImage,
       welcomeExpanded: resumeSessionId === undefined,
       tuiVersion: packageVersion(),
       ...(startup.runtimeSnapshot === undefined

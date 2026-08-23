@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent, ModelSelection, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
 import { Inbox } from '@deepseek-ai/dsh-agent'
+import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import {
   CallId,
   createAssistantMessage,
@@ -21,6 +22,7 @@ import type {
 } from '@deepseek-ai/dsh-user-questions'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ClaudeTuiApplication } from '../src/app.ts'
+import type { ReadClipboardImage } from '../src/clipboard.ts'
 import { resolveConfig } from '../src/config.ts'
 import type { ClaudeTuiRuntimeSnapshot } from '../src/runtime-snapshot.ts'
 import { HeadlessTerminal } from './headless-terminal.ts'
@@ -36,6 +38,7 @@ interface Bench {
     attachments: readonly unknown[]
     signal: AbortSignal
   }>
+  savedImages: SaveImageAttachment[][]
   exitCodes: number[]
   setStatus(status: Agent['status']): void
   askQuestions(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer>
@@ -61,6 +64,7 @@ interface CredentialFixture {
 
 interface BenchOptions {
   readonly commands?: ReadonlyArray<{ name: string; description: string }>
+  readonly commandResult?: { kind: 'success' | 'error'; text?: string }
   readonly models?: ModelFixture
   readonly credentials?: CredentialFixture
   readonly seed?: (session: Session) => void
@@ -70,6 +74,10 @@ interface BenchOptions {
   readonly tuiVersion?: string
   readonly runtimeSnapshot?: ClaudeTuiRuntimeSnapshot
   readonly color?: boolean
+  readonly readClipboardImage?: ReadClipboardImage
+  readonly saveImages?: (
+    inputs: readonly SaveImageAttachment[],
+  ) => Promise<readonly ImageAttachmentRef[]>
 }
 
 const contexts: Context[] = []
@@ -88,6 +96,7 @@ function bench(
   contexts.push(ctx)
   let questionProvider: UserQuestionProvider | undefined
   const commandCalls: Bench['commandCalls'] = []
+  const savedImages: SaveImageAttachment[][] = []
   ctx.provide('commands', {
     list: () => options.commands ?? [],
     execute: (
@@ -97,13 +106,32 @@ function bench(
       signal: AbortSignal,
     ) => {
       commandCalls.push({ agent, line, attachments, signal })
-      return Promise.resolve(undefined)
+      return Promise.resolve(options.commandResult === undefined
+        ? undefined
+        : { commandId: 'test-command', result: options.commandResult })
     },
   } as never)
   ctx.provide('userQuestions', {
     registerProvider: (provider: UserQuestionProvider) => {
       questionProvider = provider
       return () => { questionProvider = undefined }
+    },
+  } as never)
+  ctx.provide('attachments', {
+    saveImages: async (inputs: readonly SaveImageAttachment[]) => {
+      savedImages.push(inputs.map(input => ({
+        ...input,
+        data: Uint8Array.from(input.data),
+      })))
+      if (options.saveImages !== undefined) return options.saveImages(inputs)
+      return inputs.map((input, index) => ({
+        attachmentId: `test-image-${savedImages.length}-${index + 1}` as never,
+        mediaType: input.mediaType,
+        bytes: input.data.byteLength,
+        width: 1,
+        height: 1,
+        ...(input.name === undefined ? {} : { name: input.name }),
+      }))
     },
   } as never)
   if (options.models !== undefined || options.credentials !== undefined) {
@@ -218,6 +246,9 @@ function bench(
       ? {}
       : { runtimeSnapshot: options.runtimeSnapshot }),
     ...(options.models === undefined ? {} : { modelSelection: options.models.selection }),
+    ...(options.readClipboardImage === undefined
+      ? {}
+      : { readClipboardImage: options.readClipboardImage }),
   } as never)
   return {
     ctx,
@@ -225,6 +256,7 @@ function bench(
     terminal,
     followups,
     commandCalls,
+    savedImages,
     exitCodes,
     setStatus: nextStatus => { status = nextStatus },
     askQuestions: request => {
@@ -834,6 +866,295 @@ describe('ClaudeTuiApplication', () => {
       prompt: reference.frame.lines[6]?.text,
       cursor: candidateCursor(reference.frame.cursor),
     })
+
+    await test.app.dispose()
+  })
+
+  it('pastes a macOS clipboard image with Ctrl+V and submits a durable image block', async () => {
+    const clipboardImage: SaveImageAttachment = {
+      data: Uint8Array.of(0x89, 0x50, 0x4e, 0x47),
+      mediaType: 'image/png',
+      name: 'clipboard.png',
+    }
+    const test = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => clipboardImage,
+    })
+    await test.app.start()
+
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+    expect(test.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0[Image #1] ')
+
+    for (const character of 'describe this image') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.savedImages).toEqual([[clipboardImage]])
+    expect(test.followups).toHaveLength(1)
+    expect(test.followups[0]?.content).toEqual([
+      {
+        type: 'image',
+        attachment: {
+          attachmentId: 'test-image-1-1',
+          mediaType: 'image/png',
+          bytes: 4,
+          width: 1,
+          height: 1,
+          name: 'clipboard.png',
+        },
+      },
+      { type: 'text', text: 'describe this image' },
+    ])
+
+    await test.app.dispose()
+  })
+
+  it('keeps bracketed Command+V text paste separate from Ctrl+V image intake', async () => {
+    let imageReads = 0
+    const test = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => {
+        imageReads += 1
+        return undefined
+      },
+    })
+    await test.app.start()
+
+    test.terminal.send('\u001B[200~ordinary pasted text\u001B[201~')
+    test.terminal.send('\r')
+
+    expect(imageReads).toBe(0)
+    expect(test.followups.map(message => message.content)).toEqual([
+      [{ type: 'text', text: 'ordinary pasted text' }],
+    ])
+
+    await test.app.dispose()
+  })
+
+  it('submits an image-only prompt and removes pending images atomically', async () => {
+    let imageNumber = 0
+    const test = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => ({
+        data: Uint8Array.of(0x89, 0x50, 0x4e, 0x47, ++imageNumber),
+        mediaType: 'image/png',
+        name: `clipboard-${imageNumber}.png`,
+      }),
+    })
+    await test.app.start()
+
+    test.terminal.send('\u0016')
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+    expect(test.terminal.lines()[candidateRow(6)]).toBe(
+      '❯\u00a0[Image #1] [Image #2] ',
+    )
+
+    test.terminal.send('\u007f')
+    await test.terminal.settle()
+    expect(test.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0[Image #1] ')
+
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.followups[0]?.content).toEqual([
+      {
+        type: 'image',
+        attachment: expect.objectContaining({
+          attachmentId: 'test-image-1-1',
+          name: 'clipboard-1.png',
+        }),
+      },
+    ])
+    expect(test.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0 ')
+
+    await test.app.dispose()
+  })
+
+  it('clears image drafts with Ctrl+C and does not treat them as an empty Ctrl+D prompt', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => ({
+        data: Uint8Array.of(0x89, 0x50, 0x4e, 0x47),
+        mediaType: 'image/png',
+      }),
+    })
+    await test.app.start()
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+
+    test.terminal.send('\u0004')
+    await test.terminal.settle()
+    expect(test.terminal.text()).not.toContain('Press Ctrl-D again to exit')
+    expect(test.exitCodes).toEqual([])
+
+    test.terminal.send('\u0003')
+    await test.terminal.settle()
+    expect(test.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0 ')
+    expect(test.terminal.text()).not.toContain('Press Ctrl-C again to exit')
+
+    await test.app.dispose()
+  })
+
+  it('does not resurrect or send image work cancelled while clipboard and storage await', async () => {
+    const clipboardImage: SaveImageAttachment = {
+      data: Uint8Array.of(0x89, 0x50, 0x4e, 0x47),
+      mediaType: 'image/png',
+      name: 'clipboard.png',
+    }
+    let resolveClipboard!: (image: SaveImageAttachment | undefined) => void
+    const clipboardResult = new Promise<SaveImageAttachment | undefined>((resolve) => {
+      resolveClipboard = resolve
+    })
+    const pasteTest = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => await clipboardResult,
+    })
+    await pasteTest.app.start()
+
+    pasteTest.terminal.send('\u0016')
+    await pasteTest.terminal.settle()
+    pasteTest.terminal.send('\u0003')
+    for (const character of 'replacement after paste') pasteTest.terminal.send(character)
+    pasteTest.terminal.send('\r')
+    await pasteTest.terminal.settle()
+
+    expect(pasteTest.followups.map(message => message.content)).toEqual([
+      [{ type: 'text', text: 'replacement after paste' }],
+    ])
+    resolveClipboard(clipboardImage)
+    await pasteTest.terminal.settle()
+
+    expect(pasteTest.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0 ')
+    expect(pasteTest.terminal.text()).not.toContain('Pasting image')
+    expect(pasteTest.followups.map(message => message.content)).toEqual([
+      [{ type: 'text', text: 'replacement after paste' }],
+    ])
+    await pasteTest.app.dispose()
+
+    let resolveStorage!: (refs: readonly ImageAttachmentRef[]) => void
+    const storageResult = new Promise<readonly ImageAttachmentRef[]>((resolve) => {
+      resolveStorage = resolve
+    })
+    const storageTest = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => clipboardImage,
+      saveImages: async () => await storageResult,
+    })
+    await storageTest.app.start()
+    storageTest.terminal.send('\u0016')
+    await storageTest.terminal.settle()
+    for (const character of 'cancel this send') storageTest.terminal.send(character)
+    storageTest.terminal.send('\r')
+    storageTest.terminal.send('\u0003')
+    for (const character of 'replacement prompt') storageTest.terminal.send(character)
+    storageTest.terminal.send('\r')
+    await storageTest.terminal.settle()
+
+    expect(storageTest.followups.map(message => message.content)).toEqual([
+      [{ type: 'text', text: 'replacement prompt' }],
+    ])
+    resolveStorage([{
+      attachmentId: 'cancelled-image' as never,
+      mediaType: 'image/png',
+      bytes: clipboardImage.data.byteLength,
+      width: 1,
+      height: 1,
+    }])
+    await storageTest.terminal.settle()
+
+    expect(storageTest.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0 ')
+    expect(storageTest.terminal.text()).not.toContain('cancel this send')
+    expect(storageTest.followups.map(message => message.content)).toEqual([
+      [{ type: 'text', text: 'replacement prompt' }],
+    ])
+    await storageTest.app.dispose()
+  })
+
+  it('retains image and text drafts when DSH rejects attachment persistence', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => ({
+        data: Uint8Array.of(0x89, 0x50, 0x4e, 0x47),
+        mediaType: 'image/png',
+      }),
+      saveImages: async () => { throw new Error('invalid clipboard image') },
+    })
+    await test.app.start()
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+    for (const character of 'keep this draft') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.followups).toEqual([])
+    expect(test.terminal.lines().find(line => line.startsWith('❯'))).toBe(
+      '❯\u00a0[Image #1] keep this draft ',
+    )
+    expect(test.terminal.text()).toContain('Unable to send image: invalid clipboard image')
+
+    await test.app.dispose()
+  })
+
+  it('passes Ctrl+V images through the rc2 slash-command attachment envelope', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      commands: [{ name: 'vision', description: 'Use one image' }],
+      commandResult: { kind: 'success', text: 'image accepted' },
+      readClipboardImage: async () => ({
+        data: Uint8Array.of(1, 2, 3, 4),
+        mediaType: 'image/png',
+        name: 'clipboard.png',
+      }),
+    })
+    await test.app.start()
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+    for (const character of '/vision inspect') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.commandCalls).toHaveLength(1)
+    expect(test.commandCalls[0]).toMatchObject({
+      line: '/vision inspect',
+      attachments: [{
+        mediaType: 'image/png',
+        data: 'AQIDBA==',
+        name: 'clipboard.png',
+      }],
+    })
+    expect(test.terminal.text()).toContain('image accepted')
+    expect(test.terminal.lines().find(line => line.startsWith('❯'))).toBe('❯\u00a0 ')
+
+    await test.app.dispose()
+  })
+
+  it('retains pending images when an rc2 slash command rejects its image grammar', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      commands: [{ name: 'text-only', description: 'Reject image input' }],
+      commandResult: { kind: 'error', text: 'This command does not accept images.' },
+      readClipboardImage: async () => ({
+        data: Uint8Array.of(1, 2, 3),
+        mediaType: 'image/png',
+      }),
+    })
+    await test.app.start()
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+    for (const character of '/text-only') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+
+    expect(test.terminal.text()).toContain('This command does not accept images.')
+    expect(test.terminal.lines().find(line => line.startsWith('❯'))).toBe(
+      '❯\u00a0[Image #1] ',
+    )
+
+    await test.app.dispose()
+  })
+
+  it('reports a text-only clipboard without mutating the composer', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      readClipboardImage: async () => undefined,
+    })
+    await test.app.start()
+    test.terminal.send('\u0016')
+    await test.terminal.settle()
+
+    expect(test.terminal.lines()[candidateRow(6)]).toBe('❯\u00a0 ')
+    expect(test.terminal.text()).toContain('No image found in clipboard')
 
     await test.app.dispose()
   })

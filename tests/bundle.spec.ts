@@ -25,6 +25,49 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const usesDefaultNpmPeerResolution =
   process.env.DSH_CLAUDE_TUI_INSTALL_MODE === 'default'
+const runsMacClipboardQualification =
+  process.platform === 'darwin' && process.env.DSH_CLAUDE_TUI_SYSTEM_CLIPBOARD_TEST === '1'
+const PACKED_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+  'base64',
+)
+const SWIFT_PASTEBOARD_SNAPSHOT = `
+import AppKit
+import Foundation
+
+let path = CommandLine.arguments[1]
+let action = CommandLine.arguments[2]
+let pasteboard = NSPasteboard.general
+if action == "save" {
+  let payload = (pasteboard.pasteboardItems ?? []).map { item in
+    Dictionary(uniqueKeysWithValues: item.types.compactMap { type in
+      item.data(forType: type).map { (type.rawValue, $0) }
+    })
+  }
+  let data = try PropertyListSerialization.data(
+    fromPropertyList: payload,
+    format: .binary,
+    options: 0
+  )
+  try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+} else {
+  let data = try Data(contentsOf: URL(fileURLWithPath: path))
+  let payload = try PropertyListSerialization.propertyList(
+    from: data,
+    options: [],
+    format: nil
+  ) as! [[String: Data]]
+  let items = payload.map { record in
+    let item = NSPasteboardItem()
+    for (type, value) in record {
+      item.setData(value, forType: NSPasteboard.PasteboardType(type))
+    }
+    return item
+  }
+  pasteboard.clearContents()
+  _ = pasteboard.writeObjects(items)
+}
+`
 
 /** npm's tar mode drops node-pty's reviewed helper executable bit on macOS. */
 function ensureNodePtyHelper(): void {
@@ -49,6 +92,7 @@ interface MockRequest {
 interface MockDeepSeekServer {
   baseURL: string
   requests: MockRequest[]
+  fileRequests: Array<{ filename: string; bytes: number }>
   close(): Promise<void>
 }
 
@@ -62,73 +106,115 @@ function writeSse(response: import('node:http').ServerResponse, events: readonly
 
 async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServer> {
   const requests: MockRequest[] = []
+  const fileRequests: MockDeepSeekServer['fileRequests'] = []
+  let nextFile = 1
   const server: Server = createServer((request, response) => {
-    let raw = ''
-    request.setEncoding('utf8')
-    request.on('data', chunk => { raw += chunk })
+    const chunks: Buffer[] = []
+    request.on('data', (chunk: Buffer) => { chunks.push(chunk) })
     request.on('end', () => {
-      const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
-      if (request.method !== 'POST' || pathname !== '/chat/completions') {
-        response.writeHead(404).end()
-        return
-      }
-      if (request.headers.authorization !== `Bearer ${apiKey}`) {
-        response.writeHead(401, { 'content-type': 'application/json' })
-        response.end(JSON.stringify({ error: { message: 'invalid test credential' } }))
-        return
-      }
-      let body: Record<string, unknown>
-      try {
-        body = JSON.parse(raw) as Record<string, unknown>
-      } catch {
-        response.writeHead(400, { 'content-type': 'application/json' })
-        response.end(JSON.stringify({ error: { message: 'invalid test request body' } }))
-        return
-      }
-      requests.push({ headers: request.headers, body })
-      const tools = Array.isArray(body.tools) ? body.tools : []
-      const messages = Array.isArray(body.messages) ? body.messages : []
-      const hasToolResult = messages.some((message) => {
-        return typeof message === 'object' && message !== null
-          && (message as { role?: unknown }).role === 'tool'
-      })
-      if (tools.length > 0 && !hasToolResult) {
-        const toolArguments = JSON.stringify({
-          code: 'return "packed tool result"',
-          description: 'return a deterministic packed-artifact marker',
+      void (async () => {
+        const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
+        const raw = Buffer.concat(chunks)
+        if (request.headers.authorization !== `Bearer ${apiKey}`) {
+          response.writeHead(401, { 'content-type': 'application/json' })
+          response.end(JSON.stringify({ error: { message: 'invalid test credential' } }))
+          return
+        }
+        if (request.method === 'POST' && pathname === '/files') {
+          const headers = new Headers()
+          for (const [name, value] of Object.entries(request.headers)) {
+            if (value !== undefined) headers.set(name, Array.isArray(value) ? value.join(', ') : value)
+          }
+          const form = await new Request('http://127.0.0.1/files', {
+            method: 'POST',
+            headers,
+            body: Uint8Array.from(raw),
+          }).formData()
+          const file = form.get('file')
+          if (!(file instanceof Blob)) throw new Error('packed mock upload omitted file')
+          const filename = 'name' in file && typeof file.name === 'string'
+            ? file.name
+            : 'uploaded_file'
+          const createdAt = Math.floor(Date.now() / 1_000)
+          const expiresAfter = Number(form.get('expires_after[seconds]'))
+          const id = `file-packed-${nextFile++}`
+          fileRequests.push({ filename, bytes: file.size })
+          response.writeHead(200, { 'content-type': 'application/json' })
+          response.end(JSON.stringify({
+            id,
+            object: 'file',
+            bytes: file.size,
+            created_at: createdAt,
+            filename,
+            purpose: 'user_data',
+            expires_at: createdAt + expiresAfter,
+          }))
+          return
+        }
+        if (request.method !== 'POST' || pathname !== '/chat/completions') {
+          response.writeHead(404).end()
+          return
+        }
+        let body: Record<string, unknown>
+        try {
+          body = JSON.parse(raw.toString('utf8')) as Record<string, unknown>
+        } catch {
+          response.writeHead(400, { 'content-type': 'application/json' })
+          response.end(JSON.stringify({ error: { message: 'invalid test request body' } }))
+          return
+        }
+        requests.push({ headers: request.headers, body })
+        const tools = Array.isArray(body.tools) ? body.tools : []
+        const messages = Array.isArray(body.messages) ? body.messages : []
+        const hasToolResult = messages.some((message) => {
+          return typeof message === 'object' && message !== null
+            && (message as { role?: unknown }).role === 'tool'
         })
+        if (tools.length > 0 && !hasToolResult) {
+          const toolArguments = JSON.stringify({
+            code: 'return "packed tool result"',
+            description: 'return a deterministic packed-artifact marker',
+          })
+          writeSse(response, [
+            { choices: [{ delta: { role: 'assistant', content: null, reasoning_content: '' } }] },
+            {
+              choices: [{
+                delta: {
+                  tool_calls: [{
+                    index: 0,
+                    id: 'call-packed-e2e',
+                    type: 'function',
+                    function: { name: 'run_code', arguments: toolArguments },
+                  }],
+                },
+              }],
+            },
+            {
+              choices: [{ delta: {}, finish_reason: 'tool_calls' }],
+              usage: { prompt_tokens: 10, completion_tokens: 5 },
+            },
+            '[DONE]',
+          ])
+          return
+        }
+        const text = tools.length > 0 ? 'packed artifact reply' : 'Packed artifact session'
         writeSse(response, [
           { choices: [{ delta: { role: 'assistant', content: null, reasoning_content: '' } }] },
+          { choices: [{ delta: { content: text } }] },
           {
-            choices: [{
-              delta: {
-                tool_calls: [{
-                  index: 0,
-                  id: 'call-packed-e2e',
-                  type: 'function',
-                  function: { name: 'run_code', arguments: toolArguments },
-                }],
-              },
-            }],
-          },
-          {
-            choices: [{ delta: {}, finish_reason: 'tool_calls' }],
-            usage: { prompt_tokens: 10, completion_tokens: 5 },
+            choices: [{ delta: {}, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 12, completion_tokens: 4 },
           },
           '[DONE]',
         ])
-        return
-      }
-      const text = tools.length > 0 ? 'packed artifact reply' : 'Packed artifact session'
-      writeSse(response, [
-        { choices: [{ delta: { role: 'assistant', content: null, reasoning_content: '' } }] },
-        { choices: [{ delta: { content: text } }] },
-        {
-          choices: [{ delta: {}, finish_reason: 'stop' }],
-          usage: { prompt_tokens: 12, completion_tokens: 4 },
-        },
-        '[DONE]',
-      ])
+      })().catch((error: unknown) => {
+        if (response.headersSent) {
+          response.destroy(error instanceof Error ? error : new Error(String(error)))
+          return
+        }
+        response.writeHead(500, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({ error: { message: String(error) } }))
+      })
     })
   })
   await new Promise<void>((resolveListen) => { server.listen(0, '127.0.0.1', resolveListen) })
@@ -137,6 +223,7 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
   return {
     baseURL: `http://127.0.0.1:${address.port}`,
     requests,
+    fileRequests,
     close: async () => {
       server.closeAllConnections()
       await new Promise<void>((resolveClose, reject) => {
@@ -713,6 +800,75 @@ describe('dsh-claude-tui bundle', () => {
     expect(resumed).toMatchObject({ exitCode: 0, signal: 0 })
     expect(resumed.output).not.toContain('packed-shift-tab-key')
   }, 120_000)
+
+  it.runIf(runsMacClipboardQualification)(
+    'pastes and sends a macOS clipboard image through the installed PTY and Files API',
+    async () => {
+      const apiKey = 'packed-image-key'
+      const server = await startMockDeepSeekServer(apiKey)
+      const dshHome = join(packDirectory, 'image-dsh-home')
+      const workspace = join(packDirectory, 'image-workspace')
+      const pngPath = join(packDirectory, 'clipboard.png')
+      const clipboardSnapshot = join(packDirectory, 'clipboard-backup.plist')
+      let clipboardSnapshotSaved = false
+      try {
+        mkdirSync(workspace)
+        writeFileSync(pngPath, PACKED_PNG)
+        execFileSync('swift', ['-e', SWIFT_PASTEBOARD_SNAPSHOT, clipboardSnapshot, 'save'])
+        clipboardSnapshotSaved = true
+        execFileSync('/usr/bin/osascript', [
+          '-e', 'on run argv',
+          '-e', 'set the clipboard to (read POSIX file (item 1 of argv) as «class PNGf»)',
+          '-e', 'end run',
+          pngPath,
+        ])
+        const env = stringEnvironment({
+          DSH_HOME: dshHome,
+          DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+          DSH_TELEMETRY_DISABLED: '1',
+          DEEPSEEK_API_KEY: apiKey,
+          DEEPSEEK_BASE_URL: server.baseURL,
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+        })
+        const outcome = await runPackedTui(
+          installedExecutable,
+          [
+            '--session-id', 'packed-image-session',
+            '--model', 'deepseek-official/deepseek-v4-flash-vision-exp',
+          ],
+          workspace,
+          env,
+          'Run /help for commands and shortcuts',
+          async ({ write, waitForText }) => {
+            write('\u0016')
+            await waitForText('[Image #1]')
+            write('describe this image')
+            write('\r')
+            await waitForText('packed artifact reply')
+          },
+        )
+
+        expect(outcome).toMatchObject({ exitCode: 0, signal: 0 })
+        expect(outcome.output).toContain('[Image #1] describe this image')
+        expect(server.fileRequests).toHaveLength(1)
+        expect(server.fileRequests[0]).toMatchObject({ bytes: PACKED_PNG.byteLength })
+        const requestText = JSON.stringify(server.requests.map(request => request.body))
+        expect(requestText).toContain('describe this image')
+        expect(requestText).toContain('file-packed-1')
+        expect(requestText).not.toContain(PACKED_PNG.toString('base64'))
+      } finally {
+        try {
+          if (clipboardSnapshotSaved) {
+            execFileSync('swift', ['-e', SWIFT_PASTEBOARD_SNAPSHOT, clipboardSnapshot, 'restore'])
+          }
+        } finally {
+          await server.close()
+        }
+      }
+    },
+    120_000,
+  )
 
   it('completes a packed tool turn through a physically separate compatible DSH', async () => {
     const apiKey = 'external-dsh-e2e-key'

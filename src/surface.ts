@@ -150,6 +150,7 @@ export class ClaudePromptEditorComponent implements Component, Focusable {
     private readonly palette: Palette,
     private readonly searchActive: () => boolean,
     private readonly searchValue: () => string | undefined,
+    private readonly imageCount: () => number = () => 0,
   ) {}
 
   invalidate(): void {
@@ -170,11 +171,28 @@ export class ClaudePromptEditorComponent implements Component, Focusable {
       const selected = displayText(this.searchValue() ?? '')
       return [divider, truncateToWidth(`❯\u00a0${selected}`, safeWidth, '…'), divider]
     }
-    const editorLines = this.editor.render(Math.max(1, safeWidth - prefixWidth))
+    const imageLabel = Array.from(
+      { length: this.imageCount() },
+      (_, index) => `[Image #${index + 1}]`,
+    ).join(' ')
+    const availableWidth = Math.max(1, safeWidth - prefixWidth)
+    const imageSeparator = this.editor.getText() === '' ? '' : ' '
+    const visibleImageLabel = imageLabel === ''
+      ? ''
+      : `${truncateToWidth(
+          imageLabel,
+          Math.max(1, availableWidth - visibleWidth(imageSeparator) - 1),
+          '…',
+        )}${imageSeparator}`
+    const editorLines = this.editor.render(
+      Math.max(1, availableWidth - visibleWidth(visibleImageLabel)),
+    )
     const content = editorLines.slice(1, -1).map(trimEditorLine)
     return [
       divider,
-      ...content.map((line, index) => `${index === 0 ? '❯\u00a0' : '  '}${line}`),
+      ...content.map((line, index) => (
+        `${index === 0 ? `❯\u00a0${visibleImageLabel}` : '  '}${line}`
+      )),
       divider,
     ]
   }

@@ -15,7 +15,7 @@
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="DeepSeek Harness rc2" src="https://img.shields.io/badge/DSH-0.1.1--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="123 tests" src="https://img.shields.io/badge/tests-123%2F123-4eba65?style=flat-square" />
+  <img alt="139 tests" src="https://img.shields.io/badge/tests-139%2F139-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -53,10 +53,11 @@ dshtui
 本版本将完整的包内运行时固定到 DeepSeek Harness `0.1.1-rc.2`，并把外部运行时最低要求提升为 `>=0.1.1-rc.2 <0.1.2`。
 
 - `Shift+Tab` 现在执行 DSH 的真实 `/plan` 或 `/plan off` 命令。安装包 PTY 测试覆盖了 macOS 传统序列 `ESC [ Z`，并验证同一 Session 能恢复对应的 `plan/mode` 状态。Plan mode 只提供引导，不会改变独立的工具模式或审批策略。
-- 凭据刷新监听已跟随 rc2 的 `credentials/reference-updated` 事件，命令桥接继续使用附件感知接口 `execute(agent, line, images, signal)`。当前终端输入器会明确提交空图片批次；图片选择尚未作为 TUI 已完成功能宣传。
-- 运行时资格探针用 rc2 命令信封验证默认模型、Agent、命令和 Session 四项服务；仅版本字符串匹配的非兼容运行时不能通过。
+- `Ctrl+V` 现在会读取一张桌面剪贴板图片，并在输入器中加入 Claude 风格的 `[Image #N]` 标记；macOS 上的 `Command+V` 仍然只是普通文本粘贴。文字为空时，Backspace 会删除最后一张待发图片，`Ctrl+C` 会清空整份图片/文字草稿。
+- 图片提交先经过 rc2 `ctx.attachments` 校验与持久化，Session 消息只记录耐久引用；支持图片的斜杠命令继续使用附件感知接口 `execute(agent, line, images, signal)`。平台入口分别为 macOS `osascript`、Windows STA PowerShell，以及 Linux `wl-paste`/`xclip`，格式限于 DSH 支持的 PNG、JPEG、WebP 与 GIF。
+- 运行时资格探针除默认模型、Agent、命令和 Session 外，还会通过附件存储真实写入并读回一张 PNG；仅版本字符串匹配的非兼容运行时不能通过。
 - 包内依赖图现已显式提供 rc2 新要求的 `@deepseek-ai/dsh-authorization` peer，以及原有 DeepSeek 与 React 18 peer；发布 shrinkwrap 只存在一条 DSH 版本线：`0.1.1-rc.2`。
-- 上游 rc1 新增实验性视觉模型、Bubblewrap 越界修复和问题回答多行编辑；rc2 增加 Files API 图片复用和按模型要求预处理图片。这些是 Harness 发布变化，不表示本 TUI 的终端输入器已经交付图片附件入口。
+- 上游 rc1 新增实验性视觉模型、Bubblewrap 越界修复和问题回答多行编辑；rc2 增加 Files API 图片复用和按模型要求预处理图片。本 TUI 的安装包图片 gate 现在会覆盖剪贴板读取、耐久存储、Session 恢复、一次 Files API 上传和带 `file_id` 的 chat request；测试只连接本地 mock，不访问生产 Provider。
 
 > [!WARNING]
 > rc8 这一版本线引入了不兼容的 SQLite 持久化格式，rc2 延续自该版本线。不要让不同 Harness 版本并发使用同一个 `$DSH_HOME`；除非 DeepSeek Harness 明确给出受支持的迁移路径，也不要降级该 Home。测试其他版本请使用独立 Home。
@@ -70,7 +71,7 @@ dshtui
 | 熟悉的终端 | Claude 风格欢迎面板、输入框、菜单、对话记录、状态栏、审批、问题和 Agent 状态 |
 | 真实 Harness | DSH 管理的模型、持久化 Session、命令、审批策略、工具、结构化问题与子代理 |
 | 实时模型配置 | Provider/model 列表、DSH 暴露的 effort 级别、默认值保存、API Key 掩码录入和凭据来源 |
-| 高效输入 | 多行编辑、提交或 steer、中断、历史搜索、斜杠补全和有边界的 `@` 文件补全 |
+| 高效输入 | 多行编辑、图片粘贴、提交或 steer、中断、历史搜索、斜杠补全和有边界的 `@` 文件补全 |
 | 清晰的执行状态 | reasoning、工具调用/结果、缓存命中率、Token、TTFT、吞吐率和 turn 结果 |
 | Session 与 Agent | 新建/恢复 Session、安全 flush、前后台子代理和活动 Agent roster |
 | 可验证运行环境 | 欢迎面板显示真实 TUI/Harness 版本、system/bundled 来源、DSH Home 与工具模式 |
@@ -83,6 +84,8 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 | --- | --- |
 | `Enter` | 空闲时提交，运行时 steer |
 | `Shift+Enter` | 换行 |
+| `Ctrl+V` | 粘贴剪贴板图片；macOS 上 `Command+V` 仍粘贴文本 |
+| `Backspace` | 文字输入为空时删除最后一张待发图片 |
 | `Shift+Tab` | 切换当前 Session 的 DSH plan mode |
 | `Esc` / `Ctrl+C` | 中断当前 turn |
 | `Ctrl+R` | 搜索历史 prompt |
@@ -116,14 +119,14 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 ## 兼容与验证
 
-当前交互目标是已观测的 Claude Code `2.1.227` TUI。当前资格范围包括：
+主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。当前资格范围包括：
 
 - macOS arm64 与 Linux x64；
 - true-color、xterm-compatible 终端；
 - **24** 个独立捕获的 PTY 参考帧，**22** 个自动视觉/语义锚点；
-- **123/123** 个测试，覆盖 `80x24`、`100x30`、rc2 命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。
+- 默认 gate **139/139** 个测试，覆盖 `80x24`、`100x30`、剪贴板/附件失败与取消路径、rc2 命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。另有一个 opt-in macOS 系统剪贴板 gate，会把安装包图片送过 DSH 存储和本地 Files API/chat mock。
 
-Windows 启动路径已经实现，但尚未纳入发布资格验证。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
+Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH rc2 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 
 ## 一起把它做得更好
 
@@ -135,7 +138,7 @@ Windows 启动路径已经实现，但尚未纳入发布资格验证。详见[�
 | --- | --- |
 | 终端资格验证 | 在明确的终端、系统和窗口尺寸下复现布局或快捷键问题 |
 | 运行时集成 | 为某个 DSH 命令、Session、审批或子代理边界补一项聚焦测试 |
-| 交互设计 | 在不掩盖未支持状态的前提下，探索附件、引用、补全或 Session 管理 |
+| 交互设计 | 在不掩盖未支持状态的前提下，改善图片输入、引用、补全或 Session 管理 |
 | 稳定性 | 减少启动歧义、强化安装包验证，或把现场问题变成确定性 fixture |
 | 文档与语言 | 改善上手说明、解释架构边界，或保持中英文文档同步 |
 | 无障碍 | 改善无颜色模式、纯键盘流程、读屏输出或窄终端表现 |
@@ -151,7 +154,7 @@ corepack pnpm check
 
 发布门禁依次执行 TypeScript 检查、干净的生产构建和完整串行 Vitest。视觉一致性修改必须附独立捕获的参考证据，或明确记录 Harness 语义边界；运行时修改必须验证安装包路径，不能只证明源码 import 可用。
 
-近期可参与方向包括终端原生图片附件、文件与 Session 引用补全、更完整的 Session 管理、更多 plan/todo/后台任务状态，以及更多终端和操作系统资格验证。这些是贡献方向，不代表功能已经交付。
+近期可参与方向包括更丰富的图片输入、文件与 Session 引用补全、更完整的 Session 管理、更多 plan/todo/后台任务状态，以及更多终端和操作系统资格验证。这些是贡献方向，不代表功能已经交付。
 
 ## License
 

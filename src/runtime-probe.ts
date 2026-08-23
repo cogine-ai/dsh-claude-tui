@@ -186,11 +186,12 @@ function expectedProbeResult(
     && result.package === 'dsh-claude-tui'
     && result.version === version
     && Array.isArray(result.services)
-    && result.services.length === 4
+    && result.services.length === 5
     && result.services[0] === 'agentDefaultModel'
     && result.services[1] === 'agents'
-    && result.services[2] === 'commands'
-    && result.services[3] === 'sessions'
+    && result.services[2] === 'attachments'
+    && result.services[3] === 'commands'
+    && result.services[4] === 'sessions'
 }
 
 function briefOutput(stderr: string): string {

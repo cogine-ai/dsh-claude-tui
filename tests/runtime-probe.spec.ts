@@ -99,7 +99,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token,
   package: 'dsh-claude-tui',
   version: '0.1.0',
-  services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
 }) + '\\n')
 `)
 
@@ -133,7 +133,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
   package: 'dsh-claude-tui',
   version: 'different-version',
-  services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
 }) + '\\n')
 `)
 
@@ -211,7 +211,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
   package: 'dsh-claude-tui',
   version: '0.1.0',
-  services: ['agentDefaultModel', 'agents', 'commands', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
 }) + '\\n')
 `)
     const removeProbeRoot = runtimeProbeInternals.removeProbeRoot
