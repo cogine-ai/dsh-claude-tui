@@ -16,7 +16,7 @@
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="DeepSeek Harness rc2" src="https://img.shields.io/badge/DSH-0.1.1--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="139 tests" src="https://img.shields.io/badge/tests-139%2F139-4eba65?style=flat-square" />
+  <img alt="141 tests" src="https://img.shields.io/badge/tests-141%2F141-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -125,7 +125,7 @@ The main interaction target is the observed Claude Code `2.1.227` TUI; the `[Ima
 - macOS arm64 and Linux x64;
 - true-color, xterm-compatible terminals;
 - **24** independently captured PTY reference frames and **22** automated visual/semantic anchors;
-- **139/139** default-gate tests covering `80x24`, `100x30`, clipboard/attachment failure and cancellation paths, the rc2 command envelope and live profile probe, packed-tarball installation, macOS `Shift+Tab` through a real PTY, both command names, Session resume, approvals, questions, and foreground/background subagents. An additional opt-in macOS system-clipboard gate sends an installed-package image through DSH storage and a local Files API/chat mock.
+- **141/141** default-gate tests covering `80x24`, `100x30`, clipboard/attachment failure and cancellation paths, the rc2 command envelope and live profile probe, packed-tarball installation, macOS `Shift+Tab` through a real PTY, both command names, Session resume, approvals, questions, and foreground/background subagents. An additional opt-in macOS system-clipboard gate sends an installed-package image through DSH storage and a local Files API/chat mock.
 
 The Windows launcher, junction, signal-forwarding, VT-input, dependency-prebuild, and STA image-clipboard paths are implemented, and the pinned DSH rc2 upstream has a native Windows gate. This TUI's own CI still runs only on Ubuntu, however, and no Windows packed-TUI/ConPTY UAT has been recorded. Windows is therefore an implemented but currently unqualified target, not a supported release platform. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
 

@@ -15,7 +15,7 @@
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
   <img alt="DeepSeek Harness rc2" src="https://img.shields.io/badge/DSH-0.1.1--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="139 tests" src="https://img.shields.io/badge/tests-139%2F139-4eba65?style=flat-square" />
+  <img alt="141 tests" src="https://img.shields.io/badge/tests-141%2F141-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -124,7 +124,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 - macOS arm64 与 Linux x64；
 - true-color、xterm-compatible 终端；
 - **24** 个独立捕获的 PTY 参考帧，**22** 个自动视觉/语义锚点；
-- 默认 gate **139/139** 个测试，覆盖 `80x24`、`100x30`、剪贴板/附件失败与取消路径、rc2 命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。另有一个 opt-in macOS 系统剪贴板 gate，会把安装包图片送过 DSH 存储和本地 Files API/chat mock。
+- 默认 gate **141/141** 个测试，覆盖 `80x24`、`100x30`、剪贴板/附件失败与取消路径、rc2 命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。另有一个 opt-in macOS 系统剪贴板 gate，会把安装包图片送过 DSH 存储和本地 Files API/chat mock。
 
 Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH rc2 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 
