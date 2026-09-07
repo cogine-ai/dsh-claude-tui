@@ -41,9 +41,9 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm check
 ```
 
-`pnpm check` 会执行 TypeScript 检查、干净的生产构建和完整串行 Vitest。绝大多数测试不需要 Provider 凭据。不要提交凭据或已有数据的 DSH Home。
+`pnpm check` 会校验官方文档快照，执行 TypeScript 检查、生产构建和完整串行 Vitest。绝大多数测试不需要 Provider 凭据。不要提交凭据或已有数据的 DSH Home。
 
-发布维护者还会运行 `corepack pnpm test:bundle:default`，单独验证普通 npm 的 peer 求解。该门禁刻意不使用 README 中的规避参数；npm 10 面对 rc2 依赖图时可能耗时接近十分钟。日常 CI 则使用同样覆盖完整、但基于已固定 TUI 闭包的 packed-install 路径。
+发布维护者还会运行 `corepack pnpm test:bundle:default`，使用全新 npm 缓存验证普通 npm 的 peer 求解，请预留数分钟。日常 CI 验证 `--legacy-peer-deps` 安装路径，并检查实际安装的完整依赖树和运行行为。
 
 从仓库快速启动：
 
@@ -112,3 +112,7 @@ DSH_HOME=/tmp/dsh-claude-tui-dev DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
 维护者主要审查三件事：是否忠于已观测的交互目标、是否忠于真实 DSH 语义，以及发布制品是否有运行证据。三者冲突时，DSH 正确性和对用户透明的反馈优先于视觉模仿。
 
 正式发布由维护者执行；贡献者不应修改 package 所有权、发布 tag 或发布凭据。
+
+## 官方 DSH 文档
+
+本仓库的[官方文档镜像](./docs/upstream/dsh/README.md)随运行时版本维护。升级 DSH 依赖时运行 `corepack pnpm docs:dsh:sync`；`corepack pnpm docs:dsh:check` 在 CI 中检查版本及原文完整性。不要手改 `snapshot/` 中的上游文档，本项目的说明应写在镜像外。

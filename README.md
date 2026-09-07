@@ -14,9 +14,8 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness rc2" src="https://img.shields.io/badge/DSH-0.1.1--rc.2-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.1.2-rc.1 source" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="141 tests" src="https://img.shields.io/badge/tests-141%2F141-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -36,7 +35,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 
 That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this release exactly, add `@0.1.5` to the package name.
 
-The `legacy-peer-deps` flag is a temporary npm installation workaround for rc2's dense upstream peer graph. It tells npm to skip peer-conflict enforcement and use this release's explicitly pinned rc2 TUI closure, including the required authorization service and React 18 compatibility peers transitively exposed by upstream's published Web packages. Use this path only with the packed-install-validated release shown here: its gate runs the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag does not change the DSH runtime version or TUI behavior.
+The `legacy-peer-deps` flag is a temporary npm installation workaround for the published v0.1.5 release's rc2 peer graph. It tells npm to skip peer-conflict enforcement and use this release's explicitly pinned rc2 TUI closure, including the required authorization service and React 18 compatibility peers transitively exposed by upstream's published Web packages. Use this path only with the packed-install-validated release shown here: its gate runs the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag does not change the DSH runtime version or TUI behavior.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among the models and effort levels exposed by DSH.
 
@@ -49,21 +48,30 @@ dshtui
 
 The global install exposes both `dshtui` and the canonical `dsh-claude-tui` command. Resume work with `dshtui --resume` for the Session picker, or `--resume <session-id>` for an exact Session.
 
-## v0.1.5: DeepSeek Harness 0.1.1-rc.2
+## DSH 0.1.2-rc.1 adaptation (unreleased)
 
-This release pins the complete bundled runtime to DeepSeek Harness `0.1.1-rc.2` and raises the external-runtime floor to `>=0.1.1-rc.2 <0.1.2`.
+The current source pins the bundled Harness to `0.1.2-rc.1` and accepts external runtimes in `>=0.1.2-rc.1 <0.1.3` only after a behavioral probe. The published npm `0.1.5` package still bundles `0.1.1-rc.2`; the installation commands above select that published version.
 
-- `Shift+Tab` now executes DSH's real `/plan` or `/plan off` command. The macOS legacy sequence `ESC [ Z` is covered in an installed-package PTY test, and the resulting `plan/mode` state is restored from the same Session. Plan mode is guidance; it does not change the independent tools mode or approval policy.
-- `Ctrl+V` now reads one desktop clipboard image and adds Claude's `[Image #N]` composer marker; on macOS, `Command+V` remains ordinary terminal text paste. Backspace removes the last image from an otherwise empty composer, while `Ctrl+C` clears the complete image/text draft.
-- Image submission validates and persists bytes through rc2's `ctx.attachments`, writes only durable references into the Session message, and uses the attachment-aware `execute(agent, line, images, signal)` envelope for image-capable slash commands. The platform intake paths are macOS `osascript`, Windows STA PowerShell, and Linux `wl-paste`/`xclip` for DSH-supported PNG, JPEG, WebP, and GIF images.
-- Runtime qualification now writes and reads back a real PNG through the attachment store in addition to proving the default-model, Agent, command, and Session services. A version string alone cannot qualify an incompatible external runtime.
-- The bundled graph now materializes rc2's required `@deepseek-ai/dsh-authorization` peer as well as the existing DeepSeek and React 18 peers. The published shrinkwrap contains one DSH version line only: `0.1.1-rc.2`.
-- Upstream rc1 added its experimental vision model, a Bubblewrap escape fix, and multiline question-answer editing; rc2 adds Files API image reuse and model-aware image preprocessing. This TUI's installed-package image gate now covers clipboard intake, durable storage, Session replay, one Files API upload, and a `file_id` chat request against a local mock without contacting a production provider.
+- Session replay uses `snapshotEvents()`. The runtime probe appends a real event and checks `seq`, `eventAt()`, snapshot readback, and persistence flush.
+- Structured questions use DSH's Agent-scoped `user-questions/request` waterfall. Model/provider configuration uses the current settings API.
+- PTC mode now uses upstream's `ptc` value. The launcher and bundle still accept `DSH_TOOLS_MODE=code` as an alias. Native and Both modes remain selectable.
+- Cordis, loader, group, and schema peers match the new Harness graph. The production shrinkwrap contains only the `0.1.2-rc.1` DSH line.
+- The existing image composer, durable attachments, plan toggle, transcript timing, approvals, and Session picker are retained.
+
+To run this adaptation from a checkout:
+
+```bash
+corepack pnpm install --frozen-lockfile
+corepack pnpm build
+DSH_HOME=/tmp/dsh-claude-tui-rc1 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
+```
+
+DSH has an extensive [official documentation site](https://deepseek-harness.github.io/deepseek-harness/). This repository maintains a [bilingual official documentation mirror](./docs/upstream/dsh/README.md) pinned to the supported release, with a full index, source hashes, license notices, and `docs:dsh:sync` / `docs:dsh:check` commands. CI checks the snapshot offline. The mirror is repository-only and is excluded from the npm tarball.
 
 > [!WARNING]
-> The rc8 line changed the SQLite persistence format incompatibly, and rc2 continues from that line. Do not run different Harness versions concurrently against one `$DSH_HOME`, and do not downgrade the Home unless DeepSeek Harness documents a supported migration path. Use a separate Home when testing another version.
+> Upstream `0.1.2` removes the optional SQLite Session persistence backend; export sessions stored by that backend using the old Harness before upgrading. SQLite query/index storage is separate. Use separate Homes when testing different Harness versions; this adapter does not add a downgrade or SQLite export migration.
 
-See the official [rc1](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.1-rc.1) and [rc2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.1-rc.2) release notes for upstream-wide changes. This project's claims are intentionally narrower: they describe what this TUI composes and verifies.
+See the [official release notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.2-rc.1) and [adaptation validation](./docs/harness-0.1.2-rc.1-adaptation.md) for the exact scope and evidence. Upstream Web features do not imply corresponding TUI features.
 
 ## What you get
 
@@ -104,9 +112,9 @@ The default launcher removes the need to choose an installation strategy up fron
 
 1. Reuse a compatible DSH already associated with the selected `$DSH_HOME`, or a verifiable `dsh` on `PATH`.
 2. Probe it in an isolated, credential-free temporary Home.
-3. Fall back to the bundled, shrinkwrap-pinned DSH `0.1.1-rc.2` when no external runtime qualifies.
+3. Fall back to the bundled, shrinkwrap-pinned DSH `0.1.2-rc.1` when no external runtime qualifies.
 
-Compatibility requires both the version range `>=0.1.1-rc.2 <0.1.2` and a successful behavioral probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
+Compatibility requires both the version range `>=0.1.2-rc.1 <0.1.3` and a successful behavioral probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
 
 | Variable | Behavior |
 | --- | --- |
@@ -114,7 +122,7 @@ Compatibility requires both the version range `>=0.1.1-rc.2 <0.1.2` and a succes
 | `DSH_CLAUDE_TUI_RUNTIME=system` | Require a compatible external DSH |
 | `DSH_CLAUDE_TUI_RUNTIME=bundled` | Always use the packaged DSH |
 | `DSH_HOME=/path` | Use an explicit DSH data Home |
-| `DSH_TOOLS_MODE=native\|code\|both` | DSH tool presentation shown as Standard, PTC, or Both |
+| `DSH_TOOLS_MODE=native\|ptc\|both` | DSH tool presentation shown as Standard, PTC, or Both |
 
 See [Launcher environment compatibility](./docs/launcher-environment-compatibility.md) for the complete selection, ownership, and recovery contract.
 
@@ -125,9 +133,9 @@ The main interaction target is the observed Claude Code `2.1.227` TUI; the `[Ima
 - macOS arm64 and Linux x64;
 - true-color, xterm-compatible terminals;
 - **24** independently captured PTY reference frames and **22** automated visual/semantic anchors;
-- **141/141** default-gate tests covering `80x24`, `100x30`, clipboard/attachment failure and cancellation paths, the rc2 command envelope and live profile probe, packed-tarball installation, macOS `Shift+Tab` through a real PTY, both command names, Session resume, approvals, questions, and foreground/background subagents. An additional opt-in macOS system-clipboard gate sends an installed-package image through DSH storage and a local Files API/chat mock.
+- Automated tests covering `80x24`, `100x30`, clipboard/attachment failure and cancellation paths, the attachment-aware command envelope and live profile probe, packed-tarball installation, macOS `Shift+Tab` through a real PTY, both command names, Session resume, approvals, questions, and foreground/background subagents. An additional opt-in macOS system-clipboard gate sends an installed-package image through DSH storage and a local Files API/chat mock.
 
-The Windows launcher, junction, signal-forwarding, VT-input, dependency-prebuild, and STA image-clipboard paths are implemented, and the pinned DSH rc2 upstream has a native Windows gate. This TUI's own CI still runs only on Ubuntu, however, and no Windows packed-TUI/ConPTY UAT has been recorded. Windows is therefore an implemented but currently unqualified target, not a supported release platform. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
+The Windows launcher, junction, signal-forwarding, VT-input, dependency-prebuild, and STA image-clipboard paths are implemented, and the pinned DSH upstream has a native Windows gate. This TUI's own CI still runs only on Ubuntu, however, and no Windows packed-TUI/ConPTY UAT has been recorded. Windows is therefore an implemented but currently unqualified target, not a supported release platform. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
 
 ## Build it with us
 

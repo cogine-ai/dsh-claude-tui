@@ -65,7 +65,7 @@ function isolatedEnvironment(
     TERM: 'dumb',
     NO_COLOR: '1',
     DSH_TELEMETRY_DISABLED: '1',
-    DSH_TOOLS_MODE: 'code',
+    DSH_TOOLS_MODE: 'ptc',
     AWS_EC2_METADATA_DISABLED: 'true',
     [PROBE_TOKEN_ENV]: token,
   }

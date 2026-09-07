@@ -46,7 +46,7 @@ function parseModelTarget(program: Command, raw: string | undefined): Pick<Claud
 }
 
 function isDshToolsMode(value: string): value is DshToolsMode {
-  return value === 'native' || value === 'code' || value === 'both'
+  return value === 'native' || value === 'ptc' || value === 'both'
 }
 
 /** Parse the internal environment boundary without trusting inherited process state. */

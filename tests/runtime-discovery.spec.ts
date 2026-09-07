@@ -48,7 +48,7 @@ describe('DeepSeek Harness runtime discovery', () => {
     expect(resolveBundledDshRuntime()).toMatchObject({
       kind: 'bundled',
       source: 'bundled',
-      version: '0.1.1-rc.2',
+      version: '0.1.2-rc.1',
     })
   })
 
@@ -57,7 +57,7 @@ describe('DeepSeek Harness runtime discovery', () => {
     const home = join(root, 'home')
     const homePackage = fakeDsh(
       join(home, 'profiles/node_modules/@deepseek-ai/dsh'),
-      '0.1.1-rc.2',
+      '0.1.2-rc.1',
     )
     const pathPackage = fakeDsh(join(root, 'path/node_modules/@deepseek-ai/dsh'), '0.1.0')
     const binDirectory = join(root, 'path/node_modules/.bin')
@@ -75,7 +75,7 @@ describe('DeepSeek Harness runtime discovery', () => {
       version: runtime.version,
       packageRoot: runtime.packageRoot,
     }))).toEqual([
-      { source: 'home', version: '0.1.1-rc.2', packageRoot: realpathSync(homePackage) },
+      { source: 'home', version: '0.1.2-rc.1', packageRoot: realpathSync(homePackage) },
       { source: 'path', version: '0.1.0', packageRoot: realpathSync(pathPackage) },
     ])
   })
@@ -146,7 +146,7 @@ describe('DeepSeek Harness runtime discovery', () => {
     const home = join(root, 'home')
     const packageRoot = fakeDsh(
       join(home, 'profiles/node_modules/@deepseek-ai/dsh'),
-      '0.1.1-rc.2',
+      '0.1.2-rc.1',
     )
 
     const discovery = discoverExternalRuntimes({
@@ -161,7 +161,7 @@ describe('DeepSeek Harness runtime discovery', () => {
   it('continues past an npx-prepended bundled shim to a later system DSH', () => {
     const root = temporaryDirectory()
     const home = join(root, 'home')
-    const bundledRoot = fakeDsh(join(root, 'bundled/@deepseek-ai/dsh'), '0.1.1-rc.2')
+    const bundledRoot = fakeDsh(join(root, 'bundled/@deepseek-ai/dsh'), '0.1.2-rc.1')
     const bundledBin = join(root, 'bundled/.bin')
     mkdirSync(bundledBin)
     symlinkSync('../@deepseek-ai/dsh/lib/bin.js', join(bundledBin, 'dsh'))

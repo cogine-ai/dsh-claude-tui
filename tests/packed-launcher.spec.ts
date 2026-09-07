@@ -64,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.1-rc.2',
+      version: '0.1.2-rc.1',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -137,7 +137,7 @@ setInterval(() => {}, 1_000)
       dshHome,
       toolsMode: 'native',
       runtimeSnapshot: JSON.stringify({
-        harnessVersion: '0.1.1-rc.2',
+        harnessVersion: '0.1.2-rc.1',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: dshHome,
@@ -146,7 +146,7 @@ setInterval(() => {}, 1_000)
     })
   })
 
-  it('defaults to Code Mode without replacing an explicit caller value', () => {
+  it.each([undefined, 'code', 'ptc'])('launches in PTC mode for input %s', (mode) => {
     const readyPath = join(temporaryDirectory, 'default-mode-record.json')
     const environment: NodeJS.ProcessEnv = bundledEnvironment({
       DSH_HOME: join(temporaryDirectory, 'default-mode-dsh-home'),
@@ -154,7 +154,8 @@ setInterval(() => {}, 1_000)
       DSH_FAKE_SIGNAL: join(temporaryDirectory, 'default-mode-signal.txt'),
       DSH_FAKE_EXIT_CODE: '0',
     })
-    delete environment.DSH_TOOLS_MODE
+    if (mode === undefined) delete environment.DSH_TOOLS_MODE
+    else environment.DSH_TOOLS_MODE = mode
     const result = spawnSync(process.execPath, [executable, '--dump-config'], {
       cwd: temporaryDirectory,
       encoding: 'utf8',
@@ -166,11 +167,11 @@ setInterval(() => {}, 1_000)
       toolsMode?: string
       runtimeSnapshot?: string
     }
-    expect(record.toolsMode).toBe('code')
+    expect(record.toolsMode).toBe('ptc')
     expect(JSON.parse(record.runtimeSnapshot ?? '')).toMatchObject({
       runtimeKind: 'bundled',
       homeKind: 'shared',
-      toolsMode: 'code',
+      toolsMode: 'ptc',
     })
   })
 
@@ -286,7 +287,7 @@ setInterval(() => {}, 1_000)
     mkdirSync(systemPackage, { recursive: true })
     writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.1-rc.2',
+      version: '0.1.2-rc.1',
       type: 'module',
       bin: { dsh: 'bin.js' },
     }, undefined, 2)}\n`)

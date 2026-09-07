@@ -7,18 +7,18 @@ import type { Agent, ModelSelection, ModelSelectionRef } from '@deepseek-ai/dsh-
 import { Inbox } from '@deepseek-ai/dsh-agent'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import {
-  CallId,
+  ToolCallId,
   createAssistantMessage,
   createToolResultMessage,
   createUserMessage,
   type UserMessage,
 } from '@deepseek-ai/dsh-llm'
-import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { Session, SessionId, SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { SubagentRunId } from '@deepseek-ai/dsh-subagent'
-import type {
-  AskUserQuestionAnswer,
-  AskUserQuestionRequest,
-  UserQuestionProvider,
+import {
+  UserQuestionService,
+  type AskUserQuestionAnswer,
+  type AskUserQuestionRequest,
 } from '@deepseek-ai/dsh-user-questions'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ClaudeTuiApplication } from '../src/app.ts'
@@ -94,7 +94,6 @@ function bench(
 ): Bench {
   const ctx = new Context()
   contexts.push(ctx)
-  let questionProvider: UserQuestionProvider | undefined
   const commandCalls: Bench['commandCalls'] = []
   const savedImages: SaveImageAttachment[][] = []
   ctx.provide('commands', {
@@ -109,12 +108,6 @@ function bench(
       return Promise.resolve(options.commandResult === undefined
         ? undefined
         : { commandId: 'test-command', result: options.commandResult })
-    },
-  } as never)
-  ctx.provide('userQuestions', {
-    registerProvider: (provider: UserQuestionProvider) => {
-      questionProvider = provider
-      return () => { questionProvider = undefined }
     },
   } as never)
   ctx.provide('attachments', {
@@ -208,6 +201,7 @@ function bench(
     version: 0,
     id: SessionId('terminal-test'),
     createdAt: 1,
+    isSeeded: false,
     cwd: '/workspace/project',
   })
   options.seed?.(session)
@@ -230,6 +224,11 @@ function bench(
     steer: { value: (message: UserMessage) => { followups.push(message) } },
     inject: { value: () => {} },
   })
+  ctx.provide('agents', {
+    get: (id: string) => id === agent.id ? agent : undefined,
+    roots: () => [agent],
+  } as never)
+  ctx.plugin(UserQuestionService)
 
   const terminal = new HeadlessTerminal(columns, rows)
   const exitCodes: number[] = []
@@ -259,10 +258,7 @@ function bench(
     savedImages,
     exitCodes,
     setStatus: nextStatus => { status = nextStatus },
-    askQuestions: request => {
-      if (questionProvider === undefined) throw new Error('question provider is not registered')
-      return questionProvider.ask(request)
-    },
+    askQuestions: request => ctx.userQuestions.ask(request),
   }
 }
 
@@ -390,11 +386,11 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.1.1-rc.2',
+        harnessVersion: '0.1.2-rc.1',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
-        toolsMode: 'code',
+        toolsMode: 'ptc',
       },
     })
 
@@ -412,7 +408,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.1.1-rc.2 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.1.2-rc.1 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -460,10 +456,10 @@ describe('ClaudeTuiApplication', () => {
     await test.app.dispose()
   })
 
-  it('maps only DSH native, code, and both tools modes into product-facing labels', async () => {
+  it('maps only DSH native, ptc, and both tools modes into product-facing labels', async () => {
     const cases = [
       ['native', 'Standard'],
-      ['code', 'PTC'],
+      ['ptc', 'PTC'],
       ['both', 'Both (Native + PTC)'],
     ] as const
     for (const [toolsMode, label] of cases) {
@@ -471,7 +467,7 @@ describe('ClaudeTuiApplication', () => {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.1.1-rc.2',
+          harnessVersion: '0.1.2-rc.1',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -481,7 +477,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.1.1-rc.2 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.1.2-rc.1 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -497,7 +493,7 @@ describe('ClaudeTuiApplication', () => {
     expect(test.terminal.text()).toContain(
       'Using isolated DSH_HOME; existing sessions were not copied.',
     )
-    expect(test.app.agent.session.events).toEqual([])
+    expect(test.app.agent.session.snapshotEvents()).toEqual([])
     await test.app.dispose()
   })
 
@@ -552,24 +548,24 @@ describe('ClaudeTuiApplication', () => {
       source: { provider: 'test', model: 'model' },
     })
     const seedEvents: SessionEvent[] = [
-      { type: 'turn/start', seq: 0, time: 1_000, data: { turn: 1 } },
-      { type: 'step/start', seq: 1, time: 1_000, data: { turn: 1, step: 1 } },
-      { type: 'user/message', seq: 2, time: 1_000, data: user, surfaceOp: 'append' },
+      { type: 'turn/start', seq: SessionSeq(0), time: 1_000, data: { turn: 1 } },
+      { type: 'step/start', seq: SessionSeq(1), time: 1_000, data: { turn: 1, step: 1 } },
+      { type: 'user/message', seq: SessionSeq(2), time: 1_000, data: user, surfaceOp: 'append' },
       {
         type: 'assistant/chunk',
-        seq: 3,
+        seq: SessionSeq(3),
         time: 1_250,
         data: { turn: 1, step: 1, chunk: { type: 'block-start', index: 0, blockType: 'text' } },
       },
       {
         type: 'assistant/chunk',
-        seq: 4,
+        seq: SessionSeq(4),
         time: 2_000,
         data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: 'done' } },
       },
       {
         type: 'assistant/message',
-        seq: 5,
+        seq: SessionSeq(5),
         time: 2_250,
         data: {
           turn: 1,
@@ -583,10 +579,10 @@ describe('ClaudeTuiApplication', () => {
           },
         },
         surfaceOp: 'append',
-        sourceEventSeqs: [3, 4],
+        sourceEventSeqs: [SessionSeq(3), SessionSeq(4)],
       },
-      { type: 'step/end', seq: 6, time: 2_250, data: { turn: 1, step: 1 } },
-      { type: 'turn/end', seq: 7, time: 2_300, data: { turn: 1, reason: { kind: 'completed' } } },
+      { type: 'step/end', seq: SessionSeq(6), time: 2_250, data: { turn: 1, step: 1 } },
+      { type: 'turn/end', seq: SessionSeq(7), time: 2_300, data: { turn: 1, reason: { kind: 'completed' } } },
     ]
     const test = bench(110, 30, () => 1_000, { seedEvents })
 
@@ -1466,7 +1462,7 @@ describe('ClaudeTuiApplication', () => {
     await test.terminal.settle()
     expect(credentials.writes).toEqual([{ ref: 'DEEPSEEK_API_KEY', value: secret }])
     expect(test.terminal.text()).not.toContain(secret)
-    expect(JSON.stringify(test.app.agent.session.events)).not.toContain(secret)
+    expect(JSON.stringify(test.app.agent.session.snapshotEvents())).not.toContain(secret)
 
     await test.app.dispose()
   })
@@ -1491,7 +1487,7 @@ describe('ClaudeTuiApplication', () => {
     expect(credentials.writes).toEqual([{ ref: 'DEEPSEEK_API_KEY', value: secret }])
     expect(test.followups[0]?.content).toEqual([{ type: 'text', text: 'run after setup' }])
     expect(test.terminal.text()).not.toContain(secret)
-    expect(JSON.stringify(test.app.agent.session.events)).not.toContain(secret)
+    expect(JSON.stringify(test.app.agent.session.snapshotEvents())).not.toContain(secret)
 
     await test.app.dispose()
   })
@@ -1783,7 +1779,7 @@ describe('ClaudeTuiApplication', () => {
     session.append('tool/call', {
       turn: 1,
       step: 1,
-      callId: CallId('tool-reference'),
+      callId: ToolCallId('tool-reference'),
       name: 'Bash',
       arguments: JSON.stringify({
         command: 'touch /tmp/claude-tui-approval-reference',
@@ -1833,7 +1829,7 @@ describe('ClaudeTuiApplication', () => {
     )) as ReferenceFrame
     const test = bench(80, 24)
     const session = test.app.agent.session
-    const callId = CallId('tool-reference-complete')
+    const callId = ToolCallId('tool-reference-complete')
     session.append('turn/start', { turn: 1 })
     session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'Run the deterministic print reference.' }],
@@ -1916,7 +1912,7 @@ describe('ClaudeTuiApplication', () => {
     session.append('tool/call', {
       turn: 1,
       step: 1,
-      callId: CallId('subagent-reference-pending'),
+      callId: ToolCallId('subagent-reference-pending'),
       name: 'subagent',
       arguments: JSON.stringify({
         description: 'Inspect reference',
@@ -1988,7 +1984,7 @@ describe('ClaudeTuiApplication', () => {
     )) as ReferenceFrame
     const test = bench(80, 24)
     const session = test.app.agent.session
-    const callId = CallId('subagent-reference-complete')
+    const callId = ToolCallId('subagent-reference-complete')
     session.append('turn/start', { turn: 1 })
     session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'Delegate one deterministic reference task.' }],
@@ -2061,7 +2057,7 @@ describe('ClaudeTuiApplication', () => {
     )) as ReferenceFrame
     const test = bench(80, 24)
     const session = test.app.agent.session
-    const callId = CallId('subagent-reference-background')
+    const callId = ToolCallId('subagent-reference-background')
     session.append('turn/start', { turn: 1 })
     session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'Launch one deterministic background reference task.' }],
@@ -2122,7 +2118,7 @@ describe('ClaudeTuiApplication', () => {
     )) as ReferenceFrame
     const test = bench(80, 24)
     const session = test.app.agent.session
-    const callId = CallId('tool-reference-approval')
+    const callId = ToolCallId('tool-reference-approval')
     session.append('turn/start', { turn: 1 })
     session.append('user/message', createUserMessage({
       content: [{ type: 'text', text: 'Run the reference command.' }],
@@ -2282,6 +2278,33 @@ describe('ClaudeTuiApplication', () => {
       answers: [{ id: 'reference', selected: ['Alpha'] }],
     })
     await coloredApp.dispose()
+  })
+
+  it('delegates questions for another Agent to the next waterfall answerer', async () => {
+    const test = bench(80, 24)
+    await test.app.start()
+    const fallback = { answers: [{ id: 'foreign', selected: ['Handled elsewhere'] }] }
+    const result = await test.ctx.waterfall('user-questions/request', {
+      agent: { id: SessionId('another-agent') } as Agent,
+      questions: [{ id: 'foreign', question: 'Question for another terminal' }],
+    }, async () => fallback)
+    expect(result).toEqual(fallback)
+    expect(test.terminal.lines().join('\n')).not.toContain('Question for another terminal')
+    await test.app.dispose()
+  })
+
+  it('interrupts a pending DSH question and removes its answerer when the terminal closes', async () => {
+    const test = bench(80, 24)
+    await test.app.start()
+    const request = {
+      agent: test.app.agent,
+      questions: [{ id: 'pending', question: 'A pending question', options: [{ label: 'Continue' }] }],
+    }
+    const rejected = expect(test.askQuestions(request)).rejects.toThrow('interrupted')
+    await test.terminal.settle()
+    await test.app.dispose()
+    await rejected
+    await expect(test.askQuestions(request)).rejects.toMatchObject({ code: 'NO_PROVIDER' })
   })
 
   it('requires the captured second Ctrl+D gesture before exiting an empty prompt', async () => {

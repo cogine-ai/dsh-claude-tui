@@ -1,0 +1,2 @@
+# Preserve official snapshot bytes and collapse generated copies in GitHub reviews.
+docs/upstream/dsh/snapshot/** -text linguist-generated=true linguist-vendored=true

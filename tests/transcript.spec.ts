@@ -1,7 +1,7 @@
 /** Durable transcript projection and terminal-control safety. */
 import { describe, expect, it } from 'vitest'
-import { CallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { ToolCallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { Session, SessionId, SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { displayText, prettyArguments } from '../src/text.ts'
 import { createPalette } from '../src/theme.ts'
 import { TranscriptComponent, TranscriptModel } from '../src/transcript.ts'
@@ -26,7 +26,7 @@ describe('TranscriptModel', () => {
     }), { surfaceOp: 'append' })
 
     const model = new TranscriptModel()
-    model.replay(session.events)
+    model.replay(session.snapshotEvents())
 
     expect(model.items).toEqual([
       expect.objectContaining({
@@ -76,7 +76,7 @@ describe('TranscriptModel', () => {
     session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
 
     const model = new TranscriptModel()
-    model.replay(session.events)
+    model.replay(session.snapshotEvents())
 
     expect(model.items.map(item => item.kind)).toEqual(['user', 'assistant', 'completion'])
     expect(model.items[1]).toMatchObject({ text: 'final', reasoning: 'check first', pending: false })
@@ -111,7 +111,7 @@ describe('TranscriptModel', () => {
     })
 
     const model = new TranscriptModel()
-    model.replay(session.events)
+    model.replay(session.snapshotEvents())
 
     expect(model.items.map(item => item.kind)).toEqual(['notice', 'completion'])
   })
@@ -125,12 +125,12 @@ describe('TranscriptModel', () => {
       chunk: {
         type: 'block-end',
         index: 0,
-        block: { type: 'tool-call', id: CallId('call-1'), name: 'bash', arguments: '{}' },
+        block: { type: 'tool-call', id: ToolCallId('call-1'), name: 'bash', arguments: '{}' },
       },
     })
 
     const model = new TranscriptModel()
-    model.replay(session.events)
+    model.replay(session.snapshotEvents())
 
     expect(model.items).toEqual([])
   })
@@ -139,29 +139,29 @@ describe('TranscriptModel', () => {
     const message = createAssistantMessage({
       content: [{
         type: 'tool-call',
-        id: CallId('call-timing'),
+        id: ToolCallId('call-timing'),
         name: 'bash',
         arguments: '{}',
       }],
       source: { provider: 'test', model: 'model' },
     })
     const events = [
-      { type: 'step/start', seq: 0, time: 100, data: { turn: 1, step: 1 } },
+      { type: 'step/start', seq: SessionSeq(0), time: 100, data: { turn: 1, step: 1 } },
       {
         type: 'assistant/chunk',
-        seq: 1,
+        seq: SessionSeq(1),
         time: 110,
         data: { turn: 1, step: 1, chunk: { type: 'block-start', index: 0, blockType: 'tool-call' } },
       },
       {
         type: 'assistant/chunk',
-        seq: 2,
+        seq: SessionSeq(2),
         time: 120,
         data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: '' } },
       },
       {
         type: 'assistant/chunk',
-        seq: 3,
+        seq: SessionSeq(3),
         time: 130,
         data: {
           turn: 1,
@@ -169,14 +169,14 @@ describe('TranscriptModel', () => {
           chunk: {
             type: 'tool-call-delta',
             index: 0,
-            id: CallId('call-timing'),
+            id: ToolCallId('call-timing'),
             argumentsDelta: '',
           },
         },
       },
       {
         type: 'assistant/chunk',
-        seq: 4,
+        seq: SessionSeq(4),
         time: 300,
         data: {
           turn: 1,
@@ -184,7 +184,7 @@ describe('TranscriptModel', () => {
           chunk: {
             type: 'tool-call-delta',
             index: 0,
-            id: CallId('call-timing'),
+            id: ToolCallId('call-timing'),
             name: 'bash',
             argumentsDelta: '',
           },
@@ -192,7 +192,7 @@ describe('TranscriptModel', () => {
       },
       {
         type: 'assistant/message',
-        seq: 5,
+        seq: SessionSeq(5),
         time: 500,
         data: {
           turn: 1,
@@ -200,7 +200,7 @@ describe('TranscriptModel', () => {
           message,
           usage: { inputTokens: 10, outputTokens: 4 },
         },
-        sourceEventSeqs: [1, 2, 3, 4],
+        sourceEventSeqs: [SessionSeq(1), SessionSeq(2), SessionSeq(3), SessionSeq(4)],
       },
     ] satisfies SessionEvent[]
     const model = new TranscriptModel()
