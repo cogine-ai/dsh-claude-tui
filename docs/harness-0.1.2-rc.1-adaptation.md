@@ -1,6 +1,6 @@
 # DeepSeek Harness 0.1.2-rc.1 adaptation
 
-This source change follows npm's `@deepseek-ai/dsh@0.1.2-rc.1`, released from upstream commit `a66e4702047846cdaa10c66c9d3df3951f5ea70d`. The published TUI remains `0.1.5` with DSH `0.1.1-rc.2`; this document does not announce a new npm release.
+The `0.1.6` TUI release targets npm's `@deepseek-ai/dsh@0.1.2-rc.1`, released from upstream commit `a66e4702047846cdaa10c66c9d3df3951f5ea70d`. TUI `0.1.5` uses DSH `0.1.1-rc.2`. This document records the adaptation's validation; [v0.1.6 release notes](./releases/v0.1.6.md) describe the upgrade.
 
 ## Runtime changes
 
@@ -39,7 +39,7 @@ Validated on 2026-09-07 on macOS arm64 with Node.js `22.22.3`, npm `10.9.8`, and
 
 The installed-artifact gate uses a fresh npm cache. It checks the published file set, required DeepSeek peers, the full `npm ls --all` tree, and the loaded Sharp version. Installed PTY tests cover a local mock model's real PTC tool turn, Session resume, the external-runtime path, and macOS Shift+Tab plan state and resume. Headless terminal tests cover model/provider menus, questions, approvals, and image-composer failure and cancellation paths. No production model request was sent. The existing narrowly named optional Sharp residue exception remains; missing, invalid, or conflicting runtime dependencies fail the gate.
 
-Work started from clean `origin/main` at `a2c251f4be04ea19e12fc2150620c669d05afae9` in branch `cliq/dsh-0.1.2-rc.1-docs`. Before adaptation, baseline typechecking, application/startup tests, and all 8 real-runtime probe tests passed after building the baseline. This is a source adaptation with local evidence, not an npm publication or a remote CI result.
+Work started from clean `origin/main` at `a2c251f4be04ea19e12fc2150620c669d05afae9` in branch `cliq/dsh-0.1.2-rc.1-docs`. Before adaptation, baseline typechecking, application/startup tests, and all 8 real-runtime probe tests passed after building the baseline. [PR #15](https://github.com/cogine-ai/dsh-claude-tui/pull/15) merged as `258b537091e14fd6e41aa1e62c32892b8f7642bc` after all four Ubuntu CI jobs passed at the reviewed `6033555` head. These results describe the adaptation commit; npm publication and subsequent release-candidate checks have their own evidence.
 
 ## Data and platform limits
 

@@ -1,6 +1,6 @@
 {
   "name": "dsh-claude-tui",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Unofficial, high-fidelity Claude Code-style TUI for DeepSeek Harness, verified against real PTY captures",
   "keywords": [
     "deepseek",

@@ -1,12 +1,12 @@
 {
   "name": "dsh-claude-tui",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "dsh-claude-tui",
-      "version": "0.1.5",
+      "version": "0.1.6",
       "license": "MIT",
       "dependencies": {
         "@aws-sdk/credential-provider-node": "3.972.79",
