@@ -18,7 +18,7 @@ import {
   type CredentialRef,
 } from '@deepseek-ai/dsh-credentials'
 import { errorChain } from '@deepseek-ai/dsh-llm'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-settings'
 import { displayText } from './text.ts'
 import { editorTheme, type Palette } from './theme.ts'
 
@@ -78,7 +78,7 @@ export async function loadProviderCatalog(ctx: Context): Promise<ProviderCatalog
     }
     let profile: Record<string, unknown> | undefined
     try {
-      profile = record(atPath(settings.get(settingsNamespace(directory.settingsNs)), directory.settingsPath))
+      profile = record(atPath(settings.get(directory.settingsNs), directory.settingsPath))
     } catch (error: unknown) {
       const reason = errorChain(error)
       warnings.push(`${displayText(provider.name)} settings: ${reason}`)

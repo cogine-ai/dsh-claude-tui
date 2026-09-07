@@ -10,10 +10,10 @@
 
 - id: tools
   config:
-    mode: !!js process.env.DSH_TOOLS_MODE
+    mode: !!js "process.env.DSH_TOOLS_MODE === 'code' ? 'ptc' : (process.env.DSH_TOOLS_MODE || 'ptc')"
 
 - insert:
-    # Code Mode is a core execution capability, not a Web component.
+    # PTC execution is provided by the worker-thread code runtime.
     - id: code-runtime
       name: '@deepseek-ai/dsh-code-runtime-worker-thread'
 

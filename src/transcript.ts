@@ -6,7 +6,7 @@ import {
   wrapTextWithAnsi,
   type Component,
 } from '@earendil-works/pi-tui'
-import { isTokenDelta, type TokenUsage } from '@deepseek-ai/dsh-llm'
+import type { StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
 import {
   isReplacementSurfaceEvent,
   type SessionEvent,
@@ -14,6 +14,19 @@ import {
 } from '@deepseek-ai/dsh-session'
 import { contentText, displayText, imageLabels, prettyArguments } from './text.ts'
 import { markdownTheme, type Palette } from './theme.ts'
+
+/** Preserve DSH first-token timing after its helper became private to Session Stats. */
+function hasModelOutput(chunk: StreamChunk): boolean {
+  switch (chunk.type) {
+    case 'text-delta':
+    case 'reasoning-delta':
+      return chunk.text.length > 0
+    case 'tool-call-delta':
+      return chunk.argumentsDelta.length > 0 || chunk.name !== undefined
+    default:
+      return false
+  }
+}
 
 /** Transcript nodes shown to the human. */
 export type TranscriptItem =
@@ -161,7 +174,7 @@ export class TranscriptModel {
       }
       case 'assistant/chunk': {
         const chunk = event.data.chunk
-        if (isTokenDelta(chunk)) {
+        if (hasModelOutput(chunk)) {
           const key = stepKey(event.data.turn, event.data.step)
           this.outputChunkTimes.set(event.seq, event.time)
           if (!this.firstOutputAtByStep.has(key)) this.firstOutputAtByStep.set(key, event.time)

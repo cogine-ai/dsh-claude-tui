@@ -1,6 +1,7 @@
 /** Startup settlement must not await the Include entry that owns this plugin. */
 import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import {
   apply,
   awaitCompositionSettlement,
@@ -58,7 +59,7 @@ describe('launcher compatibility probe', () => {
   })
 
   it('creates, flushes, and disposes a temporary Agent without starting the terminal', async () => {
-    const session = { id: 'probe-session' }
+    const session = Session.create(SessionId('probe-session'))
     const whenIdle = vi.fn(async () => undefined)
     const dispose = vi.fn(async () => undefined)
     const agent = { session, whenIdle }
@@ -152,6 +153,16 @@ describe('launcher compatibility probe', () => {
     ))
       .rejects.toThrow(unregisterFailure)
     expect(dispose).toHaveBeenCalledTimes(2)
+
+    vi.spyOn(session, 'snapshotEvents').mockReturnValueOnce([])
+    await expect(runCompatibilityProbe(
+      ctx,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      controller.signal,
+    )).rejects.toThrow('could not read the appended Session event')
+    expect(flush).toHaveBeenCalledTimes(2)
+    expect(dispose).toHaveBeenCalledTimes(3)
   })
 
   it('enters the hidden probe branch before enforcing the interactive TTY contract', () => {

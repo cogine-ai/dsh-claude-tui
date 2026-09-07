@@ -103,7 +103,7 @@ function foldPlanMode(events: readonly unknown[]): boolean {
 
 const toolsModeLabels = {
   native: 'Standard',
-  code: 'PTC',
+  ptc: 'PTC',
   both: 'Both (Native + PTC)',
 } as const
 
@@ -169,11 +169,12 @@ export class ClaudeTuiApplication {
     private readonly config: ResolvedConfig,
     private readonly runtime: ClaudeTuiRuntime,
   ) {
-    this.transcript.replay(agent.session.events)
+    const history = agent.session.snapshotEvents()
+    this.transcript.replay(history)
     if (runtime.launchNotice !== undefined) {
       this.transcript.addNotice(runtime.launchNotice, 'warning')
     }
-    this.planModeActive = foldPlanMode(agent.session.events)
+    this.planModeActive = foldPlanMode(history)
     for (const item of this.transcript.items) {
       if (item.kind === 'user' && item.text.trim() !== '') this.promptHistory.push(item.text)
     }
@@ -355,17 +356,13 @@ export class ClaudeTuiApplication {
         this.approvalPresentation(request),
       ))
     }))
-    this.disposers.push(this.ctx.userQuestions.registerProvider({
-      ask: (request) => {
-        if (request.agent !== undefined && request.agent !== this.agent) {
-          throw new Error(`claude-tui: refusing a question for unowned agent "${request.agent.id}"`)
-        }
-        return this.modalQueue.run(() => askUserQuestions(
-          this.tui,
-          this.palette,
-          this.questionRequest(request),
-        ))
-      },
+    this.disposers.push(this.agent.ctx.on('user-questions/request', (request, next) => {
+      if (request.agent !== undefined && request.agent !== this.agent) return next()
+      return this.modalQueue.run(() => askUserQuestions(
+        this.tui,
+        this.palette,
+        this.questionRequest(request),
+      ))
     }))
   }
 

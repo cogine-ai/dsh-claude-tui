@@ -24,7 +24,7 @@ import {
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
 import type { DshToolsMode } from './runtime-snapshot.ts'
 
-const BUNDLED_DSH_VERSION = '0.1.1-rc.2'
+const BUNDLED_DSH_VERSION = '0.1.2-rc.1'
 const RUNTIME_ENV = 'DSH_CLAUDE_TUI_RUNTIME'
 const LAUNCH_NOTICE_ENV = 'DSH_CLAUDE_TUI_LAUNCH_NOTICE'
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
@@ -50,7 +50,7 @@ interface PackageManifest {
 }
 
 function isDshToolsMode(value: string): value is DshToolsMode {
-  return value === 'native' || value === 'code' || value === 'both'
+  return value === 'native' || value === 'ptc' || value === 'both'
 }
 
 /** Fail before touching Harness state when npm only warned about an invalid engine. */
@@ -129,7 +129,8 @@ function launchAdapter(identity: PackageIdentity): LaunchPlannerAdapter {
 
 /** Run Harness in the foreground while preserving the caller's process boundary. */
 async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<number> {
-  const toolsMode = (process.env.DSH_TOOLS_MODE ?? 'code').trim()
+  const requestedToolsMode = (process.env.DSH_TOOLS_MODE ?? 'ptc').trim()
+  const toolsMode = requestedToolsMode === 'code' ? 'ptc' : requestedToolsMode
   const environment: NodeJS.ProcessEnv = {
     ...process.env,
     DSH_HOME: plan.home.path,

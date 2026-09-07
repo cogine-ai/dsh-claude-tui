@@ -13,9 +13,8 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness rc2" src="https://img.shields.io/badge/DSH-0.1.1--rc.2-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.1.2-rc.1 source" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
-  <img alt="141 tests" src="https://img.shields.io/badge/tests-141%2F141-4eba65?style=flat-square" />
 </p>
 
 <p align="center">
@@ -35,7 +34,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 
 这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.5`。
 
-`legacy-peer-deps` 是针对 rc2 上游密集 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc2 TUI 闭包，其中包含必需的 authorization 服务和上游已发布 Web 包传递暴露出的 React 18 兼容 peer。只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径：发布 gate 会执行完整的 `npm ls --all`，并拒绝任何 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
+`legacy-peer-deps` 是针对已发布 v0.1.5 所用 rc2 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc2 TUI 闭包，其中包含必需的 authorization 服务和上游已发布 Web 包传递暴露出的 React 18 兼容 peer。只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径：发布 gate 会执行完整的 `npm ls --all`，并拒绝任何 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
@@ -48,21 +47,30 @@ dshtui
 
 全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`。使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
-## v0.1.5：DeepSeek Harness 0.1.1-rc.2
+## DSH 0.1.2-rc.1 适配（尚未发布）
 
-本版本将完整的包内运行时固定到 DeepSeek Harness `0.1.1-rc.2`，并把外部运行时最低要求提升为 `>=0.1.1-rc.2 <0.1.2`。
+当前源码把包内 Harness 固定到 `0.1.2-rc.1`，外部运行时须满足 `>=0.1.2-rc.1 <0.1.3` 并通过行为探针。npm 已发布的 `0.1.5` 仍内置 `0.1.1-rc.2`；上方安装命令取得的是该已发布版本。
 
-- `Shift+Tab` 现在执行 DSH 的真实 `/plan` 或 `/plan off` 命令。安装包 PTY 测试覆盖了 macOS 传统序列 `ESC [ Z`，并验证同一 Session 能恢复对应的 `plan/mode` 状态。Plan mode 只提供引导，不会改变独立的工具模式或审批策略。
-- `Ctrl+V` 现在会读取一张桌面剪贴板图片，并在输入器中加入 Claude 风格的 `[Image #N]` 标记；macOS 上的 `Command+V` 仍然只是普通文本粘贴。文字为空时，Backspace 会删除最后一张待发图片，`Ctrl+C` 会清空整份图片/文字草稿。
-- 图片提交先经过 rc2 `ctx.attachments` 校验与持久化，Session 消息只记录耐久引用；支持图片的斜杠命令继续使用附件感知接口 `execute(agent, line, images, signal)`。平台入口分别为 macOS `osascript`、Windows STA PowerShell，以及 Linux `wl-paste`/`xclip`，格式限于 DSH 支持的 PNG、JPEG、WebP 与 GIF。
-- 运行时资格探针除默认模型、Agent、命令和 Session 外，还会通过附件存储真实写入并读回一张 PNG；仅版本字符串匹配的非兼容运行时不能通过。
-- 包内依赖图现已显式提供 rc2 新要求的 `@deepseek-ai/dsh-authorization` peer，以及原有 DeepSeek 与 React 18 peer；发布 shrinkwrap 只存在一条 DSH 版本线：`0.1.1-rc.2`。
-- 上游 rc1 新增实验性视觉模型、Bubblewrap 越界修复和问题回答多行编辑；rc2 增加 Files API 图片复用和按模型要求预处理图片。本 TUI 的安装包图片 gate 现在会覆盖剪贴板读取、耐久存储、Session 恢复、一次 Files API 上传和带 `file_id` 的 chat request；测试只连接本地 mock，不访问生产 Provider。
+- 会话回放改用 `snapshotEvents()`；运行时探针会追加真实事件，验证 `seq`、`eventAt()`、快照读回及持久化 flush。
+- 结构化提问改用 DSH 的 Agent 作用域 `user-questions/request` waterfall；模型和提供方配置接入当前 settings API。
+- PTC 模式使用上游的新值 `ptc`；启动器与 bundle 仍接受 `DSH_TOOLS_MODE=code` 作为别名，Native 与 Both 模式继续可选。
+- Cordis、loader、group 和 schema peer 与新版 Harness 对齐；生产 shrinkwrap 只包含 `0.1.2-rc.1` 一条 DSH 版本线。
+- 保留已有图片输入、附件持久化、计划模式切换、回复计时、审批与会话选择器。
+
+从 checkout 运行本次适配：
+
+```bash
+corepack pnpm install --frozen-lockfile
+corepack pnpm build
+DSH_HOME=/tmp/dsh-claude-tui-rc1 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
+```
+
+DSH 有详尽的[官方文档站](https://deepseek-harness.github.io/deepseek-harness/)。本仓库维护与支持版本一致的[官方中英文文档镜像](./docs/upstream/dsh/README.md)，包含完整索引、来源校验和、许可证，以及 `docs:dsh:sync` / `docs:dsh:check` 命令。CI 离线校验快照；镜像只保留在仓库中，不进入 npm 安装包。
 
 > [!WARNING]
-> rc8 这一版本线引入了不兼容的 SQLite 持久化格式，rc2 延续自该版本线。不要让不同 Harness 版本并发使用同一个 `$DSH_HOME`；除非 DeepSeek Harness 明确给出受支持的迁移路径，也不要降级该 Home。测试其他版本请使用独立 Home。
+> 上游 `0.1.2` 移除了可选的 SQLite Session 持久化后端；如果使用过该后端，请先用旧版 Harness 导出会话。SQLite 查询和索引存储是另一项服务。测试不同版本时使用独立 Home；本适配未增加降级或 SQLite 导出迁移功能。
 
-上游完整变化见 DeepSeek Harness [rc1](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.1-rc.1) 与 [rc2](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.1-rc.2) 官方发布说明。本项目刻意缩小承诺范围：这里只描述该 TUI 实际组合并验证的能力。
+完整变化见[官方发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.2-rc.1)，本项目验证范围见[适配记录](./docs/harness-0.1.2-rc.1-adaptation.md)。上游 Web 功能不代表本 TUI 已提供对应界面。
 
 ## 你能获得什么
 
@@ -103,9 +111,9 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 1. 优先复用所选 `$DSH_HOME` 已关联的兼容 DSH，或 `PATH` 中来源可验证的 `dsh`；
 2. 在不继承凭据的临时 Home 中执行兼容探针；
-3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.1-rc.2`。
+3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.2-rc.1`。
 
-兼容性同时要求版本满足 `>=0.1.1-rc.2 <0.1.2` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
+兼容性同时要求版本满足 `>=0.1.2-rc.1 <0.1.3` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
 
 | 变量 | 行为 |
 | --- | --- |
@@ -113,7 +121,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 | `DSH_CLAUDE_TUI_RUNTIME=system` | 必须使用兼容的外部 DSH |
 | `DSH_CLAUDE_TUI_RUNTIME=bundled` | 始终使用包内 DSH |
 | `DSH_HOME=/path` | 指定 DSH 数据 Home |
-| `DSH_TOOLS_MODE=native\|code\|both` | DSH 工具呈现模式，对应 Standard、PTC、Both |
+| `DSH_TOOLS_MODE=native\|ptc\|both` | DSH 工具呈现模式，对应 Standard、PTC、Both |
 
 完整选择、所有权和恢复规则见[启动器环境兼容说明](./docs/launcher-environment-compatibility.md)。
 
@@ -124,9 +132,9 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 - macOS arm64 与 Linux x64；
 - true-color、xterm-compatible 终端；
 - **24** 个独立捕获的 PTY 参考帧，**22** 个自动视觉/语义锚点；
-- 默认 gate **141/141** 个测试，覆盖 `80x24`、`100x30`、剪贴板/附件失败与取消路径、rc2 命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。另有一个 opt-in macOS 系统剪贴板 gate，会把安装包图片送过 DSH 存储和本地 Files API/chat mock。
+- 自动化测试覆盖 `80x24`、`100x30`、剪贴板/附件失败与取消路径、附件命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。另有一个 opt-in macOS 系统剪贴板 gate，会把安装包图片送过 DSH 存储和本地 Files API/chat mock。
 
-Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH rc2 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
+Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 
 ## 一起把它做得更好
 

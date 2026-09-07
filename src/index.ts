@@ -16,7 +16,7 @@ import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-cmdline'
 import type {} from '@deepseek-ai/dsh-commands'
 import type {} from '@deepseek-ai/dsh-attachment'
-import { errorChain } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-user-approval'
 import type {} from '@deepseek-ai/dsh-user-questions'
@@ -242,7 +242,20 @@ export async function runCompatibilityProbe(
     if (!commandInvoked || execution?.result.kind !== 'success') {
       throw new Error('claude-tui: compatibility probe command did not execute successfully')
     }
-    await sessions.flush(handle.agent.session)
+    const session = handle.agent.session
+    const previousEnd = session.seq
+    const event = session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'dsh-claude-tui session probe' }],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+    if (
+      session.seq !== previousEnd + 1
+      || session.eventAt(event.seq) !== event
+      || session.snapshotEvents(previousEnd).at(-1) !== event
+    ) {
+      throw new Error('claude-tui: compatibility probe could not read the appended Session event')
+    }
+    await sessions.flush(session)
   } finally {
     try {
       unregisterCommand()

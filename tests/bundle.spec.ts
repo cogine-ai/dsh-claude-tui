@@ -368,7 +368,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.1.1-rc.2',
+      '0.1.2-rc.1',
     )
   }, 30_000)
 
@@ -386,6 +386,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/DISCLAIMER.md',
       'package/cordis.patch.yml',
       'package/docs/assets/terminal-preview.svg',
+      'package/docs/harness-0.1.2-rc.1-adaptation.md',
       'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
@@ -422,11 +423,12 @@ describe('dsh-claude-tui bundle', () => {
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.1.1-rc.2',
-        '@deepseek-ai/dsh-authorization': '0.1.1-rc.2',
+        '@deepseek-ai/dsh': '0.1.2-rc.1',
+        '@deepseek-ai/dsh-authorization': '0.1.2-rc.1',
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
+        sharp: '0.35.3',
       },
       repository: { url: 'git+https://github.com/cogine-ai/dsh-claude-tui.git' },
       homepage: 'https://github.com/cogine-ai/dsh-claude-tui#readme',
@@ -437,7 +439,7 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.1.1-rc.2 <0.1.2')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.1.2-rc.1 <0.1.3')).toBe(true)
     expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
       .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
     expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
@@ -461,17 +463,18 @@ describe('dsh-claude-tui bundle', () => {
     expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.1.1-rc.2',
+      '@deepseek-ai/dsh': '0.1.2-rc.1',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
     expect(shrinkwrap.packages?.['node_modules/react']?.version).toBe('18.3.1')
     expect(shrinkwrap.packages?.['node_modules/react-dom']?.version).toBe('18.3.1')
+    expect(shrinkwrap.packages?.['node_modules/sharp']?.version).toBe('0.35.3')
     const dshVersions = Object.entries(shrinkwrap.packages ?? {})
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.1.1-rc.2']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.1.2-rc.1']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -485,7 +488,7 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.1.1-rc.2')
+    expect(installedDsh.version).toBe('0.1.2-rc.1')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
@@ -493,6 +496,11 @@ describe('dsh-claude-tui bundle', () => {
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react-dom/package.json'), 'utf8'),
     )).toMatchObject({ version: '18.3.1' })
+    const attachmentRequire = createRequire(
+      installedRequire.resolve('@deepseek-ai/dsh-attachment-local/package.json'),
+    )
+    expect((attachmentRequire('sharp') as { versions: { sharp: string } }).versions.sharp)
+      .toBe('0.35.3')
 
     const installedDeepSeekScope = join(installDirectory, 'node_modules/@deepseek-ai')
     const requiredDeepSeekPeers = new Set<string>()
@@ -730,7 +738,7 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
       expect(first.output).toContain('v0.1.5')
-      expect(first.output).toContain('Harness 0.1.1-rc.2 · bundled · PTC')
+      expect(first.output).toContain('Harness 0.1.2-rc.1 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -903,7 +911,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.1.1-rc.2 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.1.2-rc.1 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))

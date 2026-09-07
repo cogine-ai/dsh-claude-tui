@@ -41,9 +41,9 @@ corepack pnpm install --frozen-lockfile
 corepack pnpm check
 ```
 
-`pnpm check` runs TypeScript validation, a clean production build, and the complete serial Vitest suite. Most tests do not need a provider credential. Never commit credentials or a populated DSH Home.
+`pnpm check` verifies the official documentation snapshot, runs TypeScript validation, builds the production code, and runs the complete serial Vitest suite. Most tests do not need a provider credential. Never commit credentials or a populated DSH Home.
 
-Release maintainers also run `corepack pnpm test:bundle:default` to qualify plain npm peer resolution. That gate intentionally does not use the README workaround and can take close to ten minutes on npm 10 with the rc2 graph; routine CI uses the equally complete packed-install path with the pinned TUI closure.
+Release maintainers also run `corepack pnpm test:bundle:default` to qualify plain npm peer resolution with a fresh npm cache. Allow several minutes for upstream peer resolution. Routine CI tests the `--legacy-peer-deps` installation path and verifies the installed dependency tree and runtime behavior.
 
 For a quick local launch from the repository:
 
@@ -112,3 +112,7 @@ Do not attach API keys, credential files, full Session databases, or private rep
 Maintainers review for three things: fidelity to the observed interaction target, fidelity to real DSH semantics, and evidence that the published artifact works. When those goals conflict, DSH correctness and transparent user feedback take priority over visual imitation.
 
 Release publication remains a maintainer action. Contributors should not change package ownership, publish tags, or release credentials.
+
+## Official DSH documentation
+
+The [official documentation mirror](./docs/upstream/dsh/README.md) follows the runtime pin. Run `corepack pnpm docs:dsh:sync` when upgrading DSH; CI runs `corepack pnpm docs:dsh:check` to verify version and content integrity. Keep project guidance outside the generated `snapshot/` tree.

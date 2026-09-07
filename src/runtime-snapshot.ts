@@ -1,5 +1,5 @@
 /** Launcher-owned runtime provenance rendered by the terminal welcome panel. */
-export type DshToolsMode = 'native' | 'code' | 'both'
+export type DshToolsMode = 'native' | 'ptc' | 'both'
 
 export interface ClaudeTuiRuntimeSnapshot {
   readonly harnessVersion: string
