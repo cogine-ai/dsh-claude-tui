@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.1.2-rc.1 source" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.1.2-rc.1" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -33,24 +33,24 @@ Requires Node.js `22.19+` or `24+`.
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this release exactly, add `@0.1.5` to the package name.
+That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this release exactly, add `@0.1.6` to the package name.
 
-The `legacy-peer-deps` flag is a temporary npm installation workaround for the published v0.1.5 release's rc2 peer graph. It tells npm to skip peer-conflict enforcement and use this release's explicitly pinned rc2 TUI closure, including the required authorization service and React 18 compatibility peers transitively exposed by upstream's published Web packages. Use this path only with the packed-install-validated release shown here: its gate runs the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` remains compatible, but a cold npm 10 install can spend close to ten minutes resolving unused Web UI peers. The flag does not change the DSH runtime version or TUI behavior.
+The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; this release explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` is also qualified with ordinary npm peer resolution, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among the models and effort levels exposed by DSH.
 
 For repeat use:
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.5
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.6
 dshtui
 ```
 
 The global install exposes both `dshtui` and the canonical `dsh-claude-tui` command. Resume work with `dshtui --resume` for the Session picker, or `--resume <session-id>` for an exact Session.
 
-## DSH 0.1.2-rc.1 adaptation (unreleased)
+## DSH 0.1.2-rc.1 support
 
-The current source pins the bundled Harness to `0.1.2-rc.1` and accepts external runtimes in `>=0.1.2-rc.1 <0.1.3` only after a behavioral probe. The published npm `0.1.5` package still bundles `0.1.1-rc.2`; the installation commands above select that published version.
+Version `0.1.6` pins the bundled Harness to `0.1.2-rc.1` and accepts external runtimes in `>=0.1.2-rc.1 <0.1.3` only after a behavioral probe. Version `0.1.5` uses the previous `0.1.1-rc.2` runtime. See the [v0.1.6 release notes](./docs/releases/v0.1.6.md) for upgrade guidance.
 
 - Session replay uses `snapshotEvents()`. The runtime probe appends a real event and checks `seq`, `eventAt()`, snapshot readback, and persistence flush.
 - Structured questions use DSH's Agent-scoped `user-questions/request` waterfall. Model/provider configuration uses the current settings API.
@@ -58,7 +58,7 @@ The current source pins the bundled Harness to `0.1.2-rc.1` and accepts external
 - Cordis, loader, group, and schema peers match the new Harness graph. The production shrinkwrap contains only the `0.1.2-rc.1` DSH line.
 - The existing image composer, durable attachments, plan toggle, transcript timing, approvals, and Session picker are retained.
 
-To run this adaptation from a checkout:
+To run from a checkout:
 
 ```bash
 corepack pnpm install --frozen-lockfile

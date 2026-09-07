@@ -100,7 +100,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples for the built source adaptation (npm v0.1.5 still uses the previous DSH line):
+Examples for TUI v0.1.6 with DSH `0.1.2-rc.1`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js

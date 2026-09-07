@@ -1,3 +1,7 @@
+overrides:
+  # Match the audited npm shrinkwrap's fixes for URI normalization and qs parsing.
+  fast-uri: 3.1.7
+  qs: 6.16.0
 allowBuilds:
   # Harness' PTY adapter restores the executable bit on node-pty's macOS helper.
   '@deepseek-ai/dsh-subprocess-local': true

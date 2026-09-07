@@ -13,7 +13,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.1.2-rc.1 source" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.1.2-rc.1" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -32,24 +32,24 @@
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.5`。
+这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.6`。
 
-`legacy-peer-deps` 是针对已发布 v0.1.5 所用 rc2 peer 图的临时 npm 安装规避。它让 npm 跳过 peer 冲突校验，并使用本版本显式固定的 rc2 TUI 闭包，其中包含必需的 authorization 服务和上游已发布 Web 包传递暴露出的 React 18 兼容 peer。只应对本文所示、已经通过 packed-install 验证的发布版本使用该路径：发布 gate 会执行完整的 `npm ls --all`，并拒绝任何 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 仍然兼容，但 npm 10 冷安装可能花接近十分钟求解本 TUI 不使用的 Web UI peer。该参数不改变 DSH 运行版本或 TUI 行为。
+`legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；本版本显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 也通过了标准 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
 如果会反复使用：
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.5
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.6
 dshtui
 ```
 
 全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`。使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
-## DSH 0.1.2-rc.1 适配（尚未发布）
+## 支持 DSH 0.1.2-rc.1
 
-当前源码把包内 Harness 固定到 `0.1.2-rc.1`，外部运行时须满足 `>=0.1.2-rc.1 <0.1.3` 并通过行为探针。npm 已发布的 `0.1.5` 仍内置 `0.1.1-rc.2`；上方安装命令取得的是该已发布版本。
+`0.1.6` 把包内 Harness 固定到 `0.1.2-rc.1`，外部运行时须满足 `>=0.1.2-rc.1 <0.1.3` 并通过行为探针。`0.1.5` 使用上一版 `0.1.1-rc.2` 运行时。升级说明见 [v0.1.6 发布说明](./docs/releases/v0.1.6.zh-CN.md)。
 
 - 会话回放改用 `snapshotEvents()`；运行时探针会追加真实事件，验证 `seq`、`eventAt()`、快照读回及持久化 flush。
 - 结构化提问改用 DSH 的 Agent 作用域 `user-questions/request` waterfall；模型和提供方配置接入当前 settings API。
@@ -57,7 +57,7 @@ dshtui
 - Cordis、loader、group 和 schema peer 与新版 Harness 对齐；生产 shrinkwrap 只包含 `0.1.2-rc.1` 一条 DSH 版本线。
 - 保留已有图片输入、附件持久化、计划模式切换、回复计时、审批与会话选择器。
 
-从 checkout 运行本次适配：
+从 checkout 运行：
 
 ```bash
 corepack pnpm install --frozen-lockfile

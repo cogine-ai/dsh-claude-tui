@@ -390,6 +390,8 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
+      'package/docs/releases/v0.1.6.md',
+      'package/docs/releases/v0.1.6.zh-CN.md',
       'package/docs/visual-qualification-2.1.227.md',
       'package/lib/cli.d.ts',
       'package/lib/cli.js',
@@ -417,7 +419,7 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.5',
+      version: '0.1.6',
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
@@ -594,7 +596,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.5\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.6\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -610,7 +612,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.5\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.6\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -737,7 +739,7 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.5')
+      expect(first.output).toContain('v0.1.6')
       expect(first.output).toContain('Harness 0.1.2-rc.1 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
