@@ -126,7 +126,7 @@ Five visible differences are deliberate and tested:
 2. Claude's background panel advertises `↓ to manage`. Harness has no equivalent manager contract, so the row keeps Claude's captured geometry and style but exposes the real `← for agents` roster control instead.
 3. Claude reports private subagent tool-use/token/time metrics. Harness does not provide all of those values on this surface, so completion says `Done` without inventing metrics. Expanded mode shows the real child result.
 4. The compact returning state reserves a blank top row before Claude's logo to address clipping at the terminal viewport boundary. The expanded new-Session panel follows the captured bordered geometry from row `0`, so it does not add that inset.
-5. Product identity is truthful: the orange Claude-shaped logo remains, while the title reads `DSH Claude TUI` and the expanded form includes the real package version. Both header forms retain the official-blue `powered by dsh` badge. The expanded panel replaces Claude's account, billing and release-note cells with live DSH model/effort/cwd data, `/help` guidance, and launcher-verified Harness/Home/tools-mode provenance. DSH `native`, `code`, and `both` map to `Standard`, `PTC`, and `Both (Native + PTC)`; Minimal is not presented as a tools mode.
+5. Product identity is truthful: the orange Claude-shaped logo remains, while the title reads `DSH Claude TUI` and the expanded form includes the real package version. Both header forms retain the official-blue `powered by dsh` badge. The expanded panel replaces Claude's account, billing and release-note cells with live DSH model/effort/cwd data, `/help` guidance, and launcher-verified Harness/Home/tools-mode provenance. DSH `native`, `ptc`, and `both` map to `Standard`, `PTC`, and `Both (Native + PTC)`; Minimal is not presented as a tools mode.
 
 These boundaries lower literal text identity in narrowly defined cells while preserving both visual shape and truthful interaction semantics.
 
@@ -193,3 +193,9 @@ corepack pnpm check
 ```
 
 The capture command requires the local `claude` executable at exactly `2.1.227`, but it does not require a working Claude API key for these scenarios. Refreshing fixtures is a version-pinned qualification action: a different Claude Code version must use a new fixture directory and report instead of overwriting this baseline.
+
+## DSH 0.1.5-rc.2 adaptation
+
+The 0.1.7 source candidate retains the existing reference corpus unchanged. Live streaming now reaches the same renderer through `agent/assistant-stream`; V3 settlements drive cold replay and timing. The in-flight reference test emits the real Agent event instead of appending obsolete `assistant/chunk` Session events. The candidate does not claim parity with newer Claude Code releases.
+
+See [the adaptation record](harness-0.1.5-rc.2-adaptation.md) for this candidate's validation and limitations.

@@ -5,6 +5,18 @@ launcher must make an existing DSH environment useful when it is safe, while
 remaining able to start from a clean machine without adopting or overwriting
 unowned state.
 
+Node `22.19+` and `24+` are supported. On Node `24.0` and `24.1`, the launcher
+and isolated runtime probe explicitly dispatch DSH's exported `runCli()` because
+those versions lack the `import.meta.main` entry guard used by DSH `0.1.5`.
+Other supported versions invoke the Harness executable directly. Both paths
+preserve its arguments and foreground process behavior.
+
+On macOS, Harness child processes default to `CHOKIDAR_USEPOLLING=true` and
+`CHOKIDAR_INTERVAL=1000`. This retains settings, skills, and profile updates
+while avoiding native FSEvents close deadlocks. The normal launcher preserves
+explicit values from its caller; isolated probes use their own defaults. These
+defaults apply to the child environment and may be inherited by its tools.
+
 ## Default decision order
 
 With `DSH_CLAUDE_TUI_RUNTIME=auto` (the default), the launcher completes the
@@ -14,11 +26,11 @@ whole decision before changing the selected user DSH home:
 2. Look for `@deepseek-ai/dsh` associated with that home under
    `profiles/node_modules`, then for a verifiable `dsh` executable on `PATH`.
 3. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
-   `>=0.1.2-rc.1 <0.1.3` and whose declared bin exists inside the package.
+   `>=0.1.5-rc.2 <0.1.6` and whose declared bin exists inside the package.
 4. Run each otherwise eligible external candidate through the current packed
    TUI's compatibility probe.
 5. Use the first candidate that passes; otherwise use the launcher-pinned
-   `@deepseek-ai/dsh@0.1.2-rc.1`.
+   `@deepseek-ai/dsh@0.1.5-rc.2`.
 6. Create or reconcile only the selected launcher-owned profile, then replace
    the launcher process with the selected Harness process.
 
@@ -79,7 +91,7 @@ DSH state. An isolated-home launch intentionally does not.
 The external-runtime probe uses a fresh temporary DSH home, OS home, and
 working directory. It creates and disposes a temporary Agent and Session,
 appends and reads back an event through `seq`, `eventAt()`, and
-`snapshotEvents()`, flushes that Session, and requires a token-bound machine-readable result from
+`snapshotEvents()`, verifies the V3 header and an embedded assistant stream, flushes that Session, and requires a token-bound machine-readable result from
 the exact TUI package being launched. It does not send a model request.
 
 The child receives a small platform/locale allowlist plus temporary paths,
@@ -100,7 +112,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples for TUI v0.1.6 with DSH `0.1.2-rc.1`:
+Examples for TUI v0.1.7 (unreleased) with DSH `0.1.5-rc.2`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
@@ -116,7 +128,7 @@ Harness maintains a home-level module fallback that either process may
 reconcile. Use sequential launches, or give concurrent runtimes separate
 `DSH_HOME` values.
 
-Compatibility is intentionally limited to the DSH `0.1.2` series above. A
+Compatibility is intentionally limited to the DSH `0.1.5` series above. A
 future DSH package may satisfy a wider-looking semantic range yet change an
 injected service contract; the runtime probe is therefore required in addition
 to the manifest version check.

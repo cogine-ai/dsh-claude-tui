@@ -13,7 +13,7 @@ import {
 } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
-import type { EncodedImageAttachment, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
+import type { SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, errorChain, type ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import type { AskUserQuestionRequest } from '@deepseek-ai/dsh-user-questions'
@@ -324,6 +324,11 @@ export class ClaudeTuiApplication {
       if (planMode !== undefined) this.planModeActive = planMode
       this.tui.requestRender()
     }))
+    this.disposers.push(this.agent.ctx.on('agent/assistant-stream', ({ agent, frame }) => {
+      if (agent !== this.agent || this.closed) return
+      this.transcript.applyStream(frame)
+      this.tui.requestRender()
+    }))
     this.disposers.push(this.agent.ctx.on('agent/status', ({ agent, status }) => {
       if (agent !== this.agent || this.closed) return
       this.runtime.terminal.setProgress(status === 'running')
@@ -547,7 +552,8 @@ export class ClaudeTuiApplication {
   ): void {
     const controller = new AbortController()
     this.commandControllers.add(controller)
-    const encodedImages: EncodedImageAttachment[] = images.map(image => ({
+    const encodedImages = images.map(image => ({
+      type: 'image' as const,
       mediaType: image.mediaType,
       data: Buffer.from(image.data).toString('base64'),
       ...(image.name === undefined ? {} : { name: image.name }),

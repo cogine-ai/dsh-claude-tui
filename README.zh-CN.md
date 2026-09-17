@@ -13,7 +13,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.1.2-rc.1" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.1.5-rc.2" src="https://img.shields.io/badge/DSH-0.1.5--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -32,7 +32,7 @@
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定本次版本，在包名后添加 `@0.1.6`。
+这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定当前已发布版本，在包名后添加 `@0.1.6`。
 
 `legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；本版本显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 也通过了标准 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
 
@@ -47,30 +47,29 @@ dshtui
 
 全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`。使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
-## 支持 DSH 0.1.2-rc.1
+## 支持 DSH 0.1.5-rc.2（尚未发布）
 
-`0.1.6` 把包内 Harness 固定到 `0.1.2-rc.1`，外部运行时须满足 `>=0.1.2-rc.1 <0.1.3` 并通过行为探针。`0.1.5` 使用上一版 `0.1.1-rc.2` 运行时。升级说明见 [v0.1.6 发布说明](./docs/releases/v0.1.6.zh-CN.md)。
+`0.1.7` 源码候选版本把 Harness 固定到 `0.1.5-rc.2`，外部运行时须满足 `>=0.1.5-rc.2 <0.1.6` 并通过行为探针。已发布的 TUI `0.1.6` 仍使用 DSH `0.1.2-rc.1`；上面的 npm 命令安装已发布版本，不会安装本候选版本。
 
-- 会话回放改用 `snapshotEvents()`；运行时探针会追加真实事件，验证 `seq`、`eventAt()`、快照读回及持久化 flush。
-- 结构化提问改用 DSH 的 Agent 作用域 `user-questions/request` waterfall；模型和提供方配置接入当前 settings API。
-- PTC 模式使用上游的新值 `ptc`；启动器与 bundle 仍接受 `DSH_TOOLS_MODE=code` 作为别名，Native 与 Both 模式继续可选。
-- Cordis、loader、group 和 schema peer 与新版 Harness 对齐；生产 shrinkwrap 只包含 `0.1.2-rc.1` 一条 DSH 版本线。
-- 保留已有图片输入、附件持久化、计划模式切换、回复计时、审批与会话选择器。
+- 实时回复改用 Agent assistant-stream 事件；最终回复、用量与计时从 V3 Session 聚合事件回放。重试时清除未提交草稿，避免重复显示已提交文字。
+- 模型选择通过 setup 显式接收 Agent；命令图片采用新版带类型的附件信封，Profile 改用 `personaPrefix`。
+- 保留 Claude Code `2.1.227` 参考布局、配色、键盘操作、审批、结构化问题、图片输入、计划模式和会话选择器。
+- macOS 文件监听默认采用 1 秒轮询，保留 skills、settings 和 profile 的自动更新，规避原生监听器退出挂起；显式设置的 `CHOKIDAR_USEPOLLING` / `CHOKIDAR_INTERVAL` 优先。
+- PTC 保持 `0.1.5` 的 worker-thread 运行时，不引入 `0.1.6-alpha` 的不兼容 PTC 和插件生命周期变化。
+- 生产依赖图与[官方中英文文档镜像](./docs/upstream/dsh/README.md)使用同一精确版本；镜像包含 1,412 个原始文件，不进入 npm 安装包。
 
-从 checkout 运行：
+从本候选版本的 checkout 运行：
 
 ```bash
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
-DSH_HOME=/tmp/dsh-claude-tui-rc1 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
+DSH_HOME=/tmp/dsh-claude-tui-0.1.5-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
 ```
 
-DSH 有详尽的[官方文档站](https://deepseek-harness.github.io/deepseek-harness/)。本仓库维护与支持版本一致的[官方中英文文档镜像](./docs/upstream/dsh/README.md)，包含完整索引、来源校验和、许可证，以及 `docs:dsh:sync` / `docs:dsh:check` 命令。CI 离线校验快照；镜像只保留在仓库中，不进入 npm 安装包。
-
 > [!WARNING]
-> 上游 `0.1.2` 移除了可选的 SQLite Session 持久化后端；如果使用过该后端，请先用旧版 Harness 导出会话。SQLite 查询和索引存储是另一项服务。测试不同版本时使用独立 Home；本适配未增加降级或 SQLite 导出迁移功能。
+> DSH 现使用 V3 Session。受支持的旧日志迁移为新文件并保留原件；升级后的会话不能由旧版 Harness 读取。跨版本测试请使用独立 Home。可选 SQLite Session 后端已在 `0.1.2` 移除，使用过该后端的旧会话需先用原运行时导出；SQLite 查询和索引存储是另一项服务。
 
-完整变化见[官方发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.2-rc.1)，本项目验证范围见[适配记录](./docs/harness-0.1.2-rc.1-adaptation.md)。上游 Web 功能不代表本 TUI 已提供对应界面。
+完整变化见[官方 0.1.5 变更汇总](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.1)、[rc.2 说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.2)与[适配记录](./docs/harness-0.1.5-rc.2-adaptation.md)。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面。
 
 ## 你能获得什么
 
@@ -111,9 +110,9 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 1. 优先复用所选 `$DSH_HOME` 已关联的兼容 DSH，或 `PATH` 中来源可验证的 `dsh`；
 2. 在不继承凭据的临时 Home 中执行兼容探针；
-3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.2-rc.1`。
+3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.5-rc.2`。
 
-兼容性同时要求版本满足 `>=0.1.2-rc.1 <0.1.3` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
+兼容性同时要求版本满足 `>=0.1.5-rc.2 <0.1.6` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
 
 | 变量 | 行为 |
 | --- | --- |

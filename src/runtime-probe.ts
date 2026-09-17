@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { harnessEnvironment, harnessNodeArgs } from './harness-process.ts'
 import type { DshRuntime, RuntimeProbe } from './launch-plan.ts'
 import { PROFILE_NAME } from './launch-plan.ts'
 import { ensureManagedProfile, type PackageIdentity } from './managed-profile.ts'
@@ -82,10 +83,10 @@ async function runProbeProcess(
   return await new Promise<ProbeProcessResult>((resolveResult) => {
     const child = spawn(
       process.execPath,
-      [runtime.executable, '--profile', profile],
+      harnessNodeArgs(runtime.executable, ['--profile', profile]),
       {
         cwd,
-        env: environment,
+        env: harnessEnvironment(environment),
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: process.platform !== 'win32',
       },

@@ -94,6 +94,8 @@ writeFileSync(__RECORD__, JSON.stringify({
   hasNodeOptions: 'NODE_OPTIONS' in process.env,
   hasProxy: 'HTTPS_PROXY' in process.env,
   telemetry: process.env.DSH_TELEMETRY_DISABLED,
+  watchUsePolling: process.env.CHOKIDAR_USEPOLLING,
+  watchInterval: process.env.CHOKIDAR_INTERVAL,
 }))
 process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token,
@@ -120,6 +122,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
       hasNodeOptions: false,
       hasProxy: false,
       telemetry: '1',
+      ...(process.platform === 'darwin' ? { watchUsePolling: 'true', watchInterval: '1000' } : {}),
     })
     expect(observed.home).toBe(observed.userProfile)
     expect(observed.home).not.toBe(process.env.HOME)

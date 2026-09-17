@@ -6,7 +6,8 @@ import {
   wrapTextWithAnsi,
   type Component,
 } from '@earendil-works/pi-tui'
-import type { StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
+import type { AssistantStreamFrame } from '@deepseek-ai/dsh-agent'
+import { assistantStreamFirstTokenTime, type TokenUsage } from '@deepseek-ai/dsh-llm'
 import {
   isReplacementSurfaceEvent,
   type SessionEvent,
@@ -14,19 +15,6 @@ import {
 } from '@deepseek-ai/dsh-session'
 import { contentText, displayText, imageLabels, prettyArguments } from './text.ts'
 import { markdownTheme, type Palette } from './theme.ts'
-
-/** Preserve DSH first-token timing after its helper became private to Session Stats. */
-function hasModelOutput(chunk: StreamChunk): boolean {
-  switch (chunk.type) {
-    case 'text-delta':
-    case 'reasoning-delta':
-      return chunk.text.length > 0
-    case 'tool-call-delta':
-      return chunk.argumentsDelta.length > 0 || chunk.name !== undefined
-    default:
-      return false
-  }
-}
 
 /** Transcript nodes shown to the human. */
 export type TranscriptItem =
@@ -115,8 +103,7 @@ export class TranscriptModel {
   private readonly toolByCall = new Map<string, ToolItem>()
   private readonly turnStartedAt = new Map<number, number>()
   private readonly stepStartedAt = new Map<string, number>()
-  private readonly firstOutputAtByStep = new Map<string, number>()
-  private readonly outputChunkTimes = new Map<number, number>()
+  private liveStream: Extract<AssistantStreamFrame, { type: 'start' }> | undefined
   private localNoticeSequence = 0
 
   /** Rebuild from persisted history before listening for new events. */
@@ -126,8 +113,7 @@ export class TranscriptModel {
     this.toolByCall.clear()
     this.turnStartedAt.clear()
     this.stepStartedAt.clear()
-    this.firstOutputAtByStep.clear()
-    this.outputChunkTimes.clear()
+    this.liveStream = undefined
     this.usage.inputTokens = 0
     this.usage.outputTokens = 0
     this.usage.cacheReadTokens = 0
@@ -172,20 +158,6 @@ export class TranscriptModel {
         this.stepStartedAt.set(stepKey(event.data.turn, event.data.step), event.time)
         return
       }
-      case 'assistant/chunk': {
-        const chunk = event.data.chunk
-        if (hasModelOutput(chunk)) {
-          const key = stepKey(event.data.turn, event.data.step)
-          this.outputChunkTimes.set(event.seq, event.time)
-          if (!this.firstOutputAtByStep.has(key)) this.firstOutputAtByStep.set(key, event.time)
-        }
-        if (chunk.type !== 'text-delta' && chunk.type !== 'reasoning-delta') return
-        const assistant = this.assistant(event.data.turn, event.data.step)
-        if (chunk.type === 'text-delta') assistant.text += displayText(chunk.text)
-        if (chunk.type === 'reasoning-delta') assistant.reasoning += displayText(chunk.text)
-        assistant.revision += 1
-        return
-      }
       case 'assistant/message': {
         this.recordUsage(event.data.usage)
         this.recordPerformance(event)
@@ -197,11 +169,13 @@ export class TranscriptModel {
         assistant.revision += 1
         return
       }
+      case 'assistant/attempt': {
+        this.discardDraft(event.data.turn, event.data.step)
+        return
+      }
       case 'step/end': {
         const key = stepKey(event.data.turn, event.data.step)
         this.stepStartedAt.delete(key)
-        this.firstOutputAtByStep.delete(key)
-        this.outputChunkTimes.clear()
         return
       }
       case 'tool/call': {
@@ -259,6 +233,7 @@ export class TranscriptModel {
         return
       }
       case 'turn/end': {
+        this.liveStream = undefined
         this.finishAssistants(event.data.turn)
         const notice = turnNotice(event.data.reason)
         if (notice !== undefined) this.addNotice(notice.text, notice.tone)
@@ -275,6 +250,42 @@ export class TranscriptModel {
       default:
         return
     }
+  }
+
+  /** Project process-local frames; only committed Session events survive replay. */
+  applyStream(frame: AssistantStreamFrame): void {
+    if (frame.type === 'start') {
+      if (this.liveStream !== undefined) {
+        this.discardDraft(this.liveStream.turn, this.liveStream.step)
+      }
+      this.liveStream = frame
+      return
+    }
+    const live = this.liveStream
+    if (live === undefined || frame.attemptId !== live.attemptId) return
+    if (frame.type === 'end') {
+      // Committed messages arrived through session/event before this frame.
+      this.discardDraft(live.turn, live.step)
+      this.liveStream = undefined
+      return
+    }
+    const chunk = frame.chunk
+    if (chunk.type !== 'text-delta' && chunk.type !== 'reasoning-delta') return
+    if (chunk.text === '') return
+    const assistant = this.assistant(live.turn, live.step)
+    if (chunk.type === 'text-delta') assistant.text += displayText(chunk.text)
+    else assistant.reasoning += displayText(chunk.text)
+    assistant.revision += 1
+  }
+
+  /** Remove an uncommitted retry prefix without deleting a settled response. */
+  private discardDraft(turn: number, step: number): void {
+    const key = stepKey(turn, step)
+    const item = this.assistantByStep.get(key)
+    if (item === undefined || !item.pending) return
+    this.assistantByStep.delete(key)
+    const index = this.items.indexOf(item)
+    if (index >= 0) this.items.splice(index, 1)
   }
 
   /** Add terminal-only feedback without mutating the Session log. */
@@ -316,15 +327,10 @@ export class TranscriptModel {
     this.usage.cacheWriteTokens += usage.cacheWriteTokens ?? 0
   }
 
-  /** Derive latest response latency from durable step and raw-chunk timestamps. */
+  /** Derive latest response latency from durable step and compact stream timestamps. */
   private recordPerformance(event: SessionEvent<'assistant/message'>): void {
     const key = stepKey(event.data.turn, event.data.step)
-    const referencedTimes = event.sourceEventSeqs
-      ?.map(seq => this.outputChunkTimes.get(seq))
-      .filter((time): time is number => time !== undefined)
-    const firstOutputAt = referencedTimes !== undefined && referencedTimes.length > 0
-      ? Math.min(...referencedTimes)
-      : this.firstOutputAtByStep.get(key)
+    const firstOutputAt = assistantStreamFirstTokenTime(event.data.stream)
     const startedAt = this.stepStartedAt.get(key)
     this.performance.timeToFirstTokenMs = startedAt === undefined || firstOutputAt === undefined
       ? undefined
@@ -338,9 +344,6 @@ export class TranscriptModel {
       || generationMs <= 0
       ? undefined
       : outputTokens / (generationMs / 1000)
-
-    this.outputChunkTimes.clear()
-    this.firstOutputAtByStep.delete(key)
   }
 
   /** A finish-only provider chunk must not leave a permanent working spinner. */

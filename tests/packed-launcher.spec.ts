@@ -64,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.2-rc.1',
+      version: '0.1.5-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -84,6 +84,8 @@ writeFileSync(process.env.DSH_FAKE_READY, JSON.stringify({
   launchNotice: process.env.DSH_CLAUDE_TUI_LAUNCH_NOTICE,
   toolsMode: process.env.DSH_TOOLS_MODE,
   runtimeSnapshot: process.env.DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT,
+  watchUsePolling: process.env.CHOKIDAR_USEPOLLING,
+  watchInterval: process.env.CHOKIDAR_INTERVAL,
 }))
 if (process.env.DSH_FAKE_EXIT_CODE !== undefined) {
   process.exit(Number(process.env.DSH_FAKE_EXIT_CODE))
@@ -117,6 +119,8 @@ setInterval(() => {}, 1_000)
         DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unused-signal.txt'),
         DSH_FAKE_EXIT_CODE: '23',
         DSH_TOOLS_MODE: ' native ',
+        CHOKIDAR_USEPOLLING: undefined,
+        CHOKIDAR_INTERVAL: undefined,
       }),
     })
 
@@ -136,13 +140,33 @@ setInterval(() => {}, 1_000)
       cwd: realpathSync(workspace),
       dshHome,
       toolsMode: 'native',
+      ...(process.platform === 'darwin' ? { watchUsePolling: 'true', watchInterval: '1000' } : {}),
       runtimeSnapshot: JSON.stringify({
-        harnessVersion: '0.1.2-rc.1',
+        harnessVersion: '0.1.5-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: dshHome,
         toolsMode: 'native',
       }),
+    })
+  })
+
+  it('preserves explicit file-watcher environment overrides', () => {
+    const readyPath = join(temporaryDirectory, 'watcher-override-record.json')
+    const result = spawnSync(process.execPath, [executable, '--dump-config'], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: bundledEnvironment({
+        DSH_HOME: join(temporaryDirectory, 'watcher-override-home'),
+        DSH_FAKE_READY: readyPath,
+        DSH_FAKE_EXIT_CODE: '0',
+        CHOKIDAR_USEPOLLING: 'false',
+        CHOKIDAR_INTERVAL: '250',
+      }),
+    })
+    expect(result.status).toBe(0)
+    expect(JSON.parse(readFileSync(readyPath, 'utf8'))).toMatchObject({
+      watchUsePolling: 'false', watchInterval: '250',
     })
   })
 
@@ -287,7 +311,7 @@ setInterval(() => {}, 1_000)
     mkdirSync(systemPackage, { recursive: true })
     writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.2-rc.1',
+      version: '0.1.5-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
     }, undefined, 2)}\n`)

@@ -16,7 +16,7 @@ import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-cmdline'
 import type {} from '@deepseek-ai/dsh-commands'
 import type {} from '@deepseek-ai/dsh-attachment'
-import { createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
+import { createAssistantMessage, createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-user-approval'
 import type {} from '@deepseek-ai/dsh-user-questions'
@@ -110,7 +110,7 @@ function initialSelection(
 function selectionSetup(
   defaults: ModelSelection,
   override: ModelSelection | undefined,
-): { setup(agentCtx: Context): void; selection: ModelSelectionRef } {
+): { setup(agentCtx: Context, subject: Agent): void; selection: ModelSelectionRef } {
   let agent: Agent | undefined
   let picked = override
   const selection: ModelSelectionRef = {
@@ -131,9 +131,8 @@ function selectionSetup(
   }
   return {
     selection,
-    setup(agentCtx: Context): void {
-      agent = agentCtx.agent
-      if (agent === undefined) throw new Error('claude-tui: Agent setup has no scoped Agent')
+    setup(agentCtx: Context, subject: Agent): void {
+      agent = subject
       installModelSelection(agentCtx, selection)
     },
   }
@@ -249,11 +248,27 @@ export async function runCompatibilityProbe(
       source: { kind: 'user' },
     }), { surfaceOp: 'append' })
     if (
-      session.seq !== previousEnd + 1
+      session.header.version !== 3
+      || session.seq !== previousEnd + 1
       || session.eventAt(event.seq) !== event
       || session.snapshotEvents(previousEnd).at(-1) !== event
     ) {
       throw new Error('claude-tui: compatibility probe could not read the appended Session event')
+    }
+    const response = session.append('assistant/message', {
+      turn: 1,
+      step: 1,
+      message: createAssistantMessage({
+        content: [{ type: 'text', text: 'dsh-claude-tui stream probe' }],
+        source: { provider: defaults.provider, model: defaults.model },
+      }),
+      stream: [{
+        type: 'text-chunks', time0: Date.now(), index: 0, dt: [0],
+        texts: ['dsh-claude-tui stream probe'],
+      }],
+    }, { surfaceOp: 'append' })
+    if (session.snapshotEvents(previousEnd).at(-1) !== response) {
+      throw new Error('claude-tui: compatibility probe could not read the V3 assistant stream')
     }
     await sessions.flush(session)
   } finally {

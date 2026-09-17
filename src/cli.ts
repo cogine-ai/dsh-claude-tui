@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import { constants, homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { harnessEnvironment, harnessNodeArgs } from './harness-process.ts'
 import {
   createLaunchPlanner,
   type LaunchPlan,
@@ -24,7 +25,7 @@ import {
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
 import type { DshToolsMode } from './runtime-snapshot.ts'
 
-const BUNDLED_DSH_VERSION = '0.1.2-rc.1'
+const BUNDLED_DSH_VERSION = '0.1.5-rc.2'
 const RUNTIME_ENV = 'DSH_CLAUDE_TUI_RUNTIME'
 const LAUNCH_NOTICE_ENV = 'DSH_CLAUDE_TUI_LAUNCH_NOTICE'
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
@@ -131,11 +132,11 @@ function launchAdapter(identity: PackageIdentity): LaunchPlannerAdapter {
 async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<number> {
   const requestedToolsMode = (process.env.DSH_TOOLS_MODE ?? 'ptc').trim()
   const toolsMode = requestedToolsMode === 'code' ? 'ptc' : requestedToolsMode
-  const environment: NodeJS.ProcessEnv = {
+  const environment = harnessEnvironment({
     ...process.env,
     DSH_HOME: plan.home.path,
     DSH_TOOLS_MODE: toolsMode,
-  }
+  })
   delete environment[PROBE_TOKEN_ENV]
   delete environment[LAUNCH_NOTICE_ENV]
   delete environment[RUNTIME_SNAPSHOT_ENV]
@@ -149,7 +150,7 @@ async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<nu
       toolsMode,
     })
   }
-  const harnessArgs = [plan.runtime.executable, '--profile', plan.profile.name, ...args]
+  const harnessArgs = harnessNodeArgs(plan.runtime.executable, ['--profile', plan.profile.name, ...args])
 
   // Supported POSIX Node lines expose execve: replacing this process gives
   // Harness the original PID, TTY, signals, and exit semantics without a

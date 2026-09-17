@@ -233,10 +233,22 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
   }
 }
 
+/** Keep user-wide skills, credentials, and settings outside installed-artifact tests. */
 function stringEnvironment(overrides: NodeJS.ProcessEnv): Record<string, string> {
+  if (overrides.DSH_HOME === undefined) throw new Error('packed TUI tests require an isolated DSH_HOME')
+  const home = join(overrides.DSH_HOME, 'os-home')
+  mkdirSync(home, { recursive: true })
   return Object.fromEntries(
-    Object.entries({ ...process.env, ...overrides })
-      .filter((entry): entry is [string, string] => entry[1] !== undefined),
+    Object.entries({
+      ...process.env,
+      ...overrides,
+      HOME: home,
+      USERPROFILE: home,
+      XDG_CONFIG_HOME: join(home, '.config'),
+      XDG_DATA_HOME: join(home, '.local/share'),
+      XDG_STATE_HOME: join(home, '.local/state'),
+      XDG_CACHE_HOME: join(home, '.cache'),
+    }).filter((entry): entry is [string, string] => entry[1] !== undefined),
   )
 }
 
@@ -368,7 +380,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.1.2-rc.1',
+      '0.1.5-rc.2',
     )
   }, 30_000)
 
@@ -387,6 +399,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/cordis.patch.yml',
       'package/docs/assets/terminal-preview.svg',
       'package/docs/harness-0.1.2-rc.1-adaptation.md',
+      'package/docs/harness-0.1.5-rc.2-adaptation.md',
       'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
@@ -419,14 +432,14 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.6',
+      version: '0.1.7',
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.1.2-rc.1',
-        '@deepseek-ai/dsh-authorization': '0.1.2-rc.1',
+        '@deepseek-ai/dsh': '0.1.5-rc.2',
+        '@deepseek-ai/dsh-authorization': '0.1.5-rc.2',
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
@@ -441,7 +454,7 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.1.2-rc.1 <0.1.3')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.1.5-rc.2 <0.1.6')).toBe(true)
     expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
       .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
     expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
@@ -465,7 +478,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.1.2-rc.1',
+      '@deepseek-ai/dsh': '0.1.5-rc.2',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
@@ -476,7 +489,7 @@ describe('dsh-claude-tui bundle', () => {
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.1.2-rc.1']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.1.5-rc.2']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -490,7 +503,7 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.1.2-rc.1')
+    expect(installedDsh.version).toBe('0.1.5-rc.2')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
@@ -596,7 +609,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.6\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.7\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -612,7 +625,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.6\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.7\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -634,6 +647,10 @@ describe('dsh-claude-tui bundle', () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('claude-tui-startup')
     expect(result.stderr).toBe('')
+    if (process.platform === 'darwin') {
+      expect(result.stdout).toContain('watchUsePolling: true')
+      expect(result.stdout).toContain('watchPollIntervalMs: 1000')
+    }
 
     const profileDirectory = join(dshHome, 'profiles/dsh-claude-tui')
     const manifest = JSON.parse(
@@ -726,6 +743,10 @@ describe('dsh-claude-tui bundle', () => {
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
     })
+    const skillDirectory = join(env.HOME!, '.agents/skills/packed-exit-check')
+    mkdirSync(skillDirectory, { recursive: true })
+    writeFileSync(join(skillDirectory, 'SKILL.md'),
+      '---\nname: packed-exit-check\ndescription: Verify graceful exit with watched skills.\n---\nUse the packed test marker.\n')
     try {
       const first = await runPackedTui(
         installedExecutable,
@@ -739,8 +760,8 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.6')
-      expect(first.output).toContain('Harness 0.1.2-rc.1 · bundled · PTC')
+      expect(first.output).toContain('v0.1.7')
+      expect(first.output).toContain('Harness 0.1.5-rc.2 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -764,10 +785,46 @@ describe('dsh-claude-tui bundle', () => {
       const modelRequests = server.requests.filter(request => Array.isArray(request.body.tools))
       expect(modelRequests.length).toBeGreaterThanOrEqual(2)
       expect(JSON.stringify(modelRequests.map(request => request.body))).toContain('packed tool result')
+      expect(JSON.stringify(modelRequests[0]?.body)).toContain('packed-exit-check')
     } finally {
       await server.close()
     }
   }, 120_000)
+
+  it('migrates a 0.1.2-rc.1 writer fixture while preserving its original log', async () => {
+    const dshHome = join(packDirectory, 'migration-home')
+    const workspace = join(packDirectory, 'migration-workspace')
+    mkdirSync(workspace)
+    const env = stringEnvironment({
+      DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      DSH_TELEMETRY_DISABLED: '1',
+      DEEPSEEK_API_KEY: 'packed-migration-key',
+      TERM: 'xterm-256color',
+    })
+    const initialized = spawnSync(process.execPath, [installedExecutable, '--dump-config'], {
+      cwd: workspace, env, encoding: 'utf8', timeout: 30_000,
+    })
+    expect(initialized.status).toBe(0)
+    writeFileSync(join(dshHome, 'profiles/dsh-claude-tui/cordis.patch.yml'),
+      `- id: session-persistence-jsonl\n  config:\n    root: ${JSON.stringify(join(dshHome, 'sessions'))}\n    compression: none\n`)
+    const sessionDirectory = join(dshHome, 'sessions/_no-cwd/legacy-tui-session')
+    mkdirSync(sessionDirectory, { recursive: true })
+    const original = readFileSync(join(repositoryRoot, 'tests/fixtures/dsh-0.1.2-rc.1/session.jsonl'))
+    const originalPath = join(sessionDirectory, 'session.jsonl')
+    writeFileSync(originalPath, original)
+    const resumed = await runPackedTui(installedExecutable, ['--resume', 'legacy-tui-session'],
+      workspace, env, 'A restored legacy reply.')
+    expect(resumed.exitCode).toBe(0)
+    expect(resumed.signal).toBe(0)
+    expect(resumed.output).toContain('A prompt from DSH 0.1.2-rc.1')
+    expect(readFileSync(originalPath)).toEqual(original)
+    const migrated = readFileSync(join(sessionDirectory, 'session.v3.jsonl'), 'utf8')
+      .trim().split('\n').map(line => JSON.parse(line) as { version?: number; type?: string })
+    expect(migrated[0]?.version).toBe(3)
+    expect(migrated.some(event => event.type === 'assistant/message')).toBe(true)
+    expect(migrated.some(event => event.type === 'assistant/chunk')).toBe(false)
+  }, 60_000)
 
   it('toggles and resumes plan mode through macOS Shift+Tab in the installed PTY', async () => {
     const dshHome = join(packDirectory, 'shift-tab-dsh-home')
@@ -913,7 +970,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.1.2-rc.1 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.1.5-rc.2 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))
