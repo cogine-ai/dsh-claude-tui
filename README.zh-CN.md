@@ -54,7 +54,7 @@ dshtui
 - 实时回复改用 Agent assistant-stream 事件；最终回复、用量与计时从 V3 Session 聚合事件回放。重试时清除未提交草稿，避免重复显示已提交文字。
 - 模型选择通过 setup 显式接收 Agent；命令图片采用新版带类型的附件信封，Profile 改用 `personaPrefix`。
 - 保留 Claude Code `2.1.227` 参考布局、配色、键盘操作、审批、结构化问题、图片输入、计划模式和会话选择器。
-- macOS 的 skills 采用 1 秒间隔轮询，保留自动发现与更新，规避原生文件监听器在退出时挂起。
+- macOS 文件监听默认采用 1 秒轮询，保留 skills、settings 和 profile 的自动更新，规避原生监听器退出挂起；显式设置的 `CHOKIDAR_USEPOLLING` / `CHOKIDAR_INTERVAL` 优先。
 - PTC 保持 `0.1.5` 的 worker-thread 运行时，不引入 `0.1.6-alpha` 的不兼容 PTC 和插件生命周期变化。
 - 生产依赖图与[官方中英文文档镜像](./docs/upstream/dsh/README.md)使用同一精确版本；镜像包含 1,412 个原始文件，不进入 npm 安装包。
 

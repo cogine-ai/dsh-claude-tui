@@ -5,6 +5,18 @@ launcher must make an existing DSH environment useful when it is safe, while
 remaining able to start from a clean machine without adopting or overwriting
 unowned state.
 
+Node `22.19+` and `24+` are supported. On Node `24.0` and `24.1`, the launcher
+and isolated runtime probe explicitly dispatch DSH's exported `runCli()` because
+those versions lack the `import.meta.main` entry guard used by DSH `0.1.5`.
+Other supported versions invoke the Harness executable directly. Both paths
+preserve its arguments and foreground process behavior.
+
+On macOS, Harness child processes default to `CHOKIDAR_USEPOLLING=true` and
+`CHOKIDAR_INTERVAL=1000`. This retains settings, skills, and profile updates
+while avoiding native FSEvents close deadlocks. The normal launcher preserves
+explicit values from its caller; isolated probes use their own defaults. These
+defaults apply to the child environment and may be inherited by its tools.
+
 ## Default decision order
 
 With `DSH_CLAUDE_TUI_RUNTIME=auto` (the default), the launcher completes the

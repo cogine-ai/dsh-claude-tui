@@ -55,7 +55,7 @@ The `0.1.7` source candidate pins Harness to `0.1.5-rc.2`. External runtimes mus
 - Live replies use Agent assistant-stream events; completed replies, usage, and timing replay from V3 Session settlements. Retry drafts are removed without duplicating committed text.
 - Model selection receives the explicit Agent during setup. Command images use the current typed attachment envelope, and the profile uses `personaPrefix`.
 - The Claude Code `2.1.227` reference layout, colors, keyboard controls, approvals, questions, image composer, plan toggle, and Session picker are retained.
-- On macOS, skill updates use a one-second polling interval to avoid native file-watcher shutdown hangs while preserving live discovery.
+- On macOS, file watchers default to one-second polling to avoid native shutdown hangs while preserving live skill, settings, and profile updates. Explicit `CHOKIDAR_USEPOLLING` / `CHOKIDAR_INTERVAL` values take precedence.
 - PTC keeps the `0.1.5` worker-thread runtime. This candidate does not import the incompatible `0.1.6-alpha` PTC or plugin-lifecycle changes.
 - The production dependency graph and [official bilingual documentation mirror](./docs/upstream/dsh/README.md) follow the same exact release. The mirror contains 1,412 original files and is excluded from npm packages.
 
