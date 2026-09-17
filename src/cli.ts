@@ -24,7 +24,7 @@ import {
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
 import type { DshToolsMode } from './runtime-snapshot.ts'
 
-const BUNDLED_DSH_VERSION = '0.1.2-rc.1'
+const BUNDLED_DSH_VERSION = '0.1.5-rc.2'
 const RUNTIME_ENV = 'DSH_CLAUDE_TUI_RUNTIME'
 const LAUNCH_NOTICE_ENV = 'DSH_CLAUDE_TUI_LAUNCH_NOTICE'
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'

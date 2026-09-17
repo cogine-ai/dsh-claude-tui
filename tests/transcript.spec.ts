@@ -1,20 +1,47 @@
 /** Durable transcript projection and terminal-control safety. */
 import { describe, expect, it } from 'vitest'
-import { ToolCallId, createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
+import {
+  AssistantStreamAccumulator,
+  LlmAttemptId,
+  ToolCallId,
+  createAssistantMessage,
+  createUserMessage,
+} from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { displayText, prettyArguments } from '../src/text.ts'
 import { createPalette } from '../src/theme.ts'
 import { TranscriptComponent, TranscriptModel } from '../src/transcript.ts'
 
+function start(model: TranscriptModel, id = 'attempt-1'): void {
+  model.applyStream({ type: 'start', attemptId: LlmAttemptId(id), revision: 1, turn: 1, step: 1 })
+}
+
+function text(model: TranscriptModel, value: string, id = 'attempt-1'): void {
+  model.applyStream({
+    type: 'chunk', attemptId: LlmAttemptId(id), revision: 2, index: 0, time: 300,
+    chunk: { type: 'text-delta', index: 0, text: value },
+  })
+}
+
+function settled(session: Session, value: string, interrupted = false): SessionEvent<'assistant/message'> {
+  return session.append('assistant/message', {
+    turn: 1, step: 1,
+    message: createAssistantMessage({
+      content: [{ type: 'text', text: value }],
+      source: { provider: 'test', model: 'model' },
+    }),
+    stream: [{ type: 'text-chunks', time0: 300, index: 0, dt: [0], texts: [value] }],
+    usage: { inputTokens: 12, outputTokens: 5, cacheReadTokens: 3, cacheWriteTokens: 2 },
+    ...(interrupted ? { interrupted: true as const } : {}),
+  }, { surfaceOp: 'append' })
+}
+
 describe('TranscriptModel', () => {
   it('retains durable image count for Claude-like Session replay without polluting prompt text', () => {
     const session = Session.create(SessionId('image-projection'))
     const attachment = {
-      attachmentId: 'image-1' as never,
-      mediaType: 'image/png' as const,
-      bytes: 8,
-      width: 1,
-      height: 1,
+      attachmentId: 'image-1' as never, mediaType: 'image/png' as const,
+      bytes: 8, width: 1, height: 1,
     }
     session.append('user/message', createUserMessage({
       content: [
@@ -24,192 +51,118 @@ describe('TranscriptModel', () => {
       ],
       source: { kind: 'user' },
     }), { surfaceOp: 'append' })
-
     const model = new TranscriptModel()
     model.replay(session.snapshotEvents())
-
-    expect(model.items).toEqual([
-      expect.objectContaining({
-        kind: 'user',
-        text: 'inspect this',
-        imageCount: 2,
-      }),
-    ])
-    const rendered = new TranscriptComponent(model, createPalette(false), 100, 10, true)
-      .render(80)
-      .join('\n')
-    expect(rendered).toContain('❯ [Image #1] [Image #2] inspect this')
+    expect(model.items).toEqual([expect.objectContaining({ kind: 'user', text: 'inspect this', imageCount: 2 })])
+    expect(new TranscriptComponent(model, createPalette(false), 100, 10, true).render(80).join('\n'))
+      .toContain('❯ [Image #1] [Image #2] inspect this')
   })
 
-  it('replays user, assistant, tool, usage, and turn outcomes in log order', () => {
+  it('settles live text once and reproduces the same transcript and usage on V3 replay', () => {
     const session = Session.create(SessionId('projection'))
-    const user = createUserMessage({
-      content: [{ type: 'text', text: 'inspect' }],
-      source: { kind: 'user' },
-    })
     session.append('turn/start', { turn: 1 })
     session.append('step/start', { turn: 1, step: 1 })
-    session.append('user/message', user, { surfaceOp: 'append' })
-    session.append('assistant/chunk', {
-      turn: 1,
-      step: 1,
-      chunk: { type: 'text-delta', index: 0, text: 'draft' },
-    })
-    session.append('assistant/message', {
-      turn: 1,
-      step: 1,
-      message: createAssistantMessage({
-        content: [
-          { type: 'reasoning', text: 'check first' },
-          { type: 'text', text: 'final' },
-        ],
-        source: { provider: 'test', model: 'model' },
-      }),
-      usage: {
-        inputTokens: 12,
-        outputTokens: 5,
-        cacheReadTokens: 3,
-        cacheWriteTokens: 2,
-      },
-    }, { surfaceOp: 'append' })
-    session.append('step/end', { turn: 1, step: 1 })
-    session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
-
+    session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'inspect' }], source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
     const model = new TranscriptModel()
     model.replay(session.snapshotEvents())
-
-    expect(model.items.map(item => item.kind)).toEqual(['user', 'assistant', 'completion'])
-    expect(model.items[1]).toMatchObject({ text: 'final', reasoning: 'check first', pending: false })
-    expect(model.items[2]).toMatchObject({ kind: 'completion', seconds: 0 })
-    expect(model.usage).toEqual({
-      inputTokens: 12,
-      outputTokens: 5,
-      cacheReadTokens: 3,
-      cacheWriteTokens: 2,
+    start(model)
+    text(model, 'draft')
+    expect(model.items[1]).toMatchObject({ text: 'draft', pending: true })
+    model.apply(settled(session, 'final'))
+    model.applyStream({
+      type: 'end', attemptId: LlmAttemptId('attempt-1'), revision: 3, index: 1,
+      outcome: { kind: 'committed', eventType: 'assistant/message', seq: SessionSeq(3) },
     })
+    model.apply(session.append('step/end', { turn: 1, step: 1 }))
+    model.apply(session.append('turn/end', { turn: 1, reason: { kind: 'completed' } }))
+    expect(model.items.map(item => item.kind)).toEqual(['user', 'assistant', 'completion'])
+    expect(model.items[1]).toMatchObject({ text: 'final', pending: false })
+    expect(model.usage).toEqual({ inputTokens: 12, outputTokens: 5, cacheReadTokens: 3, cacheWriteTokens: 2 })
+    const replay = new TranscriptModel()
+    replay.replay(session.snapshotEvents())
+    expect(replay.items.map(({ revision: _revision, ...item }) => item))
+      .toEqual(model.items.map(({ revision: _revision, ...item }) => item))
+    expect(replay.usage).toEqual(model.usage)
+    expect(replay.performance).toEqual(model.performance)
+  })
+
+  it('discards failed and abandoned attempt drafts before retrying the same step', () => {
+    const session = Session.create(SessionId('retry'))
+    const model = new TranscriptModel()
+    start(model)
+    text(model, 'failed prefix')
+    model.apply(session.append('assistant/attempt', { turn: 1, step: 1, stream: [] }))
+    expect(model.items).toEqual([])
+    start(model, 'retry')
+    text(model, 'stale frame', 'attempt-1')
+    text(model, 'new prefix', 'retry')
+    model.applyStream({ type: 'end', attemptId: LlmAttemptId('attempt-1'), revision: 3, index: 1, outcome: { kind: 'abandoned' } })
+    expect(model.items).toEqual([expect.objectContaining({ text: 'new prefix', pending: true })])
+    model.applyStream({ type: 'end', attemptId: LlmAttemptId('retry'), revision: 3, index: 1, outcome: { kind: 'abandoned' } })
+    expect(model.items).toEqual([])
+    model.replay(session.snapshotEvents())
+    expect(model.items).toEqual([])
+  })
+
+  it('preserves a committed interrupted prefix after its live attempt ends', () => {
+    const session = Session.create(SessionId('interrupted'))
+    const model = new TranscriptModel()
+    start(model)
+    text(model, 'partial')
+    model.apply(settled(session, 'partial', true))
+    model.applyStream({ type: 'end', attemptId: LlmAttemptId('attempt-1'), revision: 3, index: 1, outcome: { kind: 'abandoned' } })
+    model.apply(session.append('turn/end', { turn: 1, reason: { kind: 'aborted', reason: { kind: 'user' } } }))
+    expect(model.items[0]).toMatchObject({ text: 'partial', pending: false })
+    expect(model.items[1]).toMatchObject({ kind: 'notice', text: 'Interrupted by user.' })
   })
 
   it('renders untrusted terminal controls visibly and formats JSON arguments', () => {
     expect(displayText('safe\u001B[31mred\u0007')).toBe('safe\\x1b[31mred\\x07')
     expect(prettyArguments('{"path":"a","count":2}')).toBe('{\n  "path": "a",\n  "count": 2\n}')
+    const model = new TranscriptModel()
+    start(model)
+    text(model, '\u001B[2J')
+    expect(model.items[0]).toMatchObject({ text: '\\x1b[2J' })
   })
 
-  it('removes an empty pending assistant when a provider fails at finish', () => {
-    const session = Session.create(SessionId('failed-finish'))
-    session.append('turn/start', { turn: 1 })
-    session.append('assistant/chunk', {
-      turn: 1,
-      step: 1,
-      chunk: {
-        type: 'finish',
-        reason: { kind: 'error', failure: { code: 'MISSING_CREDENTIAL', message: 'missing key' } },
-      },
-    })
-    session.append('turn/end', {
-      turn: 1,
-      reason: { kind: 'error', error: { code: 'MISSING_CREDENTIAL', message: 'missing key' } },
-    })
-
+  it('does not create a working assistant for tool-only or finish-only streams', () => {
     const model = new TranscriptModel()
-    model.replay(session.snapshotEvents())
-
-    expect(model.items.map(item => item.kind)).toEqual(['notice', 'completion'])
-  })
-
-  it('does not create a working assistant for a tool-call stream block', () => {
-    const session = Session.create(SessionId('tool-stream'))
-    session.append('turn/start', { turn: 1 })
-    session.append('assistant/chunk', {
-      turn: 1,
-      step: 1,
-      chunk: {
-        type: 'block-end',
-        index: 0,
-        block: { type: 'tool-call', id: ToolCallId('call-1'), name: 'bash', arguments: '{}' },
-      },
+    start(model)
+    model.applyStream({
+      type: 'chunk', attemptId: LlmAttemptId('attempt-1'), revision: 2, index: 0, time: 100,
+      chunk: { type: 'block-end', index: 0, block: { type: 'tool-call', id: ToolCallId('call-1'), name: 'bash', arguments: '{}' } },
     })
-
-    const model = new TranscriptModel()
-    model.replay(session.snapshotEvents())
-
+    model.applyStream({
+      type: 'chunk', attemptId: LlmAttemptId('attempt-1'), revision: 3, index: 1, time: 101,
+      chunk: { type: 'finish', reason: { kind: 'error', failure: { code: 'MISSING_CREDENTIAL', message: 'missing key' } } },
+    })
     expect(model.items).toEqual([])
   })
 
-  it('uses the DSH token boundary for tool-only response timing', () => {
-    const message = createAssistantMessage({
-      content: [{
-        type: 'tool-call',
-        id: ToolCallId('call-timing'),
-        name: 'bash',
-        arguments: '{}',
-      }],
-      source: { provider: 'test', model: 'model' },
-    })
-    const events = [
+  it('uses compact stream token boundaries for tool-only timing after a cold replay', () => {
+    const stream = new AssistantStreamAccumulator()
+    stream.push({ time: 110, chunk: { type: 'block-start', index: 0, blockType: 'tool-call' } })
+    stream.push({ time: 120, chunk: { type: 'text-delta', index: 0, text: '' } })
+    stream.push({ time: 130, chunk: { type: 'tool-call-delta', index: 0, id: ToolCallId('call-timing'), argumentsDelta: '' } })
+    stream.push({ time: 300, chunk: { type: 'tool-call-delta', index: 0, id: ToolCallId('call-timing'), name: 'bash', argumentsDelta: '' } })
+    const events: SessionEvent[] = [
       { type: 'step/start', seq: SessionSeq(0), time: 100, data: { turn: 1, step: 1 } },
       {
-        type: 'assistant/chunk',
-        seq: SessionSeq(1),
-        time: 110,
-        data: { turn: 1, step: 1, chunk: { type: 'block-start', index: 0, blockType: 'tool-call' } },
-      },
-      {
-        type: 'assistant/chunk',
-        seq: SessionSeq(2),
-        time: 120,
-        data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: '' } },
-      },
-      {
-        type: 'assistant/chunk',
-        seq: SessionSeq(3),
-        time: 130,
+        type: 'assistant/message', seq: SessionSeq(1), time: 500, surfaceOp: 'append',
         data: {
-          turn: 1,
-          step: 1,
-          chunk: {
-            type: 'tool-call-delta',
-            index: 0,
-            id: ToolCallId('call-timing'),
-            argumentsDelta: '',
-          },
+          turn: 1, step: 1,
+          message: createAssistantMessage({
+            content: [{ type: 'tool-call', id: ToolCallId('call-timing'), name: 'bash', arguments: '{}' }],
+            source: { provider: 'test', model: 'model' },
+          }),
+          stream: [...stream.snapshot()], usage: { inputTokens: 10, outputTokens: 4 },
         },
       },
-      {
-        type: 'assistant/chunk',
-        seq: SessionSeq(4),
-        time: 300,
-        data: {
-          turn: 1,
-          step: 1,
-          chunk: {
-            type: 'tool-call-delta',
-            index: 0,
-            id: ToolCallId('call-timing'),
-            name: 'bash',
-            argumentsDelta: '',
-          },
-        },
-      },
-      {
-        type: 'assistant/message',
-        seq: SessionSeq(5),
-        time: 500,
-        data: {
-          turn: 1,
-          step: 1,
-          message,
-          usage: { inputTokens: 10, outputTokens: 4 },
-        },
-        sourceEventSeqs: [SessionSeq(1), SessionSeq(2), SessionSeq(3), SessionSeq(4)],
-      },
-    ] satisfies SessionEvent[]
+    ]
     const model = new TranscriptModel()
-
     model.replay(events)
-
-    expect(model.performance).toEqual({
-      timeToFirstTokenMs: 200,
-      outputTokensPerSecond: 20,
-    })
+    expect(model.performance).toEqual({ timeToFirstTokenMs: 200, outputTokensPerSecond: 20 })
   })
 })

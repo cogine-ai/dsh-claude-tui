@@ -2,11 +2,16 @@
 
 - id: system-prompt
   config:
-    persona: >-
+    personaPrefix: >-
       You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
 
 - id: hmr
   disabled: true
+
+# Native macOS FSEvents can block shutdown while closing a populated skills root.
+# Keep live skill discovery, with a bounded polling interval on that platform.
+- id: skill-filesystem
+  config: !!js "process.platform === 'darwin' ? { watchUsePolling: true, watchPollIntervalMs: 1000 } : {}"
 
 - id: tools
   config:

@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.1.2-rc.1" src="https://img.shields.io/badge/DSH-0.1.2--rc.1-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.1.5-rc.2" src="https://img.shields.io/badge/DSH-0.1.5--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -33,7 +33,7 @@ Requires Node.js `22.19+` or `24+`.
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin this release exactly, add `@0.1.6` to the package name.
+That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin the current published release exactly, add `@0.1.6` to the package name.
 
 The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; this release explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` is also qualified with ordinary npm peer resolution, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
 
@@ -48,30 +48,29 @@ dshtui
 
 The global install exposes both `dshtui` and the canonical `dsh-claude-tui` command. Resume work with `dshtui --resume` for the Session picker, or `--resume <session-id>` for an exact Session.
 
-## DSH 0.1.2-rc.1 support
+## DSH 0.1.5-rc.2 support (unreleased)
 
-Version `0.1.6` pins the bundled Harness to `0.1.2-rc.1` and accepts external runtimes in `>=0.1.2-rc.1 <0.1.3` only after a behavioral probe. Version `0.1.5` uses the previous `0.1.1-rc.2` runtime. See the [v0.1.6 release notes](./docs/releases/v0.1.6.md) for upgrade guidance.
+The `0.1.7` source candidate pins Harness to `0.1.5-rc.2`. External runtimes must satisfy `>=0.1.5-rc.2 <0.1.6` and pass the behavioral probe. Published TUI `0.1.6` still uses DSH `0.1.2-rc.1`; the npm commands above install that published version, not this candidate.
 
-- Session replay uses `snapshotEvents()`. The runtime probe appends a real event and checks `seq`, `eventAt()`, snapshot readback, and persistence flush.
-- Structured questions use DSH's Agent-scoped `user-questions/request` waterfall. Model/provider configuration uses the current settings API.
-- PTC mode now uses upstream's `ptc` value. The launcher and bundle still accept `DSH_TOOLS_MODE=code` as an alias. Native and Both modes remain selectable.
-- Cordis, loader, group, and schema peers match the new Harness graph. The production shrinkwrap contains only the `0.1.2-rc.1` DSH line.
-- The existing image composer, durable attachments, plan toggle, transcript timing, approvals, and Session picker are retained.
+- Live replies use Agent assistant-stream events; completed replies, usage, and timing replay from V3 Session settlements. Retry drafts are removed without duplicating committed text.
+- Model selection receives the explicit Agent during setup. Command images use the current typed attachment envelope, and the profile uses `personaPrefix`.
+- The Claude Code `2.1.227` reference layout, colors, keyboard controls, approvals, questions, image composer, plan toggle, and Session picker are retained.
+- On macOS, skill updates use a one-second polling interval to avoid native file-watcher shutdown hangs while preserving live discovery.
+- PTC keeps the `0.1.5` worker-thread runtime. This candidate does not import the incompatible `0.1.6-alpha` PTC or plugin-lifecycle changes.
+- The production dependency graph and [official bilingual documentation mirror](./docs/upstream/dsh/README.md) follow the same exact release. The mirror contains 1,412 original files and is excluded from npm packages.
 
-To run from a checkout:
+Run this candidate from its checkout:
 
 ```bash
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
-DSH_HOME=/tmp/dsh-claude-tui-rc1 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
+DSH_HOME=/tmp/dsh-claude-tui-0.1.5-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
 ```
 
-DSH has an extensive [official documentation site](https://deepseek-harness.github.io/deepseek-harness/). This repository maintains a [bilingual official documentation mirror](./docs/upstream/dsh/README.md) pinned to the supported release, with a full index, source hashes, license notices, and `docs:dsh:sync` / `docs:dsh:check` commands. CI checks the snapshot offline. The mirror is repository-only and is excluded from the npm tarball.
-
 > [!WARNING]
-> Upstream `0.1.2` removes the optional SQLite Session persistence backend; export sessions stored by that backend using the old Harness before upgrading. SQLite query/index storage is separate. Use separate Homes when testing different Harness versions; this adapter does not add a downgrade or SQLite export migration.
+> DSH now stores V3 Sessions. Supported older logs migrate to new files while preserving the originals; upgraded Sessions cannot be read by older Harness versions. Use separate Homes for cross-version testing. The optional SQLite Session backend was removed in `0.1.2`; export those older Sessions with their original runtime first. SQLite query/index storage is a separate service.
 
-See the [official release notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.2-rc.1) and [adaptation validation](./docs/harness-0.1.2-rc.1-adaptation.md) for the exact scope and evidence. Upstream Web features do not imply corresponding TUI features.
+See the [official 0.1.5 change summary](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.1), [rc.2 notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.2), and [adaptation record](./docs/harness-0.1.5-rc.2-adaptation.md). Upstream Web file upload, preview, and sidebar features do not imply corresponding TUI interfaces.
 
 ## What you get
 
@@ -112,9 +111,9 @@ The default launcher removes the need to choose an installation strategy up fron
 
 1. Reuse a compatible DSH already associated with the selected `$DSH_HOME`, or a verifiable `dsh` on `PATH`.
 2. Probe it in an isolated, credential-free temporary Home.
-3. Fall back to the bundled, shrinkwrap-pinned DSH `0.1.2-rc.1` when no external runtime qualifies.
+3. Fall back to the bundled, shrinkwrap-pinned DSH `0.1.5-rc.2` when no external runtime qualifies.
 
-Compatibility requires both the version range `>=0.1.2-rc.1 <0.1.3` and a successful behavioral probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
+Compatibility requires both the version range `>=0.1.5-rc.2 <0.1.6` and a successful behavioral probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
 
 | Variable | Behavior |
 | --- | --- |

@@ -4,10 +4,11 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent, ModelSelection, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
-import { Inbox } from '@deepseek-ai/dsh-agent'
+import { emitAgentEvent } from '@deepseek-ai/dsh-agent'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import {
   ToolCallId,
+  LlmAttemptId,
   createAssistantMessage,
   createToolResultMessage,
   createUserMessage,
@@ -198,7 +199,7 @@ function bench(
   }
 
   const session = Session.create(SessionId('terminal-test'), options.seedEvents, {
-    version: 0,
+    version: 3,
     id: SessionId('terminal-test'),
     createdAt: 1,
     isSeeded: false,
@@ -208,12 +209,12 @@ function bench(
   const followups: UserMessage[] = []
   let status: Agent['status'] = 'idle'
   const agent = {} as Agent
-  const agentCtx = ctx.extend({ agent })
+  const agentCtx = ctx.extend()
   Object.defineProperties(agent, {
     id: { value: session.id },
     options: { value: { provider: 'test', model: 'model' } },
     session: { value: session },
-    inbox: { value: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }) },
+
     status: { get: () => status },
     ctx: { value: agentCtx },
     cancel: { value: () => { status = 'idle' } },
@@ -386,7 +387,7 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.1.2-rc.1',
+        harnessVersion: '0.1.5-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
@@ -408,7 +409,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.1.2-rc.1 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.1.5-rc.2 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -467,7 +468,7 @@ describe('ClaudeTuiApplication', () => {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.1.2-rc.1',
+          harnessVersion: '0.1.5-rc.2',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -477,7 +478,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.1.2-rc.1 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.1.5-rc.2 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -552,25 +553,14 @@ describe('ClaudeTuiApplication', () => {
       { type: 'step/start', seq: SessionSeq(1), time: 1_000, data: { turn: 1, step: 1 } },
       { type: 'user/message', seq: SessionSeq(2), time: 1_000, data: user, surfaceOp: 'append' },
       {
-        type: 'assistant/chunk',
-        seq: SessionSeq(3),
-        time: 1_250,
-        data: { turn: 1, step: 1, chunk: { type: 'block-start', index: 0, blockType: 'text' } },
-      },
-      {
-        type: 'assistant/chunk',
-        seq: SessionSeq(4),
-        time: 2_000,
-        data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: 'done' } },
-      },
-      {
         type: 'assistant/message',
-        seq: SessionSeq(5),
+        seq: SessionSeq(3),
         time: 2_250,
         data: {
           turn: 1,
           step: 1,
           message: assistant,
+          stream: [{ type: 'text-chunks', time0: 2_000, index: 0, dt: [0], texts: ['done'] }],
           usage: {
             inputTokens: 30,
             outputTokens: 10,
@@ -579,10 +569,9 @@ describe('ClaudeTuiApplication', () => {
           },
         },
         surfaceOp: 'append',
-        sourceEventSeqs: [SessionSeq(3), SessionSeq(4)],
       },
-      { type: 'step/end', seq: SessionSeq(6), time: 2_250, data: { turn: 1, step: 1 } },
-      { type: 'turn/end', seq: SessionSeq(7), time: 2_300, data: { turn: 1, reason: { kind: 'completed' } } },
+      { type: 'step/end', seq: SessionSeq(4), time: 2_250, data: { turn: 1, step: 1 } },
+      { type: 'turn/end', seq: SessionSeq(5), time: 2_300, data: { turn: 1, reason: { kind: 'completed' } } },
     ]
     const test = bench(110, 30, () => 1_000, { seedEvents })
 
@@ -1410,6 +1399,7 @@ describe('ClaudeTuiApplication', () => {
           source: { kind: 'user' },
         }), { surfaceOp: 'append' })
         session.append('assistant/message', {
+          stream: [],
           turn: 1,
           step: 1,
           message: createAssistantMessage({
@@ -1669,6 +1659,7 @@ describe('ClaudeTuiApplication', () => {
       source: { kind: 'user' },
     }), { surfaceOp: 'append' })
     session.append('assistant/message', {
+      stream: [],
       turn: 1,
       step: 1,
       message: createAssistantMessage({
@@ -1723,11 +1714,6 @@ describe('ClaudeTuiApplication', () => {
       content: [{ type: 'text', text: 'Stream one deterministic reference response.' }],
       source: { kind: 'user' },
     }), { surfaceOp: 'append' })
-    session.append('assistant/chunk', {
-      turn: 1,
-      step: 1,
-      chunk: { type: 'text-delta', index: 0, text: 'Streaming reference response.' },
-    })
     const coloredApp = new ClaudeTuiApplication(
       test.ctx,
       test.app.agent,
@@ -1735,6 +1721,16 @@ describe('ClaudeTuiApplication', () => {
       { terminal: test.terminal, exit: code => { test.exitCodes.push(code) } },
     )
     await coloredApp.start()
+    const attemptId = LlmAttemptId('reference-stream')
+    emitAgentEvent(test.ctx, test.app.agent, 'agent/assistant-stream', {
+      frame: { type: 'start', attemptId, revision: 1, turn: 1, step: 1 },
+    })
+    emitAgentEvent(test.ctx, test.app.agent, 'agent/assistant-stream', {
+      frame: {
+        type: 'chunk', attemptId, revision: 2, index: 0, time: 1_000,
+        chunk: { type: 'text-delta', index: 0, text: 'Streaming reference response.' },
+      },
+    })
     await test.terminal.settle()
 
     const expectedLines = reference.frame.lines.map(line => line.text)
@@ -1762,6 +1758,56 @@ describe('ClaudeTuiApplication', () => {
     })
 
     await coloredApp.dispose()
+  })
+
+  it('keeps the composer draft and isolates live Agent streams across terminal resizes', async () => {
+    const test = bench(80, 24)
+    await test.app.start()
+    test.terminal.send('keep this draft')
+    const attemptId = LlmAttemptId('root-stream')
+    const foreign = { id: SessionId('other-agent') } as Agent
+    emitAgentEvent(test.ctx, foreign, 'agent/assistant-stream', {
+      frame: { type: 'start', attemptId, revision: 1, turn: 1, step: 1 },
+    })
+    emitAgentEvent(test.ctx, foreign, 'agent/assistant-stream', {
+      frame: { type: 'chunk', attemptId, revision: 2, index: 0, time: 100,
+        chunk: { type: 'text-delta', index: 0, text: 'foreign reply' } },
+    })
+    emitAgentEvent(test.ctx, test.app.agent, 'agent/assistant-stream', {
+      frame: { type: 'start', attemptId, revision: 1, turn: 1, step: 1 },
+    })
+    emitAgentEvent(test.ctx, test.app.agent, 'agent/assistant-stream', {
+      frame: { type: 'chunk', attemptId, revision: 2, index: 0, time: 100,
+        chunk: { type: 'text-delta', index: 0, text: 'root reply' } },
+    })
+    for (const width of [42, 100]) {
+      test.terminal.resize(width, 30)
+      await test.terminal.settle()
+      expect(test.terminal.text()).toContain('root reply')
+      expect(test.terminal.text()).not.toContain('foreign reply')
+      expect(test.terminal.text()).toContain('keep this draft')
+      expect(test.terminal.cursor().column).toBeLessThan(width)
+    }
+    const event = test.app.agent.session.append('assistant/message', {
+      turn: 1, step: 1,
+      message: createAssistantMessage({
+        content: [{ type: 'text', text: 'root reply' }],
+        source: { provider: 'test', model: 'model' },
+      }),
+      stream: [{ type: 'text-chunks', time0: 100, index: 0, dt: [0], texts: ['root reply'] }],
+    }, { surfaceOp: 'append' })
+    test.ctx.emit('session/event', test.app.agent.session, event)
+    emitAgentEvent(test.ctx, test.app.agent, 'agent/assistant-stream', {
+      frame: { type: 'end', attemptId, revision: 3, index: 1,
+        outcome: { kind: 'committed', eventType: 'assistant/message', seq: event.seq } },
+    })
+    await test.terminal.settle()
+    expect(test.terminal.text().match(/root reply/gu)).toHaveLength(1)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.followups).toHaveLength(1)
+    expect(test.followups[0]?.content).toEqual([{ type: 'text', text: 'keep this draft' }])
+    await test.app.dispose()
   })
 
   it('matches the captured pending Bash call geometry and semantic colors', async () => {
@@ -1855,6 +1901,7 @@ describe('ClaudeTuiApplication', () => {
       }),
     }, { surfaceOp: 'append' })
     session.append('assistant/message', {
+      stream: [],
       turn: 1,
       step: 2,
       message: createAssistantMessage({
@@ -2011,6 +2058,7 @@ describe('ClaudeTuiApplication', () => {
       }),
     }, { surfaceOp: 'append' })
     session.append('assistant/message', {
+      stream: [],
       turn: 1,
       step: 2,
       message: createAssistantMessage({
