@@ -78,7 +78,10 @@ export async function loadProviderCatalog(ctx: Context): Promise<ProviderCatalog
     }
     let profile: Record<string, unknown> | undefined
     try {
-      profile = record(atPath(settings.get(directory.settingsNs), directory.settingsPath))
+      const form = settings.describe({ redactSecrets: true })
+        .find(entry => entry.ns === directory.settingsNs)
+      if (form === undefined) throw new Error(`DSH settings form ${directory.settingsNs} is unavailable`)
+      profile = record(atPath(form.value, directory.settingsPath))
     } catch (error: unknown) {
       const reason = errorChain(error)
       warnings.push(`${displayText(provider.name)} settings: ${reason}`)

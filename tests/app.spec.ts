@@ -184,7 +184,7 @@ function bench(
   }
   if (options.credentials !== undefined) {
     ctx.provide('settings', {
-      get: () => ({ apiKeyEnv: 'DEEPSEEK_API_KEY' }),
+      describe: () => [{ ns: 'llm-deepseek', value: { apiKeyEnv: 'DEEPSEEK_API_KEY' } }],
     } as never)
     ctx.provide('credentials', {
       describe: async () => ({ ...options.credentials!.info }),
@@ -199,7 +199,7 @@ function bench(
   }
 
   const session = Session.create(SessionId('terminal-test'), options.seedEvents, {
-    version: 3,
+    version: 4,
     id: SessionId('terminal-test'),
     createdAt: 1,
     isSeeded: false,
@@ -387,7 +387,7 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.1.5-rc.2',
+        harnessVersion: '0.2.0-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
@@ -409,7 +409,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.1.5-rc.2 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.2.0-rc.2 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -468,7 +468,7 @@ describe('ClaudeTuiApplication', () => {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.1.5-rc.2',
+          harnessVersion: '0.2.0-rc.2',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -478,7 +478,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.1.5-rc.2 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.2.0-rc.2 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -1454,6 +1454,24 @@ describe('ClaudeTuiApplication', () => {
     expect(test.terminal.text()).not.toContain(secret)
     expect(JSON.stringify(test.app.agent.session.snapshotEvents())).not.toContain(secret)
 
+    await test.app.dispose()
+  })
+
+  it('refreshes provider configuration after a DSH settings document changes', async () => {
+    const credentials = credentialFixture({ configured: true, source: 'file', writable: true })
+    const test = bench(90, 28, () => 1_000, { credentials })
+    await test.app.start()
+    for (const character of '/provider') test.terminal.send(character)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('configured · file')
+
+    credentials.info = { configured: true, source: 'env', writable: false }
+    test.ctx.emit('settings/document-updated', test.ctx.settings.describe()[0]!.ns, 2)
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('configured · env · read-only')
+    expect(test.terminal.text()).not.toContain('configured · file')
+    expect(credentials.writes).toEqual([])
     await test.app.dispose()
   })
 

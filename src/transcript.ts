@@ -143,7 +143,7 @@ export class TranscriptModel {
             text: contentText(event.data.content, 'text'),
             imageCount: event.data.content.filter(block => block.type === 'image').length,
           })
-        } else if (source.kind === 'plugin' && source.form === 'notice') {
+        } else if ('form' in source && source.form === 'notice') {
           this.items.push({
             kind: 'notice',
             key: `event-${event.seq}`,
@@ -203,7 +203,7 @@ export class TranscriptModel {
       }
       case 'tool/result': {
         if (isReplacementSurfaceEvent(event)) return
-        const key = String(event.data.message.source.callId)
+        const key = String(event.data.message.toolCallId)
         const tool = this.toolByCall.get(key)
         if (tool === undefined) {
           const orphan: ToolItem = {
@@ -213,16 +213,16 @@ export class TranscriptModel {
             callId: key,
             name: 'tool',
             arguments: '',
-            result: contentText(event.data.message.content, 'tool-result'),
-            error: event.data.error !== undefined,
+            result: contentText(event.data.message.content, 'text'),
+            error: event.data.message.isError === true,
             pending: false,
           }
           this.toolByCall.set(key, orphan)
           this.items.push(orphan)
           return
         }
-        tool.result = contentText(event.data.message.content, 'tool-result')
-        tool.error = event.data.error !== undefined
+        tool.result = contentText(event.data.message.content, 'text')
+        tool.error = event.data.message.isError === true
         tool.pending = false
         tool.revision += 1
         return
@@ -379,6 +379,8 @@ function turnNotice(reason: TurnEndReason): { text: string; tone: NoticeItem['to
       return { text: 'The model reached its output-token limit.', tone: 'warning' }
     case 'interrupted':
       return { text: 'Recovered a turn interrupted by an earlier process exit.', tone: 'warning' }
+    case 'forked':
+      return { text: 'Forked from an unfinished turn.', tone: 'info' }
     default:
       return { text: `Turn ended: ${displayText(JSON.stringify(reason))}`, tone: 'warning' }
   }

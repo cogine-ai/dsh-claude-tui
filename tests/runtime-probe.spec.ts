@@ -48,7 +48,7 @@ function fixture(
     runtime: {
       kind: 'system',
       source: 'path',
-      version: '0.1.0',
+      version: '0.2.0-rc.2',
       packageRoot,
       executable,
     },

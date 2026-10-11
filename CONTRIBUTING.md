@@ -30,7 +30,7 @@ If an issue is not yet filed, use the repository's issue chooser. A small reprod
 
 Requirements:
 
-- Node.js `22.19+` or `24+`;
+- Node.js `22.19+` in 22.x, or `24.2+` (`^22.19.0 || >=24.2.0`);
 - Corepack;
 - an xterm-compatible terminal for interactive checks.
 

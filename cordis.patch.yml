@@ -18,10 +18,6 @@
     mode: !!js "process.env.DSH_TOOLS_MODE === 'code' ? 'ptc' : (process.env.DSH_TOOLS_MODE || 'ptc')"
 
 - insert:
-    # PTC execution is provided by the worker-thread code runtime.
-    - id: code-runtime
-      name: '@deepseek-ai/dsh-code-runtime-worker-thread'
-
     # The base bundle provides the question service; this consumer exposes it
     # to the model so the TUI's registered provider is reachable end to end.
     - id: tool-ask-user
