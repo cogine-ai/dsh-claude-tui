@@ -456,6 +456,7 @@ describe('dsh-claude-tui bundle', () => {
       name?: string
       version?: string
       bin?: Record<string, string>
+      engines?: Record<string, string>
       dependencies?: Record<string, string>
       peerDependencies?: Record<string, string>
       peerDependenciesMeta?: Record<string, { optional?: boolean }>
@@ -467,6 +468,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
       version: '0.1.7',
+      engines: { node: '^22.19.0 || >=24.2.0' },
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',

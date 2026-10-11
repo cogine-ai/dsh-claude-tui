@@ -59,7 +59,7 @@
         "dshtui": "lib/cli.js"
       },
       "engines": {
-        "node": "^22.19.0 || >=24.0.0"
+        "node": "^22.19.0 || >=24.2.0"
       },
       "peerDependencies": {
         "@deepseek-ai/cordis": "^4.0.4",

@@ -199,13 +199,14 @@ setInterval(() => {}, 1_000)
     })
   })
 
-  it('rejects an unsupported Node version before creating Harness state', () => {
-    const dshHome = join(temporaryDirectory, 'unsupported-node-dsh-home')
-    const readyPath = join(temporaryDirectory, 'unsupported-node-ready.json')
-    const preload = join(temporaryDirectory, 'unsupported-node-preload.mjs')
+  it.each(['22.16.0', '24.0.0', '24.1.0'])('rejects unsupported Node %s before creating Harness state', (version) => {
+    const dshHome = join(temporaryDirectory, `unsupported-node-${version}-dsh-home`)
+    const readyPath = join(temporaryDirectory, `unsupported-node-${version}-ready.json`)
+    const signalPath = join(temporaryDirectory, `unsupported-node-${version}-signal.txt`)
+    const preload = join(temporaryDirectory, `unsupported-node-${version}-preload.mjs`)
     writeFileSync(
       preload,
-      "Object.defineProperty(process.versions, 'node', { value: '22.16.0' })\n",
+      `Object.defineProperty(process.versions, 'node', { value: '${version}' })\n`,
     )
 
     const result = spawnSync(process.execPath, ['--import', preload, executable], {
@@ -214,16 +215,18 @@ setInterval(() => {}, 1_000)
       env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
-        DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unsupported-node-signal.txt'),
+        DSH_FAKE_SIGNAL: signalPath,
         DSH_FAKE_EXIT_CODE: '0',
       }),
     })
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('Node.js 22.16.0 is unsupported')
-    expect(result.stderr).toContain('22.19+ or 24+')
+    expect(result.stderr).toContain(`Node.js ${version} is unsupported`)
+    expect(result.stderr).toContain('22.19+ or 24.2+')
     expect(existsSync(dshHome)).toBe(false)
+    expect(existsSync(join(dshHome, 'profiles/dsh-claude-tui/.dsh-claude-tui-managed.json'))).toBe(false)
     expect(existsSync(readyPath)).toBe(false)
+    expect(existsSync(signalPath)).toBe(false)
   })
 
   it('does not rewrite an already-current managed marker on repeat launch', () => {

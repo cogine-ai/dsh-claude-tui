@@ -7,14 +7,24 @@ unowned state.
 
 This document describes the unreleased TUI `0.1.7` source candidate targeting
 DSH `0.2.0-rc.2`. Published npm TUI `0.1.6` still bundles DSH `0.1.2-rc.1`.
-Local macOS checks passed; exact results and remaining qualification limits are in the
+Local macOS full and ordinary-install checks passed after the engine-gate
+change; their exact results and qualification limits are recorded in the
 [adaptation record](harness-0.2.0-rc.2-adaptation.md).
 
-Node `22.19+` and `24+` are supported. On Node `24.0` and `24.1`, the launcher
-and isolated runtime probe explicitly dispatch DSH's exported `runCli()` because
-those versions lack the `import.meta.main` entry guard used by DSH `0.2.0`.
-Other supported versions invoke the Harness executable directly. Both paths
-preserve its arguments and foreground process behavior.
+The candidate requires Node **22.19+ in 22.x, or 24.2+**; its declared engines
+and launcher gate are `^22.19.0 || >=24.2.0`. Unsupported versions, including
+Node `24.0` and `24.1`, fail before external-runtime discovery or user DSH Home
+writes. Eligible versions invoke the Harness executable directly and preserve
+its arguments and foreground process behavior.
+
+The exact DSH release also uses `import.meta.main` in its private subprocess
+runner for Linux scopes and Windows Jobs. An explicit `runCli()` call can make
+the top-level CLI start on Node `24.0`/`24.1`, but cannot start that runner;
+Ubuntu PTC tests exposed the resulting unconsumed launch request. Node added
+the guard in [24.2.0 and 22.18.0](https://nodejs.org/api/esm.html#importmetamain).
+The TUI retains its existing 22.19 floor and raises the 24.x floor to 24.2.
+The complete Ubuntu checks, including installed PTC, qualify that new floor;
+results are tracked by the [branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2).
 
 On macOS, Harness child processes default to `CHOKIDAR_USEPOLLING=true` and
 `CHOKIDAR_INTERVAL=1000`. This retains settings, skills, and profile updates
@@ -27,16 +37,17 @@ defaults apply to the child environment and may be inherited by its tools.
 With `DSH_CLAUDE_TUI_RUNTIME=auto` (the default), the launcher completes the
 whole decision before changing the selected user DSH home:
 
-1. Inspect the requested/default DSH home and choose a launcher-owned profile.
-2. Look for `@deepseek-ai/dsh` associated with that home under
+1. Check the Node engine constraint before discovery or DSH Home writes.
+2. Inspect the requested/default DSH home and choose a launcher-owned profile.
+3. Look for `@deepseek-ai/dsh` associated with that home under
    `profiles/node_modules`, then for a verifiable `dsh` executable on `PATH`.
-3. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
+4. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
    `>=0.2.0-rc.2 <0.2.1` and whose declared bin exists inside the package.
-4. Run each otherwise eligible external candidate through the current packed
+5. Run each otherwise eligible external candidate through the current packed
    TUI's compatibility probe.
-5. Use the first candidate that passes; otherwise use the launcher-pinned
+6. Use the first candidate that passes; otherwise use the launcher-pinned
    `@deepseek-ai/dsh@0.2.0-rc.2`.
-6. Create or reconcile only the selected launcher-owned profile, then replace
+7. Create or reconcile only the selected launcher-owned profile, then replace
    the launcher process with the selected Harness process.
 
 The launcher does not scan arbitrary npm/pnpm caches, invoke a nested

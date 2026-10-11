@@ -26,7 +26,7 @@
 
 ## 一条命令开始
 
-需要 Node.js `22.19+` 或 `24+`。
+尚未发布的 `0.1.7` 候选版本需要 Node.js **22.x 的 22.19+，或 24.2+**（`^22.19.0 || >=24.2.0`）。候选版本会在修改 DSH Home 前拒绝 Node `24.0` 和 `24.1`。
 
 ```bash
 npx --yes --legacy-peer-deps dsh-claude-tui
@@ -49,7 +49,7 @@ dshtui
 
 ## 适配 DSH 0.2.0-rc.2（尚未发布）
 
-`0.1.7` 源码候选版本把 Harness 固定到 `0.2.0-rc.2`，外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。已发布的 TUI `0.1.6` 仍使用 DSH `0.1.2-rc.1`；上面的 npm 命令安装已发布版本，不会安装本候选版本。本地 macOS 检查已通过，[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)记录精确结果及仍未覆盖的验证范围。
+`0.1.7` 源码候选版本把 Harness 固定到 `0.2.0-rc.2`，要求 Node `^22.19.0 || >=24.2.0`；外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。已发布的 TUI `0.1.6` 仍使用 DSH `0.1.2-rc.1`；上面的 npm 命令安装已发布版本，不会安装本候选版本。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过，[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)记录实测结果及 Ubuntu CI 发现的 Node 24.0 子进程失败。
 
 - 实时回复保留 Agent assistant-stream 事件；最终回复、用量与计时从 V4 Session 聚合事件回放，工具结果采用 V4 的 tool-role 消息格式。
 - 模型选择通过 setup 显式接收 Agent；命令图片采用带类型的附件信封，Profile 保留 `personaPrefix`。
@@ -129,10 +129,10 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。现有参考集包含 **24** 个独立捕获的 PTY 帧与 **22** 个自动视觉/语义锚点。本次适配重新运行既有比较，没有新增 Claude Code 捕获基线。
 
-- macOS arm64 上，Node `24.16.0` 完整检查通过：14 个文件，**177 通过、1 跳过**。Node `24.0.0` 另行通过 32 项启动器、探针和安装包启动测试；Node `22.23.3` 普通 npm peer 求解安装包检查为 **12 通过、1 跳过**。详细结果与 CI 跟踪见[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。
+- Node 门禁变更后的 macOS arm64 检查中，Node `24.16.0` 完整检查为 14 个文件、**179 通过、1 跳过**；Node `22.23.3` 普通 npm peer 求解安装包检查为 **12 通过、1 跳过**。Node `24.0`/`24.1` 已被排除：此前 macOS 启动检查没有覆盖后来 Ubuntu PTC 测试发现的子进程 runner 失败。详细结果与范围见[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。
 - 本轮测试覆盖 true-color、xterm-compatible 的 `80x24`、`100x30` 布局、图片与命令附件、审批、问题、计划模式按键和前后台子代理。
 - 安装产物检查覆盖全新 npm 安装、两个命令入口、包内与独立外部运行时探针、经本地 DeepSeek Messages/Files API mock 的受沙箱约束 Node PTC 工具轮次、安全退出与恢复，以及 V0/V3-to-V4 迁移和原文件字节保留。
-- opt-in 真实 macOS 系统剪贴板检查已跳过。Linux x64 属于此前资格证据；本次适配的四个 Node 版本 Ubuntu CI 结果由[本分支 PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2)跟踪。
+- opt-in 真实 macOS 系统剪贴板检查已跳过。Ubuntu CI 配置为 Node `22.19.0`、`22.22.3`、`24.2.0` 和 `24.14.0`，结果由[本分支 PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2)跟踪；Node `24.2.0` 的运行资格需以完整 Ubuntu 检查通过为依据。
 
 Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 

@@ -1,8 +1,8 @@
 # DeepSeek Harness 0.2.0-rc.2 adaptation / 适配记录
 
-Status: unreleased TUI `0.1.7` source candidate, targeting `dsh-v0.2.0-rc.2` at upstream commit `639ed015397290b3745d163aafe02ffee4aa3f84`. Local macOS checks passed as recorded below; Ubuntu CI results are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). Published npm TUI `0.1.6` continues to use DSH `0.1.2-rc.1`.
+Status: unreleased TUI `0.1.7` source candidate, targeting `dsh-v0.2.0-rc.2` at upstream commit `639ed015397290b3745d163aafe02ffee4aa3f84`. Node engines are `^22.19.0 || >=24.2.0`. Local macOS full and ordinary-install checks passed after the engine-gate change, as recorded below. Ubuntu CI results are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). Published npm TUI `0.1.6` continues to use DSH `0.1.2-rc.1`.
 
-状态：尚未发布的 TUI `0.1.7` 源码候选版本，目标为 DSH `0.2.0-rc.2`，本地 macOS 检查已通过，具体结果见下表；Ubuntu CI 结果由本分支 PR checks 跟踪。npm 已发布版本仍为 TUI `0.1.6`，其 DSH 版本不变。下文把发布标签中已确认的契约与候选版本实测结果分开记录；此前 [0.1.5 适配记录](harness-0.1.5-rc.2-adaptation.md)保留原有结论。
+状态：尚未发布的 TUI `0.1.7` 源码候选版本，目标为 DSH `0.2.0-rc.2`，Node 范围为 `^22.19.0 || >=24.2.0`。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过，结果见下表；Ubuntu CI 结果由本分支 PR checks 跟踪。npm 已发布版本仍为 TUI `0.1.6`，其 DSH 版本不变。下文把发布标签中已确认的契约与候选版本实测结果分开记录；此前 [0.1.5 适配记录](harness-0.1.5-rc.2-adaptation.md)保留原有结论。
 
 ## Runtime selection / 运行时选择
 
@@ -10,7 +10,15 @@ The bundled runtime is pinned to `0.2.0-rc.2`. External runtimes must satisfy `>
 
 运行时依赖与官方文档以同一发布标签为目标，外部 DSH 必须同时通过版本检查和隔离行为探针。本次适配范围是 `0.2.0-rc.2`，不把后续 alpha 的破坏性变更提前应用到本版本。
 
-Node `22.19+` and `24+` remain the declared engines. The launcher preserves its explicit `runCli()` path for Node `24.0`/`24.1`, its bounded exit handling, and macOS one-second polling defaults. Fresh checks against the new dependency graph are recorded below; earlier checks do not establish this candidate's compatibility.
+Node **22.19+ in 22.x, or 24.2+** is required (`^22.19.0 || >=24.2.0`). The launcher rejects Node `24.0`/`24.1` before external-runtime discovery or user DSH Home writes. Bounded exit handling and macOS one-second polling remain in place. Fresh checks against the new dependency graph and engine gate are recorded below.
+
+## Node subprocess compatibility / Node 子进程兼容性
+
+Ubuntu installed-PTC checks found that the earlier Node `24.0.0` startup qualification was incomplete. In the exact release, the subprocess-local runner uses an [`import.meta.main` entry guard](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/subprocess/subprocess-local/src/bin.ts#L18), and its [built runner invocation](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/subprocess/subprocess-local/src/runner-launch.ts#L29) executes that entry directly. Node `24.0`/`24.1` lack the guard, so the helper exits without consuming the launch request. The Linux scope reports [the unconsumed bootstrap request](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/subprocess/subprocess-local/src/linux-scope.ts#L171); the Windows Job path uses the same runner. macOS directly launches these subprocesses, so its successful CLI/probe tests and local PTC checks did not reveal this platform-specific failure.
+
+Node introduced `import.meta.main` in [24.2.0 and 22.18.0](https://nodejs.org/api/esm.html#importmetamain). The candidate preserves the existing 22.19 floor and raises the 24.x floor to 24.2. The tagged provider exposes no public runner configuration that resolves this entry-point problem. The fix keeps the exact DSH dependencies, aligns the package engines, launcher guard, and CI matrix, and adds rejection tests for Node `24.0` and `24.1` before user Home writes. Complete Ubuntu checks, including installed PTC, must pass before the new minimum is runtime-qualified.
+
+Ubuntu 的安装包 PTC 测试推翻了此前对 Node `24.0` 完整运行资格的判断：CLI 显式调用 `runCli()` 只解决顶层入口，无法启动依赖 `import.meta.main` 的私有子进程 runner。macOS 直接创建该类子进程，因此此前 32 项启动路径测试和本地 PTC 成功只能作为局部诊断历史。候选版本现要求 Node `^22.19.0 || >=24.2.0`，在探测外部运行时及写用户 Home 前拒绝不支持的版本；未替换 DSH 精确标签或修改安全依赖。Node `24.2.0` 的最低版本资格须由完整 Ubuntu CI 证明。
 
 ## Confirmed upstream contracts / 已确认的上游契约
 
@@ -66,22 +74,26 @@ On 2026-10-11, `npm audit --omit=dev --json` against a temporary copy of the fin
 
 ## Validation / 验证
 
-Local results on macOS arm64, 2026-10-11, follow. They are from this adaptation's dependency graph, not transferred from the `0.1.5-rc.2` record. The existing 24 Claude PTY captures and 22 visual/semantic anchors were reused; this run adds no independently captured Claude version baseline.
+Local results on macOS arm64, 2026-10-11, follow. Initial results predate the tightened engine gate; follow-up results are recorded separately. They are from this adaptation's dependency graph, not transferred from the `0.1.5-rc.2` record. The existing 24 Claude PTY captures and 22 visual/semantic anchors were reused; this run adds no independently captured Claude version baseline.
 
 | Gate | Result |
 | --- | --- |
 | Exact-tag API and composition inspection | Confirmed against `dsh-v0.2.0-rc.2`; inspection is not runtime qualification. |
 | Official documentation sync and integrity | Passed: 1,803 original files match `dsh-v0.2.0-rc.2` / `639ed015397290b3745d163aafe02ffee4aa3f84`. |
-| Node 24.16.0 `CI=true corepack pnpm check` | Passed: documentation integrity, typecheck, production build, 14 test files; 177 passed and 1 optional system-clipboard test skipped. |
-| Node 24.0.0 launcher/probe/packed-launcher tests | Passed: 3 files, 32 tests, including the explicit CLI dispatch path. |
-| Node 22.23.3 ordinary-peer-resolution installed bundle gate | Passed: 1 file, 12 passed and 1 optional system-clipboard test skipped; fresh npm cache, ordinary peer resolution, and lifecycle scripts enabled. |
+| Initial Node 24.16.0 `CI=true corepack pnpm check` | Passed before the engine-gate change: documentation integrity, typecheck, production build, 14 test files; 177 passed and 1 optional system-clipboard test skipped. |
+| Historical Node 24.0.0 launcher/probe/packed-launcher diagnostic | 3 files and 32 tests passed on macOS with explicit CLI dispatch. Subsequent Ubuntu PTC failure invalidated full runtime qualification; Node 24.0/24.1 are excluded. |
+| Initial Node 22.23.3 ordinary-peer-resolution installed bundle gate | Passed before the engine-gate change: 1 file, 12 passed and 1 optional system-clipboard test skipped; fresh npm cache, ordinary peer resolution, and lifecycle scripts enabled. |
+| Focused packed-launcher check after engine-gate change | Passed: 23 tests, including unsupported-version rejection before user Home writes. |
+| Actual Node 24.0.0 rejection | Passed: `node lib/cli.js --dump-config` exited 1 with the unsupported-version message and the 22.19+/24.2+ requirement; the new temporary `DSH_HOME` was not created. |
+| Node 24.16.0 complete check after engine-gate change | Passed: `CI=true corepack pnpm check`, exit 0, 14 files; 179 passed and 1 optional system-clipboard test skipped (180 total), 222.68 seconds. |
+| Node 22.23.3 ordinary-peer-resolution installed bundle gate after engine-gate change | Passed: exit 0, 1 file; 12 passed and 1 optional system-clipboard test skipped (13 total), 226.40 seconds; fresh npm cache, ordinary peer resolution, and lifecycle scripts enabled. |
 | Dependency consistency | Peer check reported no issues; all 278 production DSH package entries are `0.2.0-rc.2`, and the installed npm tree check passed. |
 | Packed npm installation and runtime probes | Passed within the complete check: fresh-cache legacy-peer installation, both commands, bundled runtime, and a physically separate compatible runtime. |
 | Installed Node PTC tool turn, shutdown, and resume | Passed with a local Messages/Files API mock, strict test-key validation, and isolated OS/DSH Homes. |
 | V0/V3-to-V4 migration | Passed through the installed artifact: restored replies and V4 tool result verified; original predecessor bytes preserved. |
 | Provider refresh and terminal regressions | Passed within the complete check: document-update refresh, layouts, live streams, command attachments, approvals, questions, plan keys, and subagents. |
-| Ubuntu CI | Results tracked by [branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2); configured Node versions are 22.19.0, 22.22.3, 24.0.0, and 24.14.0. |
+| Ubuntu CI | Results tracked by [branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2); configured Node versions are 22.19.0, 22.22.3, 24.2.0, and 24.14.0. The new 24.2 minimum is qualified only after the complete checks pass. |
 
-The Node 22 gate passed after one unchanged retry of an `ECONNRESET` installation failure, which occurred before its test assertions ran. Native koffi, node-pty, and DSH subprocess install hooks exited successfully; the complete installed dependency tree, PTC/resume, both historical migrations, external runtime, and Shift+Tab checks passed. No transport override was introduced.
+The initial Node 22 gate passed after one unchanged retry of an `ECONNRESET` installation failure, which occurred before its test assertions ran. Native koffi, node-pty, and DSH subprocess install hooks exited successfully; the complete installed dependency tree, PTC/resume, both historical migrations, external runtime, and Shift+Tab checks passed. No transport override was introduced. The fresh-cache follow-up after the engine-gate change also passed with ordinary npm resolution and scripts enabled, as recorded separately above.
 
-本轮 macOS 完整检查、Node 24.0 启动路径检查和 Node 22 普通 peer 求解安装检查均已通过；Node 22 安装阶段网络中断后按原设置重试成功，未更改传输配置。Ubuntu 的四个 Node 版本以 PR checks 结果为准，本地 macOS 检查不能替代该证据。真实系统剪贴板检查已跳过；本次适配未发布 npm，也未建立生产模型或 Windows ConPTY 的新验收结论。上方依赖安全审计的 14 个条目仍未修复。
+Node 门禁变更后，macOS arm64 上 Node `24.16.0` 完整检查为 179 通过、1 跳过；Node `22.23.3` 普通 peer 求解、全新缓存且启用安装脚本的复验为 12 通过、1 跳过。初轮 Node 22 安装阶段网络中断后按原设置重试成功，未更改传输配置。Node 24.0 的 32 项局部启动测试属于诊断历史，不构成完整运行支持。Ubuntu 的四个 Node 版本以 PR checks 结果为准，本地 macOS 检查不能替代该证据。真实系统剪贴板检查已跳过；本次适配未发布 npm，也未建立生产模型或 Windows ConPTY 的新验收结论。上方依赖安全审计的 14 个条目仍未修复。

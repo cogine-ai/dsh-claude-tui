@@ -27,7 +27,7 @@
 
 ## Start in one command
 
-Requires Node.js `22.19+` or `24+`.
+The unreleased `0.1.7` candidate requires Node.js **22.19+ in 22.x, or 24.2+** (`^22.19.0 || >=24.2.0`). It rejects Node `24.0` and `24.1` before changing your DSH Home.
 
 ```bash
 npx --yes --legacy-peer-deps dsh-claude-tui
@@ -50,7 +50,7 @@ The global install exposes both `dshtui` and the canonical `dsh-claude-tui` comm
 
 ## DSH 0.2.0-rc.2 adaptation (unreleased)
 
-The `0.1.7` source candidate pins Harness to `0.2.0-rc.2`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the behavioral probe. Published TUI `0.1.6` still uses DSH `0.1.2-rc.1`; the npm commands above install that published version, not this candidate. Local macOS checks passed; the [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) records the exact results and remaining qualification limits.
+The `0.1.7` source candidate pins Harness to `0.2.0-rc.2` and requires Node `^22.19.0 || >=24.2.0`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the behavioral probe. Published TUI `0.1.6` still uses DSH `0.1.2-rc.1`; the npm commands above install that published version, not this candidate. Local macOS full and ordinary-install checks passed after the engine-gate change. The [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) records the results and the Node 24.0 subprocess failure found by Ubuntu CI.
 
 - Live replies retain Agent assistant-stream events; completed replies, usage, and timing replay from V4 Session settlements. Tool results use the V4 tool-role message format.
 - Model selection receives the explicit Agent during setup. Command images use the typed attachment envelope, and the profile retains `personaPrefix`.
@@ -130,10 +130,10 @@ See [Launcher environment compatibility](./docs/launcher-environment-compatibili
 
 The main interaction target is the observed Claude Code `2.1.227` TUI; the `[Image #1]` Ctrl+V composer behavior was independently observed against Claude Code `2.1.237`. The existing corpus contains **24** independently captured PTY reference frames and **22** automated visual/semantic anchors. This adaptation reruns the comparisons; it does not add a new Claude Code capture baseline.
 
-- On macOS arm64, Node `24.16.0` passed the complete check: 14 files, **177 passed and 1 skipped**. Node `24.0.0` separately passed 32 launcher, probe, and packed-launcher tests. Node `22.23.3` passed the ordinary npm peer-resolution bundle gate: **12 passed and 1 skipped**. See the [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) for detailed results and CI tracking.
+- After the engine-gate change, macOS arm64 passed the full check on Node `24.16.0` (14 files, **179 passed and 1 skipped**) and the ordinary npm peer-resolution bundle gate on Node `22.23.3` (**12 passed and 1 skipped**). Node `24.0`/`24.1` are excluded: earlier macOS startup checks did not exercise the subprocess runner failure later found by Ubuntu PTC tests. See the [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) for results and their scope.
 - The current tests cover true-color, xterm-compatible `80x24` and `100x30` layouts, image and command attachments, approvals, questions, plan-mode keys, and foreground/background subagents.
 - Installed-artifact checks cover fresh npm installation, both command names, bundled and separate-runtime probes, sandboxed Node PTC tool turns against a local DeepSeek Messages/Files API mock, graceful exit and resume, and V0/V3-to-V4 migration with original-file preservation.
-- The opt-in real macOS system-clipboard gate was skipped. Linux x64 belongs to earlier qualification evidence; the four-Node Ubuntu CI results for this adaptation are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2).
+- The opt-in real macOS system-clipboard gate was skipped. Ubuntu CI uses Node `22.19.0`, `22.22.3`, `24.2.0`, and `24.14.0`; results are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). Node `24.2.0` runtime qualification requires the complete Ubuntu checks to pass.
 
 The Windows launcher, junction, signal-forwarding, VT-input, dependency-prebuild, and STA image-clipboard paths are implemented, and the pinned DSH upstream has a native Windows gate. This TUI's own CI still runs only on Ubuntu, however, and no Windows packed-TUI/ConPTY UAT has been recorded. Windows is therefore an implemented but currently unqualified target, not a supported release platform. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
 

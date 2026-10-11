@@ -54,7 +54,7 @@
     "access": "public"
   },
   "engines": {
-    "node": "^22.19.0 || >=24.0.0"
+    "node": "^22.19.0 || >=24.2.0"
   },
   "packageManager": "pnpm@11.20.0",
   "dsh": {

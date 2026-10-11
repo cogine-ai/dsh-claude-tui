@@ -59,10 +59,12 @@ function assertSupportedNodeVersion(): void {
   const [majorText, minorText] = process.versions.node.split('.')
   const major = Number(majorText)
   const minor = Number(minorText)
-  const supported = (major === 22 && minor >= 19) || major >= 24
+  const supported = (major === 22 && minor >= 19)
+    || (major === 24 && minor >= 2)
+    || major > 24
   if (!supported) {
     throw new Error(
-      `Node.js ${process.versions.node} is unsupported; install Node.js 22.19+ or 24+`,
+      `Node.js ${process.versions.node} is unsupported; install Node.js 22.19+ or 24.2+`,
     )
   }
 }
