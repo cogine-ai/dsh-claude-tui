@@ -5,14 +5,14 @@ launcher must make an existing DSH environment useful when it is safe, while
 remaining able to start from a clean machine without adopting or overwriting
 unowned state.
 
-This document describes TUI `0.1.7`, targeting DSH `0.2.0-rc.2`.
+This document describes TUI `0.1.8`, targeting DSH `0.2.0-rc.2`.
 TUI `0.1.6` used DSH `0.1.2-rc.1` with external compatibility range
 `>=0.1.2-rc.1 <0.1.3`.
 Local macOS full and ordinary-install checks passed after the engine-gate
 change; their exact results and qualification limits are recorded in the
 [adaptation record](harness-0.2.0-rc.2-adaptation.md).
 
-Version `0.1.7` requires Node **22.19+ in 22.x, or 24.2+**; its declared engines
+Version `0.1.8` requires Node **22.19+ in 22.x, or 24.2+**; its declared engines
 and launcher gate are `^22.19.0 || >=24.2.0`. Unsupported versions, including
 Node `24.0` and `24.1`, fail before external-runtime discovery or user DSH Home
 writes. Eligible versions invoke the Harness executable directly and preserve
@@ -144,7 +144,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples for TUI v0.1.7 with DSH `0.2.0-rc.2`:
+Examples for TUI v0.1.8 with DSH `0.2.0-rc.2`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
@@ -161,7 +161,7 @@ reconcile. Use sequential launches, or give concurrent runtimes separate
 `DSH_HOME` values.
 
 Compatibility is intentionally limited to the DSH `0.2.0` range above; the
-`0.2.1-alpha` series is outside version `0.1.7`'s target. A
+`0.2.1-alpha` series is outside version `0.1.8`'s target. A
 future DSH package may satisfy a wider-looking semantic range yet change an
 injected service contract; the runtime probe is therefore required in addition
 to the manifest version check.

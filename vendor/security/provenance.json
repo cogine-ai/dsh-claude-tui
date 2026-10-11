@@ -1,0 +1,437 @@
+{
+  "schema_version": 1,
+  "generator": "scripts/repack-security-dependencies.py",
+  "archive_format": "sorted PAX tar; uid/gid/mtime=0; empty ownership names; gzip mtime=0, OS=255",
+  "packages": [
+    {
+      "package": "@deepseek-ai/dsh-mcp-client",
+      "version": "0.2.0-rc.2",
+      "artifact": "dsh-mcp-client-0.2.0-rc.2.tgz",
+      "dependency_patch": {
+        "@modelcontextprotocol/client": {
+          "from": "2.0.0",
+          "to": "2.2.0"
+        }
+      },
+      "original": {
+        "url": "https://registry.npmjs.org/@deepseek-ai/dsh-mcp-client/-/dsh-mcp-client-0.2.0-rc.2.tgz",
+        "integrity": "sha512-UqP2sY1r6qAhBPFeuclqrXiMBBxPaCNrXlXRqKxAON7uI1wmZZ0B3/1GmBviQ3/WjjTQlOOkj0su2v4e5DMkug==",
+        "sha256": "cd60f18a52ff39a54a9f354cf24f023e8fc6c04b068a3b56efb34559d45d6363",
+        "bytes": 33048
+      },
+      "repacked": {
+        "integrity": "sha512-qbVwY+rAUCtNBXu74/sUmoNdA9StVfNLU3C1V3hrEHKBHG5KvVZcBM8CNWtSMOKhM8O7R5ZJV6U2tQh0PZYfmQ==",
+        "sha256": "e5fe2258eb9178770d1ff8fef4a85f8bce97cc434c4b708040ebfdba30427a05",
+        "bytes": 31565
+      },
+      "manifest": {
+        "original_sha256": "b9cc4fabcf7d3f4a5301f671d0094f2db4f6f3dc140358e6ccf3af77db2122bb",
+        "repacked_sha256": "56141d3c62b9c88e4c0e292b9763346d59512698a048990fe39f42e6ae36f8ed"
+      },
+      "verification": {
+        "same_package_name_and_version": true,
+        "manifest_only_semantic_change": true,
+        "all_non_manifest_member_bytes_links_types_and_modes_unchanged": true,
+        "original_member_count": 11,
+        "non_manifest_member_count": 10,
+        "original_non_manifest_inventory_sha256": "a3aec2ca2844f0ed7ade877091aadeb72f725c95e9f8ccbd72855ca163322b0d",
+        "repacked_non_manifest_inventory_sha256": "a3aec2ca2844f0ed7ade877091aadeb72f725c95e9f8ccbd72855ca163322b0d",
+        "preserved_license_paths": [
+          "package/LICENSE"
+        ],
+        "non_manifest_inventory": [
+          {
+            "path": "package/LICENSE",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1065,
+            "sha256": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be"
+          },
+          {
+            "path": "package/README.i18n.yaml",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 3894,
+            "sha256": "7aab65f1f8bf8d7e2ef360cc7b05ce614363216d183b8670e82ee6f16b039510"
+          },
+          {
+            "path": "package/README.md",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 18723,
+            "sha256": "dee48f8f16549d0e4a4dfeca201262281448f057997247ac49425c4dba1cb7a2"
+          },
+          {
+            "path": "package/README.zh.md",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 17313,
+            "sha256": "1f6751a7b6a778a69379b103cfcc964f33a7eabf9b9187d2fd20957be907ceb0"
+          },
+          {
+            "path": "package/lib/index.js",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 35041,
+            "sha256": "758d8fc473b700b5d351158d06ce9f9e92c16e8b25497b08bb7bd2122a87f5dd"
+          },
+          {
+            "path": "package/lib/types/connection.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 4062,
+            "sha256": "daa56cbb3935d495edfa3811e90fe3384ceba79513835db16ec1416860b81ced"
+          },
+          {
+            "path": "package/lib/types/index.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 4726,
+            "sha256": "a1b8499d30fe19a69d70c5332e7d447e87496e55b67f8ab25e5bb10021cc5596"
+          },
+          {
+            "path": "package/lib/types/server-context.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1122,
+            "sha256": "ca399c8ab7ddc726e64cc5cc3cc02b286857acb3958eae9775ac0aa5b54a45ad"
+          },
+          {
+            "path": "package/lib/types/tools.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 5228,
+            "sha256": "32fa23472d05bbe322ccf4541d033e1467aa795770fb3e0c3817271416e82dfc"
+          },
+          {
+            "path": "package/lib/types/transport.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 647,
+            "sha256": "502b4c216e89876828bf85c4bfca337375e45f37a65671e7375b9eb04211576c"
+          }
+        ]
+      }
+    },
+    {
+      "package": "@deepseek-ai/libreoffice-kit",
+      "version": "0.1.5",
+      "artifact": "libreoffice-kit-0.1.5.tgz",
+      "dependency_patch": {
+        "fflate": {
+          "from": "0.8.2",
+          "to": "0.8.3"
+        }
+      },
+      "original": {
+        "url": "https://registry.npmjs.org/@deepseek-ai/libreoffice-kit/-/libreoffice-kit-0.1.5.tgz",
+        "integrity": "sha512-H12xtUsAyl70zFeQ5pk5GGRc3N1+6zn+DVAcqwlguI6EvqopBGP3xkUmePU7g5f6ydYlDZLWedHT9lTSL7zLxA==",
+        "sha256": "f3ed9e424e7a25fc0eaee0b23ac754029343dafe7ff9daf710a86825f58ba576",
+        "bytes": 104240
+      },
+      "repacked": {
+        "integrity": "sha512-w8DjYfyViA5YAoVgui9hf8NJOum4rIllmQDBISYB7i5WFs5kLu+IIxJzD9NhnRUegztnMhTvfgeW/UP7WNO5PA==",
+        "sha256": "02307f4d99969a1c2e5c404d6d3186cf39406dead44e10e0a41ec354c7f8c235",
+        "bytes": 103780
+      },
+      "manifest": {
+        "original_sha256": "ee3f6e20251427b6ea1d8757397453cf4a218193da6ee2ae08f95d63a6c05a95",
+        "repacked_sha256": "5bcace35d58ec889beeffab780fd60ef05e86f3519fd5331312fa58028716de0"
+      },
+      "verification": {
+        "same_package_name_and_version": true,
+        "manifest_only_semantic_change": true,
+        "all_non_manifest_member_bytes_links_types_and_modes_unchanged": true,
+        "original_member_count": 41,
+        "non_manifest_member_count": 40,
+        "original_non_manifest_inventory_sha256": "70175b9f7751305cac978460002c70eb4068d2689e9bc65203523403e87ad80c",
+        "repacked_non_manifest_inventory_sha256": "70175b9f7751305cac978460002c70eb4068d2689e9bc65203523403e87ad80c",
+        "preserved_license_paths": [
+          "package/LICENSE"
+        ],
+        "non_manifest_inventory": [
+          {
+            "path": "package/LICENSE",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 16725,
+            "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+          },
+          {
+            "path": "package/NOTICE",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1791,
+            "sha256": "b8841df06ad9243a1fe973f35943c68a076675829680847bc2f506e9080e8737"
+          },
+          {
+            "path": "package/README.md",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 15198,
+            "sha256": "41ee9a9f3401cbdb1df47fa9addcf6b65974376d5cdc12166de577028b63ab0b"
+          },
+          {
+            "path": "package/README.zh.md",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 14168,
+            "sha256": "944cc1ba698c97bc5c4ef6390a030d00fb8bd759fa87ad479bfe64c624cc1aac"
+          },
+          {
+            "path": "package/lib/cli.js",
+            "type": "0",
+            "mode": "0o755",
+            "bytes": 89535,
+            "sha256": "15acbf344b5f23265d6cb50f613d1f8262bf088a6c8f4999bcef8d0448fe6045"
+          },
+          {
+            "path": "package/lib/font-snapshot-worker.js",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 16895,
+            "sha256": "d9b1830baab80a06101c13e50c3b9ee4e67f75d402566ce0a6fc04a8836e673a"
+          },
+          {
+            "path": "package/lib/index.js",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 84628,
+            "sha256": "5583ce1754084cb63be913e67821282f484a14b43744f777fd10731af67e3c60"
+          },
+          {
+            "path": "package/lib/types/cli.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 64,
+            "sha256": "6f77e82bfb5dd3b1015dd92c63e427d505f9bbbdaa041cad6c704f41c553a536"
+          },
+          {
+            "path": "package/lib/types/document.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 979,
+            "sha256": "6159a43a731b6d9313994672cca729f652d914dba7a36715c1b8a95c7608c00f"
+          },
+          {
+            "path": "package/lib/types/engine-rendering.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1173,
+            "sha256": "dcd667581a67a25758175cd2a2b36404beac9db8a4306bb54c02ca1021c73c7a"
+          },
+          {
+            "path": "package/lib/types/engine.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 3115,
+            "sha256": "99a35b23dde79c2b47fd3a8888188e4cccd4dd931b4ce42d5585638faca66fbd"
+          },
+          {
+            "path": "package/lib/types/errors.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1354,
+            "sha256": "52b257ce931dfb47fa22af76cfc604f11046e9eddb5f935ee909fe4e39b8117f"
+          },
+          {
+            "path": "package/lib/types/font-file-identity.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 612,
+            "sha256": "d25e5ab247594f1483a9d057e3b3ee26ceca60dad3e6da445e20040d384b1613"
+          },
+          {
+            "path": "package/lib/types/font-full.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 754,
+            "sha256": "559d238feea9407403b62e79c727856e398bedaa5c72f4bd8b6ea056149eab0f"
+          },
+          {
+            "path": "package/lib/types/font-loader.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 2062,
+            "sha256": "906dc942ddb87e446c77c70486f0e7be3382bee5d9828841ca7c580da9bf57c3"
+          },
+          {
+            "path": "package/lib/types/font-metadata-cache.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 906,
+            "sha256": "f23141ac08f387b1bf1341130050d0ff01bf5a0e264992a5aac2bdc221dc620e"
+          },
+          {
+            "path": "package/lib/types/font-snapshot-state.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 934,
+            "sha256": "230b0dca36de3af7745a2e20ff38f3e3d82d05fe9520d66acffc3bdb10465093"
+          },
+          {
+            "path": "package/lib/types/font-snapshot-validation.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 282,
+            "sha256": "65f6b8f4ea72a29610a0de09049932d478756de5f5c5cb8100bfa4ace1f0cead"
+          },
+          {
+            "path": "package/lib/types/font-snapshot-worker.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 380,
+            "sha256": "92e2f2e35736436d3f5d225394df28409b45d304c5cebbda875d96741d9ca27e"
+          },
+          {
+            "path": "package/lib/types/font-snapshot.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 610,
+            "sha256": "c7d5893b6a9509a4e283c354220811ebf253da9b16bdf10f4d515809dcb3fb83"
+          },
+          {
+            "path": "package/lib/types/fonts.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 7127,
+            "sha256": "e83ca2d3f19e5ec1c435efeb866fbee511e83469a1e1e710eb81e39dbc2051c7"
+          },
+          {
+            "path": "package/lib/types/image-operations.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 2596,
+            "sha256": "4cc5ba82fbbfadd300a6fa292e1609216bdaff19d32d2e0a6d79a23145b3dec4"
+          },
+          {
+            "path": "package/lib/types/image-renderer.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 351,
+            "sha256": "4573d0a2340cc6db93d8a431ba709d5871e1e9099f32ab0d7fd564509cb6f5ce"
+          },
+          {
+            "path": "package/lib/types/index.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 5782,
+            "sha256": "1b2e3b13334a31ee46326c83bb357491c9d13888c333b208ec48626fb0ad9194"
+          },
+          {
+            "path": "package/lib/types/native-font-names.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 200,
+            "sha256": "5c7b88642936b75acdb9057eecd33e12ba7680561787d10f77485f6d4e2f8eed"
+          },
+          {
+            "path": "package/lib/types/native-image-renderer.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 891,
+            "sha256": "956f4e02cad5dfd2c23a5f6714d352d59ebf275f454026e7fe26db79908af798"
+          },
+          {
+            "path": "package/lib/types/native-process.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 918,
+            "sha256": "a5154e2bc11f011bb1ff2a04d8b119f98f1744cf8099b3f1aa31a92d215b7ddc"
+          },
+          {
+            "path": "package/lib/types/native.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 3173,
+            "sha256": "daf83e1322ac0b9527bbe1f27760943945f1a697a23c5a69fd5feaf71b1ac4ac"
+          },
+          {
+            "path": "package/lib/types/office-fonts.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 506,
+            "sha256": "499313f154976f69db1920d80357bae904a36809e886dfa986cc7b8d83071ea4"
+          },
+          {
+            "path": "package/lib/types/ooxml.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1025,
+            "sha256": "8f1e4e62a5c7690329470a988fa6ade24b491609b32a888e8dcd1555b3828169"
+          },
+          {
+            "path": "package/lib/types/operations.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1771,
+            "sha256": "8ab9e3ebcd6c9b829e17f8d918b4212f7faee329d8d4babeff8941d34680f913"
+          },
+          {
+            "path": "package/lib/types/options.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1570,
+            "sha256": "54ba0213a7b7e16f4fdc78e00c8a8bf2a767ee2311229e359c60a59337d14f4e"
+          },
+          {
+            "path": "package/lib/types/png.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 149,
+            "sha256": "eb887f2e26c20a7a642aaeba5a07e4414e83a14baf43829ed910d428a65ff875"
+          },
+          {
+            "path": "package/lib/types/profile.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 465,
+            "sha256": "4e373c7805d8edf1ad37652bcb2b4a443e35d2b7ca474d6f3227dc0430b3d73d"
+          },
+          {
+            "path": "package/lib/types/rendering.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1811,
+            "sha256": "eccde0f904ac6de9d34a2cb578f7991d41558baea15aeccd947084a63d0ab925"
+          },
+          {
+            "path": "package/lib/types/runtime.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 609,
+            "sha256": "55830bc7befbc27ca75bcb4500e1f2b1b9ab8e2cecc547f452e0cae843f631e4"
+          },
+          {
+            "path": "package/lib/types/sheet-geometry.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 1420,
+            "sha256": "3717b85d2155b16fdb79febe4a4585d7f142bb50b54f4fb2c3cd1cf165a0cc63"
+          },
+          {
+            "path": "package/lib/types/wasm.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 4026,
+            "sha256": "bf61171ec708b30d9d8c91c7522f6c53aa341e3c8e1693fa3fadd282b0e8cf77"
+          },
+          {
+            "path": "package/lib/types/worker.d.ts",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 900,
+            "sha256": "011eb8f80486e0671ccd41b7c20807dd83fe8ffdf53e7d41b808bf49a36c1323"
+          },
+          {
+            "path": "package/lib/worker.js",
+            "type": "0",
+            "mode": "0o644",
+            "bytes": 60303,
+            "sha256": "03920e4616cc44adcf30d5f81ed07261889ed6f9956f7c5bde92747184c33137"
+          }
+        ]
+      }
+    }
+  ]
+}

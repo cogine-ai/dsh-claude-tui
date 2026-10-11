@@ -1,6 +1,6 @@
 {
   "name": "dsh-claude-tui",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Unofficial, high-fidelity Claude Code-style TUI for DeepSeek Harness, verified against real PTY captures",
   "keywords": [
     "deepseek",
@@ -94,6 +94,7 @@
     "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
     "@deepseek-ai/dsh-jobs": "0.2.0-rc.2",
     "@deepseek-ai/dsh-llm-deepseek": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "https://raw.githubusercontent.com/cogine-ai/dsh-claude-tui/0e0e57954e3502234fbd8a835b6fdaff235de3ad/vendor/security/dsh-mcp-client-0.2.0-rc.2.tgz",
     "@deepseek-ai/dsh-output-retention": "0.2.0-rc.2",
     "@deepseek-ai/dsh-ptc-runtime": "0.2.0-rc.2",
     "@deepseek-ai/dsh-sandbox": "0.2.0-rc.2",
@@ -112,13 +113,14 @@
     "@deepseek-ai/dsh-util-time": "0.2.0-rc.2",
     "@deepseek-ai/dsh-util-workspace-path": "0.2.0-rc.2",
     "@deepseek-ai/dsh-workflow": "0.2.0-rc.2",
+    "@deepseek-ai/libreoffice-kit": "https://raw.githubusercontent.com/cogine-ai/dsh-claude-tui/0e0e57954e3502234fbd8a835b6fdaff235de3ad/vendor/security/libreoffice-kit-0.1.5.tgz",
     "@deepseek-ai/schemastery": "3.18.4",
     "@earendil-works/pi-tui": "0.84.1",
     "commander": "^15.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "semver": "7.8.5",
-    "sharp": "0.35.3"
+    "sharp": "0.35.5"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
@@ -161,6 +163,7 @@
     "@deepseek-ai/dsh-subagent": "0.2.0-rc.2",
     "@deepseek-ai/dsh-user-approval": "0.2.0-rc.2",
     "@deepseek-ai/dsh-user-questions": "0.2.0-rc.2",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "@types/node": "^24.10.0",
     "@types/semver": "7.8.0",
     "@xterm/headless": "6.0.0",
