@@ -439,6 +439,8 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/release-hardening-v0.1.0.md',
       'package/docs/releases/v0.1.6.md',
       'package/docs/releases/v0.1.6.zh-CN.md',
+      'package/docs/releases/v0.1.7.md',
+      'package/docs/releases/v0.1.7.zh-CN.md',
       'package/docs/visual-qualification-2.1.227.md',
       'package/lib/cli.d.ts',
       'package/lib/cli.js',

@@ -5,13 +5,14 @@ launcher must make an existing DSH environment useful when it is safe, while
 remaining able to start from a clean machine without adopting or overwriting
 unowned state.
 
-This document describes the unreleased TUI `0.1.7` source candidate targeting
-DSH `0.2.0-rc.2`. Published npm TUI `0.1.6` still bundles DSH `0.1.2-rc.1`.
+This document describes TUI `0.1.7`, targeting DSH `0.2.0-rc.2`.
+TUI `0.1.6` used DSH `0.1.2-rc.1` with external compatibility range
+`>=0.1.2-rc.1 <0.1.3`.
 Local macOS full and ordinary-install checks passed after the engine-gate
 change; their exact results and qualification limits are recorded in the
 [adaptation record](harness-0.2.0-rc.2-adaptation.md).
 
-The candidate requires Node **22.19+ in 22.x, or 24.2+**; its declared engines
+Version `0.1.7` requires Node **22.19+ in 22.x, or 24.2+**; its declared engines
 and launcher gate are `^22.19.0 || >=24.2.0`. Unsupported versions, including
 Node `24.0` and `24.1`, fail before external-runtime discovery or user DSH Home
 writes. Eligible versions invoke the Harness executable directly and preserve
@@ -23,8 +24,10 @@ the top-level CLI start on Node `24.0`/`24.1`, but cannot start that runner;
 Ubuntu PTC tests exposed the resulting unconsumed launch request. Node added
 the guard in [24.2.0 and 22.18.0](https://nodejs.org/api/esm.html#importmetamain).
 The TUI retains its existing 22.19 floor and raises the 24.x floor to 24.2.
-The complete Ubuntu checks, including installed PTC, qualify that new floor;
-results are tracked by the [branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2).
+The complete four-version Ubuntu checks, including installed PTC, passed
+before PR review at `58143d3` in [run 38099441670](https://github.com/cogine-ai/dsh-claude-tui/actions/runs/38099441670),
+including the new 24.2 floor. Subsequent results are tracked by the
+[branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2).
 
 On macOS, Harness child processes default to `CHOKIDAR_USEPOLLING=true` and
 `CHOKIDAR_INTERVAL=1000`. This retains settings, skills, and profile updates
@@ -141,7 +144,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples for TUI v0.1.7 (unreleased) with DSH `0.2.0-rc.2`:
+Examples for TUI v0.1.7 with DSH `0.2.0-rc.2`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
@@ -158,7 +161,7 @@ reconcile. Use sequential launches, or give concurrent runtimes separate
 `DSH_HOME` values.
 
 Compatibility is intentionally limited to the DSH `0.2.0` range above; the
-`0.2.1-alpha` series is outside this candidate's target. A
+`0.2.1-alpha` series is outside version `0.1.7`'s target. A
 future DSH package may satisfy a wider-looking semantic range yet change an
 injected service contract; the runtime probe is therefore required in addition
 to the manifest version check.

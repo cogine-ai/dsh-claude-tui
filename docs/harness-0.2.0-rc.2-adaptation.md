@@ -1,12 +1,12 @@
 # DeepSeek Harness 0.2.0-rc.2 adaptation / 适配记录
 
-Status: unreleased TUI `0.1.7` source candidate, targeting `dsh-v0.2.0-rc.2` at upstream commit `639ed015397290b3745d163aafe02ffee4aa3f84`. Node engines are `^22.19.0 || >=24.2.0`. Local macOS full and ordinary-install checks passed after the engine-gate change, as recorded below. Ubuntu CI results are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). Published npm TUI `0.1.6` continues to use DSH `0.1.2-rc.1`.
+Target: TUI `0.1.7`, using `dsh-v0.2.0-rc.2` at upstream commit `639ed015397290b3745d163aafe02ffee4aa3f84`. Node engines are `^22.19.0 || >=24.2.0`. Local macOS full and ordinary-install checks passed after the engine-gate change. Before PR review, all four Ubuntu jobs passed at `58143d3` in [run 38099441670](https://github.com/cogine-ai/dsh-claude-tui/actions/runs/38099441670); subsequent results are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). TUI `0.1.6` used DSH `0.1.2-rc.1` with external range `>=0.1.2-rc.1 <0.1.3`. This record describes adaptation and qualification; npm publication has separate registry verification.
 
-状态：尚未发布的 TUI `0.1.7` 源码候选版本，目标为 DSH `0.2.0-rc.2`，Node 范围为 `^22.19.0 || >=24.2.0`。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过，结果见下表；Ubuntu CI 结果由本分支 PR checks 跟踪。npm 已发布版本仍为 TUI `0.1.6`，其 DSH 版本不变。下文把发布标签中已确认的契约与候选版本实测结果分开记录；此前 [0.1.5 适配记录](harness-0.1.5-rc.2-adaptation.md)保留原有结论。
+适配目标：TUI `0.1.7` 与 DSH `0.2.0-rc.2`，Node 范围为 `^22.19.0 || >=24.2.0`。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过；PR review 前，Ubuntu 四项检查在 `58143d3` 的 run 38099441670 全部通过，后续结果由本分支 PR checks 跟踪。TUI `0.1.6` 使用 DSH `0.1.2-rc.1`，外部范围为 `>=0.1.2-rc.1 <0.1.3`。本文记录适配与资格证据，npm 发布另行核验 registry。下文区分发布标签契约与实测结果；此前 [0.1.5 适配记录](harness-0.1.5-rc.2-adaptation.md)保留原有结论。
 
 ## Runtime selection / 运行时选择
 
-The bundled runtime is pinned to `0.2.0-rc.2`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the isolated behavioral probe. A manifest match alone does not qualify a runtime. DSH `0.2.1-alpha` is outside this target, and the candidate does not adopt its removals of `both`, runtime invariant plugins, or the in-process subagent driver.
+The bundled runtime is pinned to `0.2.0-rc.2`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the isolated behavioral probe. A manifest match alone does not qualify a runtime. DSH `0.2.1-alpha` is outside this target, and version `0.1.7` does not adopt its removals of `both`, runtime invariant plugins, or the in-process subagent driver.
 
 运行时依赖与官方文档以同一发布标签为目标，外部 DSH 必须同时通过版本检查和隔离行为探针。本次适配范围是 `0.2.0-rc.2`，不把后续 alpha 的破坏性变更提前应用到本版本。
 
@@ -16,9 +16,9 @@ Node **22.19+ in 22.x, or 24.2+** is required (`^22.19.0 || >=24.2.0`). The laun
 
 Ubuntu installed-PTC checks found that the earlier Node `24.0.0` startup qualification was incomplete. In the exact release, the subprocess-local runner uses an [`import.meta.main` entry guard](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/subprocess/subprocess-local/src/bin.ts#L18), and its [built runner invocation](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/subprocess/subprocess-local/src/runner-launch.ts#L29) executes that entry directly. Node `24.0`/`24.1` lack the guard, so the helper exits without consuming the launch request. The Linux scope reports [the unconsumed bootstrap request](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/subprocess/subprocess-local/src/linux-scope.ts#L171); the Windows Job path uses the same runner. macOS directly launches these subprocesses, so its successful CLI/probe tests and local PTC checks did not reveal this platform-specific failure.
 
-Node introduced `import.meta.main` in [24.2.0 and 22.18.0](https://nodejs.org/api/esm.html#importmetamain). The candidate preserves the existing 22.19 floor and raises the 24.x floor to 24.2. The tagged provider exposes no public runner configuration that resolves this entry-point problem. The fix keeps the exact DSH dependencies, aligns the package engines, launcher guard, and CI matrix, and adds rejection tests for Node `24.0` and `24.1` before user Home writes. Complete Ubuntu checks, including installed PTC, must pass before the new minimum is runtime-qualified.
+Node introduced `import.meta.main` in [24.2.0 and 22.18.0](https://nodejs.org/api/esm.html#importmetamain). Version `0.1.7` preserves the existing 22.19 floor and raises the 24.x floor to 24.2. The tagged provider exposes no public runner configuration that resolves this entry-point problem. The fix keeps the exact DSH dependencies, aligns the package engines, launcher guard, and CI matrix, and adds rejection tests for Node `24.0` and `24.1` before user Home writes. Before PR review, complete Ubuntu checks, including installed PTC at the new minimum, passed at `58143d3` in run 38099441670.
 
-Ubuntu 的安装包 PTC 测试推翻了此前对 Node `24.0` 完整运行资格的判断：CLI 显式调用 `runCli()` 只解决顶层入口，无法启动依赖 `import.meta.main` 的私有子进程 runner。macOS 直接创建该类子进程，因此此前 32 项启动路径测试和本地 PTC 成功只能作为局部诊断历史。候选版本现要求 Node `^22.19.0 || >=24.2.0`，在探测外部运行时及写用户 Home 前拒绝不支持的版本；未替换 DSH 精确标签或修改安全依赖。Node `24.2.0` 的最低版本资格须由完整 Ubuntu CI 证明。
+Ubuntu 的安装包 PTC 测试推翻了此前对 Node `24.0` 完整运行资格的判断：CLI 显式调用 `runCli()` 只解决顶层入口，无法启动依赖 `import.meta.main` 的私有子进程 runner。macOS 直接创建该类子进程，因此此前 32 项启动路径测试和本地 PTC 成功只能作为局部诊断历史。`0.1.7` 要求 Node `^22.19.0 || >=24.2.0`，在探测外部运行时及写用户 Home 前拒绝不支持的版本；未替换 DSH 精确标签或修改安全依赖。PR review 前的完整 Ubuntu CI 已覆盖 Node `24.2.0` 最低版本。
 
 ## Confirmed upstream contracts / 已确认的上游契约
 
@@ -42,9 +42,9 @@ The following findings come from the exact published tag, rather than the upstre
 
 Settings and transport references: [resolved settings forms](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/settings/settings/src/index.ts), [Messages transport](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/llm/llm-deepseek/README.md), and [API-key authentication](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/llm/llm-deepseek-api-key/README.md).
 
-## Candidate changes / 候选版本变更
+## Version changes / 版本变更
 
-The candidate updates DSH dependencies and peer ranges, removes the obsolete worker-thread code-runtime insert, and uses the base bundle's sandboxed Node PTC provider. Session replay consumes V4 tool-role results. The runtime probe expects a V4 header while continuing to exercise Agent creation, image storage/readback, command execution, user/assistant events, flush, and disposal without a model request.
+Version `0.1.7` updates DSH dependencies and peer ranges, removes the obsolete worker-thread code-runtime insert, and uses the base bundle's sandboxed Node PTC provider. Session replay consumes V4 tool-role results. The runtime probe expects a V4 header while continuing to exercise Agent creation, image storage/readback, command execution, user/assistant events, flush, and disposal without a model request.
 
 Provider configuration now reads `settings.describe({ redactSecrets: true })`, selects the provider's form by namespace, and uses its resolved value. The open Provider view listens to `settings/document-updated` so changes refresh without reopening the view. This replaces the removed `settings.get()` and `settings/updated` path while retaining credential-reference resolution and masked display.
 
@@ -92,8 +92,8 @@ Local results on macOS arm64, 2026-10-11, follow. Initial results predate the ti
 | Installed Node PTC tool turn, shutdown, and resume | Passed with a local Messages/Files API mock, strict test-key validation, and isolated OS/DSH Homes. |
 | V0/V3-to-V4 migration | Passed through the installed artifact: restored replies and V4 tool result verified; original predecessor bytes preserved. |
 | Provider refresh and terminal regressions | Passed within the complete check: document-update refresh, layouts, live streams, command attachments, approvals, questions, plan keys, and subagents. |
-| Ubuntu CI | Results tracked by [branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2); configured Node versions are 22.19.0, 22.22.3, 24.2.0, and 24.14.0. The new 24.2 minimum is qualified only after the complete checks pass. |
+| Ubuntu CI before PR review | Passed on `58143d3` in [run 38099441670](https://github.com/cogine-ai/dsh-claude-tui/actions/runs/38099441670): Node 22.19.0, 22.22.3, 24.2.0, and 24.14.0. Subsequent results are tracked by [branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). |
 
 The initial Node 22 gate passed after one unchanged retry of an `ECONNRESET` installation failure, which occurred before its test assertions ran. Native koffi, node-pty, and DSH subprocess install hooks exited successfully; the complete installed dependency tree, PTC/resume, both historical migrations, external runtime, and Shift+Tab checks passed. No transport override was introduced. The fresh-cache follow-up after the engine-gate change also passed with ordinary npm resolution and scripts enabled, as recorded separately above.
 
-Node 门禁变更后，macOS arm64 上 Node `24.16.0` 完整检查为 179 通过、1 跳过；Node `22.23.3` 普通 peer 求解、全新缓存且启用安装脚本的复验为 12 通过、1 跳过。初轮 Node 22 安装阶段网络中断后按原设置重试成功，未更改传输配置。Node 24.0 的 32 项局部启动测试属于诊断历史，不构成完整运行支持。Ubuntu 的四个 Node 版本以 PR checks 结果为准，本地 macOS 检查不能替代该证据。真实系统剪贴板检查已跳过；本次适配未发布 npm，也未建立生产模型或 Windows ConPTY 的新验收结论。上方依赖安全审计的 14 个条目仍未修复。
+Node 门禁变更后，macOS arm64 上 Node `24.16.0` 完整检查为 179 通过、1 跳过；Node `22.23.3` 普通 peer 求解、全新缓存且启用安装脚本的复验为 12 通过、1 跳过。初轮 Node 22 安装阶段网络中断后按原设置重试成功，未更改传输配置。Node 24.0 的 32 项局部启动测试属于诊断历史，不构成完整运行支持。PR review 前 Ubuntu 四个 Node 版本均通过，后续结果以 PR checks 为准。真实系统剪贴板检查已跳过；生产模型与 Windows ConPTY 尚无本版本的新验收结论。上述资格证据不替代 npm 发布后的 registry 核验。上方依赖安全审计的 14 个条目仍未修复。

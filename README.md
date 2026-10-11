@@ -14,7 +14,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.2.0-rc.2 source target" src="https://img.shields.io/badge/DSH-0.2.0--rc.2-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.2.0-rc.2 runtime" src="https://img.shields.io/badge/DSH-0.2.0--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -27,13 +27,13 @@
 
 ## Start in one command
 
-The unreleased `0.1.7` candidate requires Node.js **22.19+ in 22.x, or 24.2+** (`^22.19.0 || >=24.2.0`). It rejects Node `24.0` and `24.1` before changing your DSH Home.
+Version `0.1.7` requires Node.js **22.19+ in 22.x, or 24.2+** (`^22.19.0 || >=24.2.0`). It rejects Node `24.0` and `24.1` before changing your DSH Home.
 
 ```bash
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To pin the current published release exactly, add `@0.1.6` to the package name.
+That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To select version `0.1.7` exactly, add `@0.1.7` to the package name.
 
 The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; this release explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` is also qualified with ordinary npm peer resolution, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
 
@@ -42,15 +42,15 @@ A real model request needs credentials for the DSH provider you select. Use `/pr
 For repeat use:
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.6
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.7
 dshtui
 ```
 
 The global install exposes both `dshtui` and the canonical `dsh-claude-tui` command. Resume work with `dshtui --resume` for the Session picker, or `--resume <session-id>` for an exact Session.
 
-## DSH 0.2.0-rc.2 adaptation (unreleased)
+## DSH 0.2.0-rc.2 support
 
-The `0.1.7` source candidate pins Harness to `0.2.0-rc.2` and requires Node `^22.19.0 || >=24.2.0`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the behavioral probe. Published TUI `0.1.6` still uses DSH `0.1.2-rc.1`; the npm commands above install that published version, not this candidate. Local macOS full and ordinary-install checks passed after the engine-gate change. The [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) records the results and the Node 24.0 subprocess failure found by Ubuntu CI.
+Version `0.1.7` pins Harness to `0.2.0-rc.2` and requires Node `^22.19.0 || >=24.2.0`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the behavioral probe. TUI `0.1.6` used DSH `0.1.2-rc.1` with the external range `>=0.1.2-rc.1 <0.1.3`. See the [v0.1.7 release notes](./docs/releases/v0.1.7.md) for upgrade guidance. Local macOS full and ordinary-install checks passed after the engine-gate change. The [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) records the results and the Node 24.0 subprocess failure found by Ubuntu CI.
 
 - Live replies retain Agent assistant-stream events; completed replies, usage, and timing replay from V4 Session settlements. Tool results use the V4 tool-role message format.
 - Model selection receives the explicit Agent during setup. Command images use the typed attachment envelope, and the profile retains `personaPrefix`.
@@ -60,7 +60,7 @@ The `0.1.7` source candidate pins Harness to `0.2.0-rc.2` and requires Node `^22
 - PTC uses the sandboxed Node-process runtime provided by the shared DSH base bundle. Tool modes remain `native`, `ptc`, and `both` in this release.
 - The production dependency graph and [official bilingual documentation mirror](./docs/upstream/dsh/README.md) target the same exact release. The mirror is excluded from npm packages; its index records the source inventory.
 
-Run this candidate from its checkout:
+To run from a checkout:
 
 ```bash
 corepack pnpm install --frozen-lockfile
@@ -71,7 +71,7 @@ DSH_HOME=/tmp/dsh-claude-tui-0.2.0-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/
 > [!WARNING]
 > DSH now stores V4 Sessions. Supported older logs migrate to new files while preserving the originals; upgraded Sessions cannot be read by older Harness versions. Use separate Homes for cross-version testing. The optional SQLite Session backend was removed in `0.1.2`; export those older Sessions with their original runtime first. SQLite query/index storage is a separate service.
 
-See the [official 0.2.0-rc.2 release notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) and [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md). The [0.1.5 record](./docs/harness-0.1.5-rc.2-adaptation.md) preserves earlier results. Upstream Web file upload, preview, and sidebar features do not imply corresponding TUI interfaces; the newer `0.2.1-alpha` series is outside this candidate's target.
+See the [official 0.2.0-rc.2 release notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) and [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md). The [0.1.5 record](./docs/harness-0.1.5-rc.2-adaptation.md) preserves earlier results. Upstream Web file upload, preview, and sidebar features do not imply corresponding TUI interfaces; the newer `0.2.1-alpha` series is outside version `0.1.7`'s target.
 
 ## What you get
 
@@ -114,7 +114,7 @@ The default launcher removes the need to choose an installation strategy up fron
 2. Probe it in an isolated, credential-free temporary Home.
 3. Fall back to the bundled, shrinkwrap-pinned DSH `0.2.0-rc.2` when no external runtime qualifies.
 
-For the source candidate, compatibility requires both the version range `>=0.2.0-rc.2 <0.2.1` and a successful behavioral probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
+Compatibility requires both the version range `>=0.2.0-rc.2 <0.2.1` and a successful behavioral probe. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
 
 | Variable | Behavior |
 | --- | --- |
@@ -133,7 +133,7 @@ The main interaction target is the observed Claude Code `2.1.227` TUI; the `[Ima
 - After the engine-gate change, macOS arm64 passed the full check on Node `24.16.0` (14 files, **179 passed and 1 skipped**) and the ordinary npm peer-resolution bundle gate on Node `22.23.3` (**12 passed and 1 skipped**). Node `24.0`/`24.1` are excluded: earlier macOS startup checks did not exercise the subprocess runner failure later found by Ubuntu PTC tests. See the [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) for results and their scope.
 - The current tests cover true-color, xterm-compatible `80x24` and `100x30` layouts, image and command attachments, approvals, questions, plan-mode keys, and foreground/background subagents.
 - Installed-artifact checks cover fresh npm installation, both command names, bundled and separate-runtime probes, sandboxed Node PTC tool turns against a local DeepSeek Messages/Files API mock, graceful exit and resume, and V0/V3-to-V4 migration with original-file preservation.
-- The opt-in real macOS system-clipboard gate was skipped. Ubuntu CI uses Node `22.19.0`, `22.22.3`, `24.2.0`, and `24.14.0`; results are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2). Node `24.2.0` runtime qualification requires the complete Ubuntu checks to pass.
+- The opt-in real macOS system-clipboard gate was skipped. Before PR review, all four Ubuntu jobs passed on Node `22.19.0`, `22.22.3`, `24.2.0`, and `24.14.0` at `58143d3` in [run 38099441670](https://github.com/cogine-ai/dsh-claude-tui/actions/runs/38099441670). Subsequent checks are tracked by the [branch's PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2).
 
 The Windows launcher, junction, signal-forwarding, VT-input, dependency-prebuild, and STA image-clipboard paths are implemented, and the pinned DSH upstream has a native Windows gate. This TUI's own CI still runs only on Ubuntu, however, and no Windows packed-TUI/ConPTY UAT has been recorded. Windows is therefore an implemented but currently unqualified target, not a supported release platform. Read the [full visual and semantic qualification report](./docs/visual-qualification-2.1.227.md) or the [artifact-hardening baseline](./docs/release-hardening-v0.1.0.md).
 

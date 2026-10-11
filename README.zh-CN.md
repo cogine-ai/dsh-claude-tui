@@ -13,7 +13,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.2.0-rc.2 源码适配目标" src="https://img.shields.io/badge/DSH-0.2.0--rc.2-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.2.0-rc.2 运行时" src="https://img.shields.io/badge/DSH-0.2.0--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -26,13 +26,13 @@
 
 ## 一条命令开始
 
-尚未发布的 `0.1.7` 候选版本需要 Node.js **22.x 的 22.19+，或 24.2+**（`^22.19.0 || >=24.2.0`）。候选版本会在修改 DSH Home 前拒绝 Node `24.0` 和 `24.1`。
+`0.1.7` 需要 Node.js **22.x 的 22.19+，或 24.2+**（`^22.19.0 || >=24.2.0`）。启动器会在修改 DSH Home 前拒绝 Node `24.0` 和 `24.1`。
 
 ```bash
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确固定当前已发布版本，在包名后添加 `@0.1.6`。
+这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确选择 `0.1.7`，在包名后添加 `@0.1.7`。
 
 `legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；本版本显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 也通过了标准 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
 
@@ -41,15 +41,15 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 如果会反复使用：
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.6
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.7
 dshtui
 ```
 
 全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`。使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
-## 适配 DSH 0.2.0-rc.2（尚未发布）
+## 支持 DSH 0.2.0-rc.2
 
-`0.1.7` 源码候选版本把 Harness 固定到 `0.2.0-rc.2`，要求 Node `^22.19.0 || >=24.2.0`；外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。已发布的 TUI `0.1.6` 仍使用 DSH `0.1.2-rc.1`；上面的 npm 命令安装已发布版本，不会安装本候选版本。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过，[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)记录实测结果及 Ubuntu CI 发现的 Node 24.0 子进程失败。
+`0.1.7` 把 Harness 固定到 `0.2.0-rc.2`，要求 Node `^22.19.0 || >=24.2.0`；外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。TUI `0.1.6` 使用 DSH `0.1.2-rc.1`，其外部兼容范围为 `>=0.1.2-rc.1 <0.1.3`。升级说明见 [v0.1.7 发布说明](./docs/releases/v0.1.7.zh-CN.md)。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过，[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)记录实测结果及 Ubuntu CI 发现的 Node 24.0 子进程失败。
 
 - 实时回复保留 Agent assistant-stream 事件；最终回复、用量与计时从 V4 Session 聚合事件回放，工具结果采用 V4 的 tool-role 消息格式。
 - 模型选择通过 setup 显式接收 Agent；命令图片采用带类型的附件信封，Profile 保留 `personaPrefix`。
@@ -59,7 +59,7 @@ dshtui
 - PTC 使用共享 DSH base bundle 提供的受沙箱约束的 Node 子进程运行时；本版本仍保留 `native`、`ptc` 和 `both` 工具模式。
 - 生产依赖图与[官方中英文文档镜像](./docs/upstream/dsh/README.md)以同一精确版本为目标；镜像不进入 npm 安装包，原始文件清单由镜像索引记录。
 
-从本候选版本的 checkout 运行：
+从 checkout 运行：
 
 ```bash
 corepack pnpm install --frozen-lockfile
@@ -70,7 +70,7 @@ DSH_HOME=/tmp/dsh-claude-tui-0.2.0-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/
 > [!WARNING]
 > DSH 现使用 V4 Session。受支持的旧日志迁移为新文件并保留原件；升级后的会话不能由旧版 Harness 读取。跨版本测试请使用独立 Home。可选 SQLite Session 后端已在 `0.1.2` 移除，使用过该后端的旧会话需先用原运行时导出；SQLite 查询和索引存储是另一项服务。
 
-完整变化见[官方 0.2.0-rc.2 发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)与[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。[0.1.5 记录](./docs/harness-0.1.5-rc.2-adaptation.md)保留此前验证结论。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面；更新的 `0.2.1-alpha` 系列不在本候选版本的适配目标内。
+完整变化见[官方 0.2.0-rc.2 发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)与[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。[0.1.5 记录](./docs/harness-0.1.5-rc.2-adaptation.md)保留此前验证结论。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面；更新的 `0.2.1-alpha` 系列不在 `0.1.7` 的适配目标内。
 
 ## 你能获得什么
 
@@ -113,7 +113,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 2. 在不继承凭据的临时 Home 中执行兼容探针；
 3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.2.0-rc.2`。
 
-本源码候选版本的兼容性同时要求版本满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
+兼容性同时要求版本满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
 
 | 变量 | 行为 |
 | --- | --- |
@@ -132,7 +132,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 - Node 门禁变更后的 macOS arm64 检查中，Node `24.16.0` 完整检查为 14 个文件、**179 通过、1 跳过**；Node `22.23.3` 普通 npm peer 求解安装包检查为 **12 通过、1 跳过**。Node `24.0`/`24.1` 已被排除：此前 macOS 启动检查没有覆盖后来 Ubuntu PTC 测试发现的子进程 runner 失败。详细结果与范围见[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。
 - 本轮测试覆盖 true-color、xterm-compatible 的 `80x24`、`100x30` 布局、图片与命令附件、审批、问题、计划模式按键和前后台子代理。
 - 安装产物检查覆盖全新 npm 安装、两个命令入口、包内与独立外部运行时探针、经本地 DeepSeek Messages/Files API mock 的受沙箱约束 Node PTC 工具轮次、安全退出与恢复，以及 V0/V3-to-V4 迁移和原文件字节保留。
-- opt-in 真实 macOS 系统剪贴板检查已跳过。Ubuntu CI 配置为 Node `22.19.0`、`22.22.3`、`24.2.0` 和 `24.14.0`，结果由[本分支 PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2)跟踪；Node `24.2.0` 的运行资格需以完整 Ubuntu 检查通过为依据。
+- opt-in 真实 macOS 系统剪贴板检查已跳过。PR review 前，Ubuntu 的 Node `22.19.0`、`22.22.3`、`24.2.0` 和 `24.14.0` 四项检查已在 `58143d3` 的 [run 38099441670](https://github.com/cogine-ai/dsh-claude-tui/actions/runs/38099441670) 全部通过；后续结果由[本分支 PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2)跟踪。
 
 Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 
