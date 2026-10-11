@@ -267,11 +267,14 @@ def main():
             with tempfile.TemporaryDirectory(prefix="dsh-security-repack-check-") as temporary:
                 generated = Path(temporary)
                 generate(generated)
+                expected_names = {path.name for path in generated.iterdir()}
+                actual_names = {path.name for path in DESTINATION.iterdir()} if DESTINATION.is_dir() else set()
                 mismatches = [
                     path.name for path in sorted(generated.iterdir())
                     if not (DESTINATION / path.name).is_file()
                     or path.read_bytes() != (DESTINATION / path.name).read_bytes()
                 ]
+                mismatches.extend(sorted(actual_names - expected_names))
                 if mismatches:
                     print("Repack check failed: " + ", ".join(mismatches), file=sys.stderr)
                     return 1

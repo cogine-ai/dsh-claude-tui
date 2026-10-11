@@ -21,6 +21,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import * as pty from 'node-pty'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { verifyMcpCompatibility } from './mcp-compat.ts'
+import { verifySecurityDependencies } from './security-dependency-checks.ts'
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const usesDefaultNpmPeerResolution =
@@ -431,6 +433,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/DISCLAIMER.md',
       'package/cordis.patch.yml',
       'package/docs/assets/terminal-preview.svg',
+      'package/docs/dependency-security-rc.2.md',
       'package/docs/harness-0.1.2-rc.1-adaptation.md',
       'package/docs/harness-0.1.5-rc.2-adaptation.md',
       'package/docs/harness-0.2.0-rc.2-adaptation.md',
@@ -481,7 +484,7 @@ describe('dsh-claude-tui bundle', () => {
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
-        sharp: '0.35.3',
+        sharp: '0.35.5',
       },
       repository: { url: 'git+https://github.com/cogine-ai/dsh-claude-tui.git' },
       homepage: 'https://github.com/cogine-ai/dsh-claude-tui#readme',
@@ -522,7 +525,7 @@ describe('dsh-claude-tui bundle', () => {
       .toBe('3.972.79')
     expect(shrinkwrap.packages?.['node_modules/react']?.version).toBe('18.3.1')
     expect(shrinkwrap.packages?.['node_modules/react-dom']?.version).toBe('18.3.1')
-    expect(shrinkwrap.packages?.['node_modules/sharp']?.version).toBe('0.35.3')
+    expect(shrinkwrap.packages?.['node_modules/sharp']?.version).toBe('0.35.5')
     const dshVersions = Object.entries(shrinkwrap.packages ?? {})
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
@@ -553,7 +556,7 @@ describe('dsh-claude-tui bundle', () => {
       installedRequire.resolve('@deepseek-ai/dsh-attachment-local/package.json'),
     )
     expect((attachmentRequire('sharp') as { versions: { sharp: string } }).versions.sharp)
-      .toBe('0.35.3')
+      .toBe('0.35.5')
 
     const installedDeepSeekScope = join(installDirectory, 'node_modules/@deepseek-ai')
     const requiredDeepSeekPeers = new Set<string>()
@@ -588,7 +591,7 @@ describe('dsh-claude-tui bundle', () => {
     // npm 10 can retain these leaves after filtering their cross-platform
     // optional Sharp parent. Any other dependency-tree problem is a failure.
     expect(fullNpmProblems.filter(problem => {
-      return !/^extraneous: (?:@emnapi\/runtime@1\.11\.3|@img\/sharp-wasm32@0\.35\.3) /u
+      return !/^extraneous: (?:@emnapi\/runtime@1\.11\.3|@img\/sharp-wasm32@0\.35\.5) /u
         .test(problem)
     })).toEqual([])
 
@@ -600,6 +603,14 @@ describe('dsh-claude-tui bundle', () => {
     expect(publishedText).not.toMatch(/\b(?:ghp|github_pat|npm)_[A-Za-z0-9_]{20,}\b/u)
     expect(publishedText).not.toMatch(/\bsk-[A-Za-z0-9_-]{20,}\b/u)
   }, 30_000)
+
+  it('uses patched native image, Office ZIP, and URI parsers from the installed TUI', async () => {
+    await verifySecurityDependencies(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
+  }, 40_000)
+
+  it('preserves DSH 0.2.0-rc.2 MCP behavior in the installed TUI', async () => {
+    await verifyMcpCompatibility(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
+  }, 40_000)
 
   it('publishes a side-effect-free executable help surface', () => {
     const manifest = JSON.parse(

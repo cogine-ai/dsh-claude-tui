@@ -1,7 +1,21 @@
 overrides:
+  # These manifest-only repacks preserve the rc.2 sources and repair exact upstream pins.
+  # Trusted local tarballs also keep pnpm's default exotic-subdependency block enabled.
+  '@deepseek-ai/dsh-mcp-client': file:vendor/security/dsh-mcp-client-0.2.0-rc.2.tgz
+  '@deepseek-ai/libreoffice-kit': file:vendor/security/libreoffice-kit-0.1.5.tgz
   # Match the audited npm shrinkwrap's fixes for URI normalization and qs parsing.
-  fast-uri: 3.1.7
+  fast-uri: 3.1.8
   qs: 6.16.0
+  # Converge compatible workspace/optional/dev consumers on patched releases.
+  # Empty-range selectors leave any incompatible declared range untouched.
+  '@modelcontextprotocol/sdk@': 1.31.0
+  'compression@': 1.8.2
+  'hono@': 4.13.7
+  'ip-address@': 10.7.1
+  'js-yaml@': 4.3.2
+  'proxy-addr@': 2.0.8
+  'source-map-js@': 1.2.2
+  'vitest@': 4.1.11
 allowBuilds:
   # Harness' PTY adapter restores the executable bit on node-pty's macOS helper.
   '@deepseek-ai/dsh-subprocess-local': true
