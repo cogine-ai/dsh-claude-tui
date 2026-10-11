@@ -118,10 +118,10 @@ describe('launcher-managed profiles', () => {
     )).toBe(packageIdentity.root)
   })
 
-  it('recognizes and reconciles a valid legacy launcher-managed profile', () => {
+  it('reconciles a legacy launcher-managed profile while preserving user state', () => {
     const root = temporaryDirectory()
     const home = join(root, 'home')
-    const firstIdentity = identity(join(root, 'package-v1'), '0.1.0')
+    const firstIdentity = identity(join(root, 'package-v1'), '0.1.6')
     ensureManagedProfile(
       home,
       { name: LEGACY_PROFILE_NAME, action: 'create' },
@@ -130,7 +130,16 @@ describe('launcher-managed profiles', () => {
     const legacy = profilePath(home, LEGACY_PROFILE_NAME)
     const patchPath = join(legacy, 'cordis.patch.yml')
     writeFileSync(patchPath, '# user customization\n[]\n')
-    const secondIdentity = identity(join(root, 'package-v2'), '0.1.1')
+    const settingsPath = join(home, 'settings.json')
+    const credentialsPath = join(home, 'credentials.json')
+    const sessionDirectory = join(home, 'sessions', 'existing-session')
+    const sessionPath = join(sessionDirectory, 'session.jsonl')
+    mkdirSync(sessionDirectory, { recursive: true })
+    const session = readFileSync(new URL('./fixtures/dsh-0.1.2-rc.1/session.jsonl', import.meta.url), 'utf8')
+    writeFileSync(settingsPath, '{"userSetting":"keep"}\n')
+    writeFileSync(credentialsPath, '{"apiKey":"synthetic-existing-credential"}\n')
+    writeFileSync(sessionPath, session)
+    const secondIdentity = identity(join(root, 'package-v2'), '0.1.7')
 
     expect(inspectManagedProfiles(home).legacy).toEqual({ kind: 'managed' })
     ensureManagedProfile(
@@ -140,8 +149,11 @@ describe('launcher-managed profiles', () => {
     )
 
     expect(readFileSync(patchPath, 'utf8')).toBe('# user customization\n[]\n')
+    expect(readFileSync(settingsPath, 'utf8')).toBe('{"userSetting":"keep"}\n')
+    expect(readFileSync(credentialsPath, 'utf8')).toBe('{"apiKey":"synthetic-existing-credential"}\n')
+    expect(readFileSync(sessionPath, 'utf8')).toBe(session)
     expect(JSON.parse(readFileSync(join(legacy, MANAGED_STATE_FILENAME), 'utf8')))
-      .toMatchObject({ profile: LEGACY_PROFILE_NAME, version: '0.1.1' })
+      .toMatchObject({ profile: LEGACY_PROFILE_NAME, version: '0.1.7' })
     expect(resolve(
       dirname(join(legacy, 'node_modules/dsh-claude-tui')),
       readlinkSync(join(legacy, 'node_modules/dsh-claude-tui')),

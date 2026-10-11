@@ -64,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.5-rc.2',
+      version: '0.2.0-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -142,7 +142,7 @@ setInterval(() => {}, 1_000)
       toolsMode: 'native',
       ...(process.platform === 'darwin' ? { watchUsePolling: 'true', watchInterval: '1000' } : {}),
       runtimeSnapshot: JSON.stringify({
-        harnessVersion: '0.1.5-rc.2',
+        harnessVersion: '0.2.0-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: dshHome,
@@ -199,13 +199,14 @@ setInterval(() => {}, 1_000)
     })
   })
 
-  it('rejects an unsupported Node version before creating Harness state', () => {
-    const dshHome = join(temporaryDirectory, 'unsupported-node-dsh-home')
-    const readyPath = join(temporaryDirectory, 'unsupported-node-ready.json')
-    const preload = join(temporaryDirectory, 'unsupported-node-preload.mjs')
+  it.each(['22.16.0', '24.0.0', '24.1.0'])('rejects unsupported Node %s before creating Harness state', (version) => {
+    const dshHome = join(temporaryDirectory, `unsupported-node-${version}-dsh-home`)
+    const readyPath = join(temporaryDirectory, `unsupported-node-${version}-ready.json`)
+    const signalPath = join(temporaryDirectory, `unsupported-node-${version}-signal.txt`)
+    const preload = join(temporaryDirectory, `unsupported-node-${version}-preload.mjs`)
     writeFileSync(
       preload,
-      "Object.defineProperty(process.versions, 'node', { value: '22.16.0' })\n",
+      `Object.defineProperty(process.versions, 'node', { value: '${version}' })\n`,
     )
 
     const result = spawnSync(process.execPath, ['--import', preload, executable], {
@@ -214,16 +215,18 @@ setInterval(() => {}, 1_000)
       env: bundledEnvironment({
         DSH_HOME: dshHome,
         DSH_FAKE_READY: readyPath,
-        DSH_FAKE_SIGNAL: join(temporaryDirectory, 'unsupported-node-signal.txt'),
+        DSH_FAKE_SIGNAL: signalPath,
         DSH_FAKE_EXIT_CODE: '0',
       }),
     })
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('Node.js 22.16.0 is unsupported')
-    expect(result.stderr).toContain('22.19+ or 24+')
+    expect(result.stderr).toContain(`Node.js ${version} is unsupported`)
+    expect(result.stderr).toContain('22.19+ or 24.2+')
     expect(existsSync(dshHome)).toBe(false)
+    expect(existsSync(join(dshHome, 'profiles/dsh-claude-tui/.dsh-claude-tui-managed.json'))).toBe(false)
     expect(existsSync(readyPath)).toBe(false)
+    expect(existsSync(signalPath)).toBe(false)
   })
 
   it('does not rewrite an already-current managed marker on repeat launch', () => {
@@ -311,7 +314,7 @@ setInterval(() => {}, 1_000)
     mkdirSync(systemPackage, { recursive: true })
     writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.5-rc.2',
+      version: '0.2.0-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
     }, undefined, 2)}\n`)
@@ -360,6 +363,60 @@ if (token !== undefined) {
       args: ['--profile', 'dsh-claude-tui', 'use existing dsh'],
       dshHome,
     })
+  })
+
+  it.each(['0.1.5-rc.2', '0.1.5', '0.2.0-rc.1', '0.2.1-alpha.2'].flatMap(version => [
+    { version, mode: 'auto' },
+    { version, mode: 'system' },
+  ]))('does not execute unsupported DSH $version in $mode mode', ({ version, mode }) => {
+    const dshHome = join(temporaryDirectory, `unsupported-runtime-${version}-${mode}`)
+    const systemRecord = join(dshHome, 'must-not-execute.txt')
+    const bundledRecord = join(dshHome, 'bundled-record.json')
+    const systemPackage = join(dshHome, 'profiles/node_modules/@deepseek-ai/dsh')
+    mkdirSync(systemPackage, { recursive: true })
+    writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
+      name: '@deepseek-ai/dsh',
+      version,
+      type: 'module',
+      bin: { dsh: 'bin.js' },
+    }, undefined, 2)}\n`)
+    writeFileSync(join(systemPackage, 'bin.js'), `
+import { writeFileSync } from 'node:fs'
+writeFileSync(${JSON.stringify(systemRecord)}, 'executed')
+`)
+
+    const result = spawnSync(process.execPath, [executable], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: '',
+        DSH_HOME: dshHome,
+        DSH_FAKE_READY: bundledRecord,
+        DSH_FAKE_EXIT_CODE: '0',
+        DSH_CLAUDE_TUI_RUNTIME: mode,
+      },
+    })
+
+    expect(existsSync(systemRecord)).toBe(false)
+    expect(result.stderr).toContain(`DeepSeek Harness ${version}; supported system range is >=0.2.0-rc.2 <0.2.1`)
+    const managedProfile = join(dshHome, 'profiles/dsh-claude-tui')
+    if (mode === 'auto') {
+      expect(result.status).toBe(0)
+      const record = JSON.parse(readFileSync(bundledRecord, 'utf8')) as {
+        runtimeSnapshot: string
+      }
+      expect(JSON.parse(record.runtimeSnapshot)).toMatchObject({
+        harnessVersion: '0.2.0-rc.2',
+        runtimeKind: 'bundled',
+      })
+      expect(existsSync(managedProfile)).toBe(true)
+    } else {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('no compatible system DeepSeek Harness found')
+      expect(existsSync(bundledRecord)).toBe(false)
+      expect(existsSync(managedProfile)).toBe(false)
+    }
   })
 
   it('falls back to an isolated home only when the default home has a hard conflict', () => {

@@ -1,0 +1,7 @@
+# DSH 0.1.5-rc.2 Session fixture
+
+Generated with the published `@deepseek-ai/dsh-session@0.1.5-rc.2`, `@deepseek-ai/dsh-llm@0.1.5-rc.2`, and the actual `@deepseek-ai/dsh-session-persistence-jsonl@0.1.5-rc.2` backend. The backend used `compression: 'none'` and `create`, followed by the write handle's `append`, `flush`, and `close`; this file is its unchanged physical output. The physical header includes `type: 'session'` and `delegationDepth: 0`. `Session.serialize()` produces a logical header and cannot substitute for the persistence writer.
+
+The fixture contains one complete two-step turn and 11 events, all synthetic. The first assistant message advertises the tool call before its call/result pair; the second assistant message supplies the final reply. Both assistant messages come from the released `BlockAssembler`, with the same chunks recorded by `AssistantStreamAccumulator`, including their token-usage chunks. No credentials, external model requests, or personal Session data were used.
+
+Verified by reading the file through the released `0.1.5-rc.2` backend, then write-opening it through the released `0.2.0-rc.2` JSONL backend. Its real migration and worker validation published `session.v4.jsonl`, retained all 11 events, and converted the tool result to `role: 'tool'`, `toolCallId: 'v3-call'`, `isError: false`, and direct text content. The original V3 file remained byte-for-byte unchanged. Packed-artifact tests separately exercise TUI resume and the same original-byte preservation assertion.

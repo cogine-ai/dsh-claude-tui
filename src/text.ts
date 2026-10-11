@@ -26,14 +26,11 @@ export function displayText(input: string): string {
 }
 
 /** Flatten visible text from merge-extensible content blocks. */
-export function contentText(blocks: readonly ContentBlock[], kind: 'text' | 'reasoning' | 'tool-result'): string {
+export function contentText(blocks: readonly ContentBlock[], kind: 'text' | 'reasoning'): string {
   const parts: string[] = []
   for (const block of blocks) {
     if (kind === 'text' && block.type === 'text') parts.push(block.text)
     if (kind === 'reasoning' && block.type === 'reasoning') parts.push(block.text)
-    if (kind === 'tool-result' && block.type === 'tool-result') {
-      parts.push(contentText(block.content, 'text'))
-    }
   }
   return displayText(parts.join(''))
 }

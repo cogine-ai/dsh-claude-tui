@@ -96,10 +96,13 @@ interface MockDeepSeekServer {
   close(): Promise<void>
 }
 
-function writeSse(response: import('node:http').ServerResponse, events: readonly unknown[]): void {
+function writeSse(
+  response: import('node:http').ServerResponse,
+  events: readonly { type: string; [key: string]: unknown }[],
+): void {
   response.writeHead(200, { 'content-type': 'text/event-stream' })
   for (const event of events) {
-    response.write(`data: ${typeof event === 'string' ? event : JSON.stringify(event)}\n\n`)
+    response.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`)
   }
   response.end()
 }
@@ -115,12 +118,21 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
       void (async () => {
         const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
         const raw = Buffer.concat(chunks)
-        if (request.headers.authorization !== `Bearer ${apiKey}`) {
+        if (request.headers['x-api-key'] !== apiKey) {
           response.writeHead(401, { 'content-type': 'application/json' })
-          response.end(JSON.stringify({ error: { message: 'invalid test credential' } }))
+          response.end(JSON.stringify({
+            type: 'error', error: { type: 'authentication_error', message: 'invalid test credential' },
+          }))
           return
         }
-        if (request.method === 'POST' && pathname === '/files') {
+        if (request.headers['anthropic-version'] !== '2023-06-01') {
+          response.writeHead(400, { 'content-type': 'application/json' })
+          response.end(JSON.stringify({
+            type: 'error', error: { type: 'invalid_request_error', message: 'invalid Messages API version' },
+          }))
+          return
+        }
+        if (request.method === 'POST' && pathname === '/v1/files') {
           const headers = new Headers()
           for (const [name, value] of Object.entries(request.headers)) {
             if (value !== undefined) headers.set(name, Array.isArray(value) ? value.join(', ') : value)
@@ -135,23 +147,20 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
           const filename = 'name' in file && typeof file.name === 'string'
             ? file.name
             : 'uploaded_file'
-          const createdAt = Math.floor(Date.now() / 1_000)
-          const expiresAfter = Number(form.get('expires_after[seconds]'))
           const id = `file-packed-${nextFile++}`
           fileRequests.push({ filename, bytes: file.size })
           response.writeHead(200, { 'content-type': 'application/json' })
           response.end(JSON.stringify({
             id,
-            object: 'file',
-            bytes: file.size,
-            created_at: createdAt,
+            type: 'file',
+            size_bytes: file.size,
+            created_at: new Date().toISOString(),
+            mime_type: file.type,
             filename,
-            purpose: 'user_data',
-            expires_at: createdAt + expiresAfter,
           }))
           return
         }
-        if (request.method !== 'POST' || pathname !== '/chat/completions') {
+        if (request.method !== 'POST' || pathname !== '/v1/messages') {
           response.writeHead(404).end()
           return
         }
@@ -166,46 +175,67 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
         requests.push({ headers: request.headers, body })
         const tools = Array.isArray(body.tools) ? body.tools : []
         const messages = Array.isArray(body.messages) ? body.messages : []
-        const hasToolResult = messages.some((message) => {
-          return typeof message === 'object' && message !== null
-            && (message as { role?: unknown }).role === 'tool'
+        const toolResults = messages.flatMap((message) => {
+          if (typeof message !== 'object' || message === null) return []
+          const record = message as { role?: unknown; content?: unknown }
+          if (record.role !== 'user' || !Array.isArray(record.content)) return []
+          return record.content.filter((block): block is {
+            type: 'tool_result'; tool_use_id?: unknown; content?: unknown; is_error?: unknown
+          } => typeof block === 'object' && block !== null && block.type === 'tool_result')
         })
+        const hasToolResult = toolResults.length > 0
+        const messageStart = {
+          type: 'message_start',
+          message: {
+            id: `msg-packed-${requests.length}`,
+            type: 'message',
+            role: 'assistant',
+            model: body.model,
+            content: [],
+            stop_reason: null,
+            stop_sequence: null,
+            usage: { input_tokens: 10, output_tokens: 0 },
+          },
+        }
         if (tools.length > 0 && !hasToolResult) {
+          if (!tools.some(tool => typeof tool === 'object' && tool !== null && tool.name === 'run_code')) {
+            throw new Error('packed Messages request omitted the run_code tool declaration')
+          }
           const toolArguments = JSON.stringify({
             code: 'return "packed tool result"',
             description: 'return a deterministic packed-artifact marker',
           })
           writeSse(response, [
-            { choices: [{ delta: { role: 'assistant', content: null, reasoning_content: '' } }] },
+            messageStart,
             {
-              choices: [{
-                delta: {
-                  tool_calls: [{
-                    index: 0,
-                    id: 'call-packed-e2e',
-                    type: 'function',
-                    function: { name: 'run_code', arguments: toolArguments },
-                  }],
-                },
-              }],
+              type: 'content_block_start', index: 0,
+              content_block: { type: 'tool_use', id: 'call-packed-e2e', name: 'run_code', input: {} },
             },
             {
-              choices: [{ delta: {}, finish_reason: 'tool_calls' }],
-              usage: { prompt_tokens: 10, completion_tokens: 5 },
+              type: 'content_block_delta', index: 0,
+              delta: { type: 'input_json_delta', partial_json: toolArguments },
             },
-            '[DONE]',
+            { type: 'content_block_stop', index: 0 },
+            { type: 'message_delta', delta: { stop_reason: 'tool_use', stop_sequence: null }, usage: { output_tokens: 5 } },
+            { type: 'message_stop' },
           ])
           return
         }
+        if (hasToolResult && !toolResults.some(result => result.tool_use_id === 'call-packed-e2e'
+          && result.is_error !== true && Array.isArray(result.content)
+          && result.content.some(block => typeof block === 'object' && block !== null
+            && block.type === 'text' && typeof block.text === 'string'
+            && block.text.includes('packed tool result')))) {
+          throw new Error('packed Messages request omitted the executed PTC tool result')
+        }
         const text = tools.length > 0 ? 'packed artifact reply' : 'Packed artifact session'
         writeSse(response, [
-          { choices: [{ delta: { role: 'assistant', content: null, reasoning_content: '' } }] },
-          { choices: [{ delta: { content: text } }] },
-          {
-            choices: [{ delta: {}, finish_reason: 'stop' }],
-            usage: { prompt_tokens: 12, completion_tokens: 4 },
-          },
-          '[DONE]',
+          messageStart,
+          { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+          { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } },
+          { type: 'content_block_stop', index: 0 },
+          { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 4 } },
+          { type: 'message_stop' },
         ])
       })().catch((error: unknown) => {
         if (response.headersSent) {
@@ -238,9 +268,12 @@ function stringEnvironment(overrides: NodeJS.ProcessEnv): Record<string, string>
   if (overrides.DSH_HOME === undefined) throw new Error('packed TUI tests require an isolated DSH_HOME')
   const home = join(overrides.DSH_HOME, 'os-home')
   mkdirSync(home, { recursive: true })
+  const inherited = Object.fromEntries(Object.entries(process.env).filter(([name]) => {
+    return !name.startsWith('DEEPSEEK_') && !name.startsWith('DSH_')
+  }))
   return Object.fromEntries(
     Object.entries({
-      ...process.env,
+      ...inherited,
       ...overrides,
       HOME: home,
       USERPROFILE: home,
@@ -380,7 +413,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.1.5-rc.2',
+      '0.2.0-rc.2',
     )
   }, 30_000)
 
@@ -400,6 +433,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/assets/terminal-preview.svg',
       'package/docs/harness-0.1.2-rc.1-adaptation.md',
       'package/docs/harness-0.1.5-rc.2-adaptation.md',
+      'package/docs/harness-0.2.0-rc.2-adaptation.md',
       'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
@@ -422,6 +456,7 @@ describe('dsh-claude-tui bundle', () => {
       name?: string
       version?: string
       bin?: Record<string, string>
+      engines?: Record<string, string>
       dependencies?: Record<string, string>
       peerDependencies?: Record<string, string>
       peerDependenciesMeta?: Record<string, { optional?: boolean }>
@@ -433,13 +468,14 @@ describe('dsh-claude-tui bundle', () => {
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
       version: '0.1.7',
+      engines: { node: '^22.19.0 || >=24.2.0' },
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.1.5-rc.2',
-        '@deepseek-ai/dsh-authorization': '0.1.5-rc.2',
+        '@deepseek-ai/dsh': '0.2.0-rc.2',
+        '@deepseek-ai/dsh-authorization': '0.2.0-rc.2',
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
@@ -454,7 +490,7 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.1.5-rc.2 <0.1.6')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.2.0-rc.2 <0.2.1')).toBe(true)
     expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
       .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
     expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
@@ -478,7 +514,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.1.5-rc.2',
+      '@deepseek-ai/dsh': '0.2.0-rc.2',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
@@ -489,7 +525,7 @@ describe('dsh-claude-tui bundle', () => {
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.1.5-rc.2']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.2.0-rc.2']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -503,7 +539,7 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.1.5-rc.2')
+    expect(installedDsh.version).toBe('0.2.0-rc.2')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
@@ -761,7 +797,7 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
       expect(first.output).toContain('v0.1.7')
-      expect(first.output).toContain('Harness 0.1.5-rc.2 · bundled · PTC')
+      expect(first.output).toContain('Harness 0.2.0-rc.2 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -791,9 +827,20 @@ describe('dsh-claude-tui bundle', () => {
     }
   }, 120_000)
 
-  it('migrates a 0.1.2-rc.1 writer fixture while preserving its original log', async () => {
-    const dshHome = join(packDirectory, 'migration-home')
-    const workspace = join(packDirectory, 'migration-workspace')
+  it.each([
+    {
+      writer: '0.1.2-rc.1', sessionId: 'legacy-tui-session', filename: 'session.jsonl',
+      prompt: 'A prompt from DSH 0.1.2-rc.1', reply: 'A restored legacy reply.',
+      toolResult: undefined,
+    },
+    {
+      writer: '0.1.5-rc.2', sessionId: 'v3-tui-session', filename: 'session.v3.jsonl',
+      prompt: 'A prompt from DSH 0.1.5-rc.2', reply: 'A restored V3 reply.',
+      toolResult: 'V3 tool result',
+    },
+  ])('migrates a $writer writer fixture while preserving its original log', async (fixture) => {
+    const dshHome = join(packDirectory, `migration-home-${fixture.writer}`)
+    const workspace = join(packDirectory, `migration-workspace-${fixture.writer}`)
     mkdirSync(workspace)
     const env = stringEnvironment({
       DSH_HOME: dshHome,
@@ -808,22 +855,31 @@ describe('dsh-claude-tui bundle', () => {
     expect(initialized.status).toBe(0)
     writeFileSync(join(dshHome, 'profiles/dsh-claude-tui/cordis.patch.yml'),
       `- id: session-persistence-jsonl\n  config:\n    root: ${JSON.stringify(join(dshHome, 'sessions'))}\n    compression: none\n`)
-    const sessionDirectory = join(dshHome, 'sessions/_no-cwd/legacy-tui-session')
+    const sessionDirectory = join(dshHome, 'sessions/_no-cwd', fixture.sessionId)
     mkdirSync(sessionDirectory, { recursive: true })
-    const original = readFileSync(join(repositoryRoot, 'tests/fixtures/dsh-0.1.2-rc.1/session.jsonl'))
-    const originalPath = join(sessionDirectory, 'session.jsonl')
+    const original = readFileSync(join(repositoryRoot, 'tests/fixtures', `dsh-${fixture.writer}`, fixture.filename))
+    const originalPath = join(sessionDirectory, fixture.filename)
     writeFileSync(originalPath, original)
-    const resumed = await runPackedTui(installedExecutable, ['--resume', 'legacy-tui-session'],
-      workspace, env, 'A restored legacy reply.')
+    const resumed = await runPackedTui(installedExecutable, ['--resume', fixture.sessionId],
+      workspace, env, fixture.reply)
     expect(resumed.exitCode).toBe(0)
     expect(resumed.signal).toBe(0)
-    expect(resumed.output).toContain('A prompt from DSH 0.1.2-rc.1')
+    expect(resumed.output).toContain(fixture.prompt)
     expect(readFileSync(originalPath)).toEqual(original)
-    const migrated = readFileSync(join(sessionDirectory, 'session.v3.jsonl'), 'utf8')
+    const migrated = readFileSync(join(sessionDirectory, 'session.v4.jsonl'), 'utf8')
       .trim().split('\n').map(line => JSON.parse(line) as { version?: number; type?: string })
-    expect(migrated[0]?.version).toBe(3)
+    expect(migrated[0]?.version).toBe(4)
     expect(migrated.some(event => event.type === 'assistant/message')).toBe(true)
     expect(migrated.some(event => event.type === 'assistant/chunk')).toBe(false)
+    if (fixture.toolResult !== undefined) {
+      expect(resumed.output).toContain(fixture.toolResult)
+      expect(migrated.find(event => event.type === 'tool/result')).toMatchObject({
+        data: { message: {
+          role: 'tool', toolCallId: 'v3-call', isError: false,
+          content: [{ type: 'text', text: fixture.toolResult }],
+        } },
+      })
+    }
   }, 60_000)
 
   it('toggles and resumes plan mode through macOS Shift+Tab in the installed PTY', async () => {
@@ -970,7 +1026,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.1.5-rc.2 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.2.0-rc.2 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))

@@ -1073,7 +1073,7 @@ export class ClaudeTuiApplication {
           const disposers = [
             this.ctx.on('llm/adapters-updated', refresh),
             this.ctx.on('credentials/reference-updated', () => { refresh() }),
-            this.ctx.on('settings/updated', () => { refresh() }),
+            this.ctx.on('settings/document-updated', () => { refresh() }),
           ]
           return () => { for (const dispose of disposers.reverse()) dispose() }
         },

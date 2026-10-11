@@ -248,7 +248,7 @@ export async function runCompatibilityProbe(
       source: { kind: 'user' },
     }), { surfaceOp: 'append' })
     if (
-      session.header.version !== 3
+      session.header.version !== 4
       || session.seq !== previousEnd + 1
       || session.eventAt(event.seq) !== event
       || session.snapshotEvents(previousEnd).at(-1) !== event
@@ -268,7 +268,7 @@ export async function runCompatibilityProbe(
       }],
     }, { surfaceOp: 'append' })
     if (session.snapshotEvents(previousEnd).at(-1) !== response) {
-      throw new Error('claude-tui: compatibility probe could not read the V3 assistant stream')
+      throw new Error('claude-tui: compatibility probe could not read the V4 assistant stream')
     }
     await sessions.flush(session)
   } finally {
