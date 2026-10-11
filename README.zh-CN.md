@@ -26,13 +26,13 @@
 
 ## 一条命令开始
 
-`0.1.7` 需要 Node.js **22.x 的 22.19+，或 24.2+**（`^22.19.0 || >=24.2.0`）。启动器会在修改 DSH Home 前拒绝 Node `24.0` 和 `24.1`。
+`0.1.8` 需要 Node.js **22.x 的 22.19+，或 24.2+**（`^22.19.0 || >=24.2.0`）。启动器会在修改 DSH Home 前拒绝 Node `24.0` 和 `24.1`。
 
 ```bash
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确选择 `0.1.7`，在包名后添加 `@0.1.7`。
+这条命令会安装并进入 npm `latest` 标签指向的 TUI，不要求全局安装 `dsh`、拉取仓库、安装 pnpm 或手工创建 profile。如需精确选择 `0.1.8`，在包名后添加 `@0.1.8`。
 
 `legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；本版本显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。普通 `npx dsh-claude-tui` 也通过了标准 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
 
@@ -41,7 +41,7 @@ npx --yes --legacy-peer-deps dsh-claude-tui
 如果会反复使用：
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.7
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.8
 dshtui
 ```
 
@@ -49,7 +49,7 @@ dshtui
 
 ## 支持 DSH 0.2.0-rc.2
 
-`0.1.7` 把 Harness 固定到 `0.2.0-rc.2`，要求 Node `^22.19.0 || >=24.2.0`；外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。TUI `0.1.6` 使用 DSH `0.1.2-rc.1`，其外部兼容范围为 `>=0.1.2-rc.1 <0.1.3`。升级说明见 [v0.1.7 发布说明](./docs/releases/v0.1.7.zh-CN.md)。Node 门禁变更后的本地 macOS 完整检查与普通安装检查均已通过，[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)记录实测结果及 Ubuntu CI 发现的 Node 24.0 子进程失败。
+`0.1.8` 保持 Harness `0.2.0-rc.2` 及 `0.1.7` 引入的 Node `^22.19.0 || >=24.2.0` 要求，修复上一版本的 14 个生产依赖受影响条目，其中 6 个为 high。外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。TUI `0.1.6` 使用 DSH `0.1.2-rc.1`，其外部兼容范围为 `>=0.1.2-rc.1 <0.1.3`。修复、兼容性检查及资格边界见 [v0.1.8 发布说明](./docs/releases/v0.1.8.zh-CN.md)与[依赖安全记录](./docs/dependency-security-rc.2.md)；[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)保留 rc.2 迁移及 Node 门禁的历史证据。
 
 - 实时回复保留 Agent assistant-stream 事件；最终回复、用量与计时从 V4 Session 聚合事件回放，工具结果采用 V4 的 tool-role 消息格式。
 - 模型选择通过 setup 显式接收 Agent；命令图片采用带类型的附件信封，Profile 保留 `personaPrefix`。
@@ -70,7 +70,7 @@ DSH_HOME=/tmp/dsh-claude-tui-0.2.0-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/
 > [!WARNING]
 > DSH 现使用 V4 Session。受支持的旧日志迁移为新文件并保留原件；升级后的会话不能由旧版 Harness 读取。跨版本测试请使用独立 Home。可选 SQLite Session 后端已在 `0.1.2` 移除，使用过该后端的旧会话需先用原运行时导出；SQLite 查询和索引存储是另一项服务。
 
-完整变化见[官方 0.2.0-rc.2 发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)与[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。[0.1.5 记录](./docs/harness-0.1.5-rc.2-adaptation.md)保留此前验证结论。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面；更新的 `0.2.1-alpha` 系列不在 `0.1.7` 的适配目标内。
+完整变化见[官方 0.2.0-rc.2 发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)与[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。[0.1.5 记录](./docs/harness-0.1.5-rc.2-adaptation.md)保留此前验证结论。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面；更新的 `0.2.1-alpha` 系列不在 `0.1.8` 的适配目标内。
 
 ## 你能获得什么
 

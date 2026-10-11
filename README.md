@@ -27,13 +27,13 @@
 
 ## Start in one command
 
-Version `0.1.7` requires Node.js **22.19+ in 22.x, or 24.2+** (`^22.19.0 || >=24.2.0`). It rejects Node `24.0` and `24.1` before changing your DSH Home.
+Version `0.1.8` requires Node.js **22.19+ in 22.x, or 24.2+** (`^22.19.0 || >=24.2.0`). It rejects Node `24.0` and `24.1` before changing your DSH Home.
 
 ```bash
 npx --yes --legacy-peer-deps dsh-claude-tui
 ```
 
-That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To select version `0.1.7` exactly, add `@0.1.7` to the package name.
+That command installs and opens the TUI selected by npm's `latest` tag. You do not need a global `dsh`, a repository checkout, pnpm, or manual profile setup. To select version `0.1.8` exactly, add `@0.1.8` to the package name.
 
 The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; this release explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Plain `npx dsh-claude-tui` is also qualified with ordinary npm peer resolution, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
 
@@ -42,7 +42,7 @@ A real model request needs credentials for the DSH provider you select. Use `/pr
 For repeat use:
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.7
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.8
 dshtui
 ```
 
@@ -50,7 +50,7 @@ The global install exposes both `dshtui` and the canonical `dsh-claude-tui` comm
 
 ## DSH 0.2.0-rc.2 support
 
-Version `0.1.7` pins Harness to `0.2.0-rc.2` and requires Node `^22.19.0 || >=24.2.0`. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the behavioral probe. TUI `0.1.6` used DSH `0.1.2-rc.1` with the external range `>=0.1.2-rc.1 <0.1.3`. See the [v0.1.7 release notes](./docs/releases/v0.1.7.md) for upgrade guidance. Local macOS full and ordinary-install checks passed after the engine-gate change. The [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) records the results and the Node 24.0 subprocess failure found by Ubuntu CI.
+Version `0.1.8` retains Harness `0.2.0-rc.2` and the Node `^22.19.0 || >=24.2.0` requirement introduced in `0.1.7`. It repairs the 14 affected production dependency entries from that release, including six high entries. External runtimes must satisfy `>=0.2.0-rc.2 <0.2.1` and pass the behavioral probe. TUI `0.1.6` used DSH `0.1.2-rc.1` with the external range `>=0.1.2-rc.1 <0.1.3`. See the [v0.1.8 release notes](./docs/releases/v0.1.8.md) and [dependency security record](./docs/dependency-security-rc.2.md) for fixes, compatibility checks, and qualification boundaries. The [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md) preserves the rc.2 migration and Node engine-gate history.
 
 - Live replies retain Agent assistant-stream events; completed replies, usage, and timing replay from V4 Session settlements. Tool results use the V4 tool-role message format.
 - Model selection receives the explicit Agent during setup. Command images use the typed attachment envelope, and the profile retains `personaPrefix`.
@@ -71,7 +71,7 @@ DSH_HOME=/tmp/dsh-claude-tui-0.2.0-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/
 > [!WARNING]
 > DSH now stores V4 Sessions. Supported older logs migrate to new files while preserving the originals; upgraded Sessions cannot be read by older Harness versions. Use separate Homes for cross-version testing. The optional SQLite Session backend was removed in `0.1.2`; export those older Sessions with their original runtime first. SQLite query/index storage is a separate service.
 
-See the [official 0.2.0-rc.2 release notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) and [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md). The [0.1.5 record](./docs/harness-0.1.5-rc.2-adaptation.md) preserves earlier results. Upstream Web file upload, preview, and sidebar features do not imply corresponding TUI interfaces; the newer `0.2.1-alpha` series is outside version `0.1.7`'s target.
+See the [official 0.2.0-rc.2 release notes](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2) and [adaptation record](./docs/harness-0.2.0-rc.2-adaptation.md). The [0.1.5 record](./docs/harness-0.1.5-rc.2-adaptation.md) preserves earlier results. Upstream Web file upload, preview, and sidebar features do not imply corresponding TUI interfaces; the newer `0.2.1-alpha` series is outside version `0.1.8`'s target.
 
 ## What you get
 
