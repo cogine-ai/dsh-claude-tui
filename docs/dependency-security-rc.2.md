@@ -67,6 +67,15 @@ DSH rc.2's default HTTP bridge uses static headers and does not supply an OAuth 
 
 ## Results / 结果
 
-Final audit, complete regression, ordinary npm installation, and CI results are recorded here after the candidate dependency graph is validated. This branch does not publish a new npm version. External DSH installations have an independent dependency graph; this repair targets the bundled graph.
+Validated on 2026-10-11:
 
-最终审计、完整回归、普通 npm 安装及 CI 结果在候选依赖图验证后记录。本分支只提交 PR，不发布新的 npm 版本；外部 DSH 的独立依赖图不在本次修复范围内。
+- `python3 scripts/repack-security-dependencies.py --check`: both archives, provenance, and preserved inventories regenerate byte-for-byte. The anonymous HTTPS downloads also match the committed archives.
+- Frozen pnpm installation and full `pnpm audit --json`: **0 advisories**, including the optional SDK v1 branch (807 workspace dependency entries).
+- Node `24.16.0` `CI=true corepack pnpm check`: **16 files / 184 passed / 1 skipped**; typecheck, build, and all 1,803 official DSH documentation files pass. This includes the fresh legacy-peer npm installed-artifact gate and actual dependency-owner checks.
+- Node `22.23.3`, npm `10.9.9`, fresh ordinary npm installation with a new cache and no consumer override: **production audit 0**; all 278 installed DSH packages remain `0.2.0-rc.2`. Actual loaded Sharp native libraries are heif `1.23.5`, rsvg `2.63.2`, and vips `8.18.7`.
+- Node `22.23.3` ordinary npm bundle gate: **14 passed / 1 skipped**. Actual stdio/HTTP MCP, image/ZIP/URI, CLI, PTC turn, resume, predecessor-preserving migration, and external-runtime checks pass. The skip is the opt-in real macOS clipboard qualification.
+- `npm ls --all` exits successfully. npm 10 retains two existing optional extraneous leaves, `@emnapi/runtime@1.11.3` and `@img/sharp-wasm32@0.35.5`; the bundle test allows only those exact entries and rejects other tree problems.
+
+CI checks the same complete gate and repack reproduction on Ubuntu with Node `22.19.0`, `22.22.3`, `24.2.0`, and `24.14.0`; run conclusions are available on the pull request. Audit results describe the advisory data available on the validation date, rather than a guarantee against future advisories. This branch does not publish a new npm version. External DSH installations have an independent dependency graph; this repair targets the bundled graph.
+
+2026-10-11 验证结果：归档及来源记录逐字节复现；冻结安装后的完整 pnpm 工作区审计为 0，包含保留的可选 SDK v1 路径。Node 24 全量检查 16 个文件、184 项通过、1 项跳过，类型、构建及 1,803 个官方文档文件均通过。Node 22 使用全新缓存普通 npm 安装，无消费方 override，生产审计为 0，278 个 DSH 包全部保持 rc.2；完整安装包回归 14 项通过、1 项真实 macOS 剪贴板测试按条件跳过。`npm ls` 成功，保留两个既有可选 extraneous 条目，其他树问题均拒绝。四版本 Ubuntu CI 的实际结论记录在 PR。本分支只提交 PR，不发布新的 npm 版本；外部 DSH 的独立依赖图不在本次修复范围内。
