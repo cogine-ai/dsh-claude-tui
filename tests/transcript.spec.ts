@@ -5,6 +5,7 @@ import {
   LlmAttemptId,
   ToolCallId,
   createAssistantMessage,
+  createToolResultMessage,
   createUserMessage,
 } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session'
@@ -58,7 +59,7 @@ describe('TranscriptModel', () => {
       .toContain('❯ [Image #1] [Image #2] inspect this')
   })
 
-  it('settles live text once and reproduces the same transcript and usage on V3 replay', () => {
+  it('settles live text once and reproduces the same transcript and usage on V4 replay', () => {
     const session = Session.create(SessionId('projection'))
     session.append('turn/start', { turn: 1 })
     session.append('step/start', { turn: 1, step: 1 })
@@ -86,6 +87,85 @@ describe('TranscriptModel', () => {
       .toEqual(model.items.map(({ revision: _revision, ...item }) => item))
     expect(replay.usage).toEqual(model.usage)
     expect(replay.performance).toEqual(model.performance)
+  })
+
+  it('replays first-class tool-role results with direct text blocks and their error state', () => {
+    const session = Session.create(SessionId('tool-role-projection'))
+    const callId = ToolCallId('call-1')
+    session.append('tool/call', {
+      turn: 1, step: 1, callId, name: 'bash', arguments: '{"command":"pwd"}',
+    })
+    session.append('tool/result', {
+      turn: 1, step: 1,
+      message: createToolResultMessage({
+        callId, isError: true,
+        content: [
+          { type: 'text', text: 'Permission denied\n' },
+          { type: 'text', text: '\u001b[2J' },
+        ],
+      }),
+    }, { surfaceOp: 'append' })
+    const model = new TranscriptModel()
+    model.replay(session.snapshotEvents())
+    expect(model.items).toEqual([expect.objectContaining({
+      kind: 'tool', callId: 'call-1', name: 'bash',
+      arguments: '{\n  "command": "pwd"\n}',
+      result: 'Permission denied\n\\x1b[2J', error: true, pending: false,
+    })])
+    expect(new TranscriptComponent(model, createPalette(false), 100, 10, true).render(80).join('\n'))
+      .toContain('Permission denied')
+  })
+
+  it('settles an existing call live and projects an unmatched V4 tool result', () => {
+    const session = Session.create(SessionId('tool-role-live'))
+    const model = new TranscriptModel()
+    const callId = ToolCallId('call-1')
+    model.apply(session.append('tool/call', {
+      turn: 1, step: 1, callId, name: 'bash', arguments: '{}',
+    }))
+    model.apply(session.append('tool/result', {
+      turn: 1, step: 1,
+      message: createToolResultMessage({
+        callId, isError: false, content: [{ type: 'text', text: '/workspace' }],
+      }),
+    }, { surfaceOp: 'append' }))
+    model.apply(session.append('tool/result', {
+      turn: 1, step: 1,
+      message: createToolResultMessage({
+        callId: ToolCallId('call-2'), isError: true,
+        content: [{ type: 'text', text: 'Command did not run' }],
+      }),
+      error: { name: 'ToolError', code: 'TOOL_NOT_STARTED', reason: 'Interrupted before dispatch' },
+    }, { surfaceOp: 'append' }))
+    expect(model.items).toEqual([
+      expect.objectContaining({ kind: 'tool', callId: 'call-1', result: '/workspace', error: false, pending: false }),
+      expect.objectContaining({ kind: 'tool', callId: 'call-2', name: 'tool', result: 'Command did not run', error: true, pending: false }),
+    ])
+    const replay = new TranscriptModel()
+    replay.replay(session.snapshotEvents())
+    expect(replay.items).toEqual(model.items)
+  })
+
+  it('shows notice summaries from concrete V4 producers without showing their model-facing text', () => {
+    const session = Session.create(SessionId('producer-notice'))
+    session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'Detailed model-facing route change' }],
+      source: { kind: 'model-selection', form: 'notice', summary: 'old/model → new/model\u0007' },
+    }), { surfaceOp: 'append' })
+    const model = new TranscriptModel()
+    model.replay(session.snapshotEvents())
+    expect(model.items).toEqual([expect.objectContaining({
+      kind: 'notice', text: 'old/model → new/model\\x07', tone: 'info',
+    })])
+  })
+
+  it('explains an unfinished turn inherited by a fork without marking it as a failed request', () => {
+    const session = Session.create(SessionId('forked-projection'))
+    const model = new TranscriptModel()
+    model.apply(session.append('turn/end', { turn: 1, reason: { kind: 'forked' } }))
+    expect(model.items[0]).toMatchObject({
+      kind: 'notice', text: 'Forked from an unfinished turn.', tone: 'info',
+    })
   })
 
   it('discards failed and abandoned attempt drafts before retrying the same step', () => {

@@ -12,7 +12,7 @@ export function harnessNodeArgs(
   nodeVersion = process.versions.node,
 ): string[] {
   if (!/^24\.[01]\./u.test(nodeVersion)) return [executable, ...args]
-  // DSH 0.1.5 guards its entry with import.meta.main (Node 24.2+/22.18+).
+  // The DSH CLI guards its entry with import.meta.main (Node 24.2+/22.18+).
   // Imported guarded CLIs need explicit dispatch; self-starting CLIs already ran.
   return ['--input-type=module', '--eval', EXPLICIT_CLI_ENTRY, '--', executable, ...args]
 }

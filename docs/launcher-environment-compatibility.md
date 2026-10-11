@@ -5,9 +5,14 @@ launcher must make an existing DSH environment useful when it is safe, while
 remaining able to start from a clean machine without adopting or overwriting
 unowned state.
 
+This document describes the unreleased TUI `0.1.7` source candidate targeting
+DSH `0.2.0-rc.2`. Published npm TUI `0.1.6` still bundles DSH `0.1.2-rc.1`.
+Local macOS checks passed; exact results and remaining qualification limits are in the
+[adaptation record](harness-0.2.0-rc.2-adaptation.md).
+
 Node `22.19+` and `24+` are supported. On Node `24.0` and `24.1`, the launcher
 and isolated runtime probe explicitly dispatch DSH's exported `runCli()` because
-those versions lack the `import.meta.main` entry guard used by DSH `0.1.5`.
+those versions lack the `import.meta.main` entry guard used by DSH `0.2.0`.
 Other supported versions invoke the Harness executable directly. Both paths
 preserve its arguments and foreground process behavior.
 
@@ -26,11 +31,11 @@ whole decision before changing the selected user DSH home:
 2. Look for `@deepseek-ai/dsh` associated with that home under
    `profiles/node_modules`, then for a verifiable `dsh` executable on `PATH`.
 3. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
-   `>=0.1.5-rc.2 <0.1.6` and whose declared bin exists inside the package.
+   `>=0.2.0-rc.2 <0.2.1` and whose declared bin exists inside the package.
 4. Run each otherwise eligible external candidate through the current packed
    TUI's compatibility probe.
 5. Use the first candidate that passes; otherwise use the launcher-pinned
-   `@deepseek-ai/dsh@0.1.5-rc.2`.
+   `@deepseek-ai/dsh@0.2.0-rc.2`.
 6. Create or reconcile only the selected launcher-owned profile, then replace
    the launcher process with the selected Harness process.
 
@@ -54,6 +59,11 @@ The product labels stay mapped to DSH's real tools configuration:
 - `native` renders as `Standard`;
 - `ptc` renders as `PTC`; the legacy `code` input is normalized to `ptc`;
 - `both` renders as `Both (Native + PTC)`.
+
+DSH `0.2.0-rc.2` retains all three modes. PTC executes through the shared base
+bundle's `@deepseek-ai/dsh-ptc-runtime-node` provider, which starts fresh Node
+processes under the Session's sandbox policy. The TUI patch does not mount the
+removed worker-thread code-runtime package.
 
 `Minimal` remains an Agent-composition choice, not a fourth DSH tools mode. A
 direct `dsh --profile ...` launch has no launcher decision to report, so the
@@ -86,12 +96,20 @@ Sessions, credentials, settings, and the shared profile-module fallback are
 DSH-home scoped rather than profile scoped. A shared-home launch sees existing
 DSH state. An isolated-home launch intentionally does not.
 
+DSH `0.2.0-rc.2` writes V4 Session generations. Supported older logs migrate
+through upstream's adjacent converters and retain their predecessor files;
+older runtimes cannot read the new V4 generation. Use a separate DSH Home for
+cross-version checks, and stop other Harness processes before resuming existing
+Sessions with the new runtime. Preserving predecessors does not establish
+downgrade support. The removed SQLite Session backend requires export with its
+original runtime before migration; SQLite query/index storage is separate.
+
 ## Compatibility probe
 
 The external-runtime probe uses a fresh temporary DSH home, OS home, and
 working directory. It creates and disposes a temporary Agent and Session,
 appends and reads back an event through `seq`, `eventAt()`, and
-`snapshotEvents()`, verifies the V3 header and an embedded assistant stream, flushes that Session, and requires a token-bound machine-readable result from
+`snapshotEvents()`, verifies the V4 header and an embedded assistant stream, flushes that Session, and requires a token-bound machine-readable result from
 the exact TUI package being launched. It does not send a model request.
 
 The child receives a small platform/locale allowlist plus temporary paths,
@@ -112,7 +130,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples for TUI v0.1.7 (unreleased) with DSH `0.1.5-rc.2`:
+Examples for TUI v0.1.7 (unreleased) with DSH `0.2.0-rc.2`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
@@ -128,7 +146,8 @@ Harness maintains a home-level module fallback that either process may
 reconcile. Use sequential launches, or give concurrent runtimes separate
 `DSH_HOME` values.
 
-Compatibility is intentionally limited to the DSH `0.1.5` series above. A
+Compatibility is intentionally limited to the DSH `0.2.0` range above; the
+`0.2.1-alpha` series is outside this candidate's target. A
 future DSH package may satisfy a wider-looking semantic range yet change an
 injected service contract; the runtime probe is therefore required in addition
 to the manifest version check.

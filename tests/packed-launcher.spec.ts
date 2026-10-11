@@ -64,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.5-rc.2',
+      version: '0.2.0-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -142,7 +142,7 @@ setInterval(() => {}, 1_000)
       toolsMode: 'native',
       ...(process.platform === 'darwin' ? { watchUsePolling: 'true', watchInterval: '1000' } : {}),
       runtimeSnapshot: JSON.stringify({
-        harnessVersion: '0.1.5-rc.2',
+        harnessVersion: '0.2.0-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: dshHome,
@@ -311,7 +311,7 @@ setInterval(() => {}, 1_000)
     mkdirSync(systemPackage, { recursive: true })
     writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.1.5-rc.2',
+      version: '0.2.0-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
     }, undefined, 2)}\n`)
@@ -360,6 +360,60 @@ if (token !== undefined) {
       args: ['--profile', 'dsh-claude-tui', 'use existing dsh'],
       dshHome,
     })
+  })
+
+  it.each(['0.1.5-rc.2', '0.1.5', '0.2.0-rc.1', '0.2.1-alpha.2'].flatMap(version => [
+    { version, mode: 'auto' },
+    { version, mode: 'system' },
+  ]))('does not execute unsupported DSH $version in $mode mode', ({ version, mode }) => {
+    const dshHome = join(temporaryDirectory, `unsupported-runtime-${version}-${mode}`)
+    const systemRecord = join(dshHome, 'must-not-execute.txt')
+    const bundledRecord = join(dshHome, 'bundled-record.json')
+    const systemPackage = join(dshHome, 'profiles/node_modules/@deepseek-ai/dsh')
+    mkdirSync(systemPackage, { recursive: true })
+    writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
+      name: '@deepseek-ai/dsh',
+      version,
+      type: 'module',
+      bin: { dsh: 'bin.js' },
+    }, undefined, 2)}\n`)
+    writeFileSync(join(systemPackage, 'bin.js'), `
+import { writeFileSync } from 'node:fs'
+writeFileSync(${JSON.stringify(systemRecord)}, 'executed')
+`)
+
+    const result = spawnSync(process.execPath, [executable], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: '',
+        DSH_HOME: dshHome,
+        DSH_FAKE_READY: bundledRecord,
+        DSH_FAKE_EXIT_CODE: '0',
+        DSH_CLAUDE_TUI_RUNTIME: mode,
+      },
+    })
+
+    expect(existsSync(systemRecord)).toBe(false)
+    expect(result.stderr).toContain(`DeepSeek Harness ${version}; supported system range is >=0.2.0-rc.2 <0.2.1`)
+    const managedProfile = join(dshHome, 'profiles/dsh-claude-tui')
+    if (mode === 'auto') {
+      expect(result.status).toBe(0)
+      const record = JSON.parse(readFileSync(bundledRecord, 'utf8')) as {
+        runtimeSnapshot: string
+      }
+      expect(JSON.parse(record.runtimeSnapshot)).toMatchObject({
+        harnessVersion: '0.2.0-rc.2',
+        runtimeKind: 'bundled',
+      })
+      expect(existsSync(managedProfile)).toBe(true)
+    } else {
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('no compatible system DeepSeek Harness found')
+      expect(existsSync(bundledRecord)).toBe(false)
+      expect(existsSync(managedProfile)).toBe(false)
+    }
   })
 
   it('falls back to an isolated home only when the default home has a hard conflict', () => {

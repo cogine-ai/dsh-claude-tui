@@ -13,7 +13,7 @@
   <a href="https://github.com/cogine-ai/dsh-claude-tui/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/cogine-ai/dsh-claude-tui/ci.yml?style=flat-square&label=CI" /></a>
   <a href="https://www.npmjs.com/package/dsh-claude-tui"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-claude-tui?style=flat-square&logo=npm" /></a>
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-4d6bfe?style=flat-square" /></a>
-  <img alt="DeepSeek Harness 0.1.5-rc.2" src="https://img.shields.io/badge/DSH-0.1.5--rc.2-536af5?style=flat-square" />
+  <img alt="DeepSeek Harness 0.2.0-rc.2 源码适配目标" src="https://img.shields.io/badge/DSH-0.2.0--rc.2-536af5?style=flat-square" />
   <img alt="Claude Code 2.1.227 target" src="https://img.shields.io/badge/Claude_Code-2.1.227-d77757?style=flat-square" />
 </p>
 
@@ -47,29 +47,30 @@ dshtui
 
 全局安装会同时提供短命令 `dshtui` 和正式命令 `dsh-claude-tui`。使用 `dshtui --resume` 打开 Session 选择器，或用 `--resume <session-id>` 精确恢复。
 
-## 支持 DSH 0.1.5-rc.2（尚未发布）
+## 适配 DSH 0.2.0-rc.2（尚未发布）
 
-`0.1.7` 源码候选版本把 Harness 固定到 `0.1.5-rc.2`，外部运行时须满足 `>=0.1.5-rc.2 <0.1.6` 并通过行为探针。已发布的 TUI `0.1.6` 仍使用 DSH `0.1.2-rc.1`；上面的 npm 命令安装已发布版本，不会安装本候选版本。
+`0.1.7` 源码候选版本把 Harness 固定到 `0.2.0-rc.2`，外部运行时须满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。已发布的 TUI `0.1.6` 仍使用 DSH `0.1.2-rc.1`；上面的 npm 命令安装已发布版本，不会安装本候选版本。本地 macOS 检查已通过，[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)记录精确结果及仍未覆盖的验证范围。
 
-- 实时回复改用 Agent assistant-stream 事件；最终回复、用量与计时从 V3 Session 聚合事件回放。重试时清除未提交草稿，避免重复显示已提交文字。
-- 模型选择通过 setup 显式接收 Agent；命令图片采用新版带类型的附件信封，Profile 改用 `personaPrefix`。
+- 实时回复保留 Agent assistant-stream 事件；最终回复、用量与计时从 V4 Session 聚合事件回放，工具结果采用 V4 的 tool-role 消息格式。
+- 模型选择通过 setup 显式接收 Agent；命令图片采用带类型的附件信封，Profile 保留 `personaPrefix`。
+- Provider 配置读取 DSH 已解析的设置表单，文档更新后刷新；安装包测试采用 API Key 的 Messages 协议并验证认证字段。
 - 保留 Claude Code `2.1.227` 参考布局、配色、键盘操作、审批、结构化问题、图片输入、计划模式和会话选择器。
 - macOS 文件监听默认采用 1 秒轮询，保留 skills、settings 和 profile 的自动更新，规避原生监听器退出挂起；显式设置的 `CHOKIDAR_USEPOLLING` / `CHOKIDAR_INTERVAL` 优先。
-- PTC 保持 `0.1.5` 的 worker-thread 运行时，不引入 `0.1.6-alpha` 的不兼容 PTC 和插件生命周期变化。
-- 生产依赖图与[官方中英文文档镜像](./docs/upstream/dsh/README.md)使用同一精确版本；镜像包含 1,412 个原始文件，不进入 npm 安装包。
+- PTC 使用共享 DSH base bundle 提供的受沙箱约束的 Node 子进程运行时；本版本仍保留 `native`、`ptc` 和 `both` 工具模式。
+- 生产依赖图与[官方中英文文档镜像](./docs/upstream/dsh/README.md)以同一精确版本为目标；镜像不进入 npm 安装包，原始文件清单由镜像索引记录。
 
 从本候选版本的 checkout 运行：
 
 ```bash
 corepack pnpm install --frozen-lockfile
 corepack pnpm build
-DSH_HOME=/tmp/dsh-claude-tui-0.1.5-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
+DSH_HOME=/tmp/dsh-claude-tui-0.2.0-rc.2 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
 ```
 
 > [!WARNING]
-> DSH 现使用 V3 Session。受支持的旧日志迁移为新文件并保留原件；升级后的会话不能由旧版 Harness 读取。跨版本测试请使用独立 Home。可选 SQLite Session 后端已在 `0.1.2` 移除，使用过该后端的旧会话需先用原运行时导出；SQLite 查询和索引存储是另一项服务。
+> DSH 现使用 V4 Session。受支持的旧日志迁移为新文件并保留原件；升级后的会话不能由旧版 Harness 读取。跨版本测试请使用独立 Home。可选 SQLite Session 后端已在 `0.1.2` 移除，使用过该后端的旧会话需先用原运行时导出；SQLite 查询和索引存储是另一项服务。
 
-完整变化见[官方 0.1.5 变更汇总](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.1)、[rc.2 说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.5-rc.2)与[适配记录](./docs/harness-0.1.5-rc.2-adaptation.md)。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面。
+完整变化见[官方 0.2.0-rc.2 发布说明](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2)与[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。[0.1.5 记录](./docs/harness-0.1.5-rc.2-adaptation.md)保留此前验证结论。上游 Web 文件上传、预览和侧栏功能不代表本 TUI 已提供对应界面；更新的 `0.2.1-alpha` 系列不在本候选版本的适配目标内。
 
 ## 你能获得什么
 
@@ -110,9 +111,9 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 1. 优先复用所选 `$DSH_HOME` 已关联的兼容 DSH，或 `PATH` 中来源可验证的 `dsh`；
 2. 在不继承凭据的临时 Home 中执行兼容探针；
-3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.1.5-rc.2`。
+3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.2.0-rc.2`。
 
-兼容性同时要求版本满足 `>=0.1.5-rc.2 <0.1.6` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
+本源码候选版本的兼容性同时要求版本满足 `>=0.2.0-rc.2 <0.2.1` 并通过行为探针。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
 
 | 变量 | 行为 |
 | --- | --- |
@@ -126,12 +127,12 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 ## 兼容与验证
 
-主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。当前资格范围包括：
+主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。现有参考集包含 **24** 个独立捕获的 PTY 帧与 **22** 个自动视觉/语义锚点。本次适配重新运行既有比较，没有新增 Claude Code 捕获基线。
 
-- macOS arm64 与 Linux x64；
-- true-color、xterm-compatible 终端；
-- **24** 个独立捕获的 PTY 参考帧，**22** 个自动视觉/语义锚点；
-- 自动化测试覆盖 `80x24`、`100x30`、剪贴板/附件失败与取消路径、附件命令信封和真实 profile 探针、tarball 安装、真实 PTY 中的 macOS `Shift+Tab`、两个命令入口、Session 恢复、审批、问题和前后台子代理。另有一个 opt-in macOS 系统剪贴板 gate，会把安装包图片送过 DSH 存储和本地 Files API/chat mock。
+- macOS arm64 上，Node `24.16.0` 完整检查通过：14 个文件，**177 通过、1 跳过**。Node `24.0.0` 另行通过 32 项启动器、探针和安装包启动测试；Node `22.23.3` 普通 npm peer 求解安装包检查为 **12 通过、1 跳过**。详细结果与 CI 跟踪见[适配记录](./docs/harness-0.2.0-rc.2-adaptation.md)。
+- 本轮测试覆盖 true-color、xterm-compatible 的 `80x24`、`100x30` 布局、图片与命令附件、审批、问题、计划模式按键和前后台子代理。
+- 安装产物检查覆盖全新 npm 安装、两个命令入口、包内与独立外部运行时探针、经本地 DeepSeek Messages/Files API mock 的受沙箱约束 Node PTC 工具轮次、安全退出与恢复，以及 V0/V3-to-V4 迁移和原文件字节保留。
+- opt-in 真实 macOS 系统剪贴板检查已跳过。Linux x64 属于此前资格证据；本次适配的四个 Node 版本 Ubuntu CI 结果由[本分支 PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2)跟踪。
 
 Windows 启动、junction、信号转发、VT 输入、依赖预编译件和 STA 图片剪贴板路径均已实现，固定的 DSH 上游也有原生 Windows gate。但本 TUI 自己的 CI 仍只运行 Ubuntu，尚无 Windows packed-TUI/ConPTY UAT。因此 Windows 目前只是“已有实现但尚未认证”的目标，不能称为当前版本支持的发布平台。详见[完整视觉与语义资格报告](./docs/visual-qualification-2.1.227.md)和[制品加固基线](./docs/release-hardening-v0.1.0.md)。
 
