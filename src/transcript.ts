@@ -7,6 +7,7 @@ import {
   type Component,
 } from '@earendil-works/pi-tui'
 import type { AssistantStreamFrame } from '@deepseek-ai/dsh-agent'
+import type {} from '@deepseek-ai/dsh-subagent'
 import { assistantStreamFirstTokenTime, type TokenUsage } from '@deepseek-ai/dsh-llm'
 import {
   isReplacementSurfaceEvent,
@@ -142,6 +143,17 @@ export class TranscriptModel {
             revision: 0,
             text: contentText(event.data.content, 'text'),
             imageCount: event.data.content.filter(block => block.type === 'image').length,
+          })
+        } else if (source.kind === 'agent-message' || source.kind === 'subagent-settled') {
+          this.items.push({
+            kind: 'notice',
+            key: `event-${event.seq}`,
+            revision: 0,
+            text: event.data.content
+              .filter(block => block.type === 'text')
+              .map(block => displayText(block.text))
+              .join('\n'),
+            tone: 'info',
           })
         } else if ('form' in source && source.form === 'notice') {
           this.items.push({
@@ -531,11 +543,13 @@ export class TranscriptComponent implements Component {
           .map(line => `${this.palette.dim('  ⎿ \u00a0')}${line}`),
       ]
     }
-    if (isBackgroundSubagent(item)) {
-      return [
+    if (isStartedSubagent(item)) {
+      const lines = [
         title,
-        this.palette.dim('  ⎿ \u00a0Backgrounded agent (← for agents · ctrl+o to expand)'),
+        this.palette.dim('  ⎿ \u00a0Started (← for agents · ctrl+o to expand)'),
       ]
+      if (this.toolsExpanded) lines.push(this.palette.dim(`  ⎿ \u00a0${item.result}`))
+      return lines
     }
 
     const lines = [
@@ -597,19 +611,9 @@ export function subagentToolLabel(item: ToolItem): string | undefined {
   return toolArgumentSummary(item.arguments, item.name)
 }
 
-/** Background outcomes are explicit in both Harness's call and canonical result. */
-function isBackgroundSubagent(item: ToolItem): boolean {
-  const result = item.result?.trim().toLocaleLowerCase() ?? ''
-  if (result.startsWith('started background subagent task ') || result.startsWith('started subagent ')) {
-    return true
-  }
-  try {
-    const value = JSON.parse(item.arguments) as unknown
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      && (value as Record<string, unknown>).run_in_background === true
-  } catch {
-    return false
-  }
+/** Current and historical creation receipts never imply child completion. */
+function isStartedSubagent(item: ToolItem): boolean {
+  return /^started (?:subagent|background subagent task) \S+$/u.test(item.result?.trim() ?? '')
 }
 
 /** Empty objects carry no useful visual detail beneath a tool heading. */

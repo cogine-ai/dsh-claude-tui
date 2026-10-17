@@ -72,7 +72,7 @@ describe('optional workspace MCP compatibility', () => {
     const workspaceRequire = createRequire(fileURLToPath(new URL('../package.json', import.meta.url)))
     const dshRequire = createRequire(workspaceRequire.resolve('@deepseek-ai/dsh/package.json'))
     const piOwnerPath = dshRequire.resolve('@deepseek-ai/dsh-llm-pi-ai/package.json')
-    expect(JSON.parse(readFileSync(piOwnerPath, 'utf8')).version).toBe('0.2.0-rc.2')
+    expect(JSON.parse(readFileSync(piOwnerPath, 'utf8')).version).toBe('0.2.1-rc.2')
     const piOwnerRequire = createRequire(piOwnerPath)
     // pi-ai exposes only an import entry and hides its manifest. Use this
     // owner's lookup paths, then resolve the symlink to keep its peer context.

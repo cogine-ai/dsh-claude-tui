@@ -387,7 +387,7 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.2.0-rc.2',
+        harnessVersion: '0.2.1-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
@@ -409,7 +409,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.2.0-rc.2 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.2.1-rc.2 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -457,18 +457,17 @@ describe('ClaudeTuiApplication', () => {
     await test.app.dispose()
   })
 
-  it('maps only DSH native, ptc, and both tools modes into product-facing labels', async () => {
+  it('maps DSH native and ptc tools modes into product-facing labels', async () => {
     const cases = [
       ['native', 'Standard'],
       ['ptc', 'PTC'],
-      ['both', 'Both (Native + PTC)'],
     ] as const
     for (const [toolsMode, label] of cases) {
       const test = bench(100, 30, () => 1_000, {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.2.0-rc.2',
+          harnessVersion: '0.2.1-rc.2',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -478,7 +477,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.2.0-rc.2 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.2.1-rc.2 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -834,6 +833,43 @@ describe('ClaudeTuiApplication', () => {
       submitted: 0,
     })
 
+    await app.dispose()
+  })
+
+  it('indexes the effective working directory and discards a stale scan after a durable directory change', async () => {
+    const test = bench(80, 24)
+    let cwd = '/workspace/resumed'
+    test.ctx.provide('workingDirectory', { get: () => cwd } as never)
+    const requests: Array<{
+      cwd: string
+      resolve: (entries: Array<{ path: string; directory: boolean }>) => void
+    }> = []
+    const app = new ClaudeTuiApplication(test.ctx, test.app.agent, resolveConfig({ color: false }), {
+      terminal: test.terminal,
+      exit: code => { test.exitCodes.push(code) },
+      listWorkspaceEntries: (directory) => new Promise(resolve => {
+        requests.push({ cwd: directory, resolve })
+      }),
+    })
+    await app.start()
+    expect(requests.map(request => request.cwd)).toEqual(['/workspace/resumed'])
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('/workspace/resumed')
+
+    cwd = '/workspace/changed'
+    test.app.agent.ctx.emit('session/event', test.app.agent.session,
+      test.app.agent.session.append('working-directory/change', { cwd }))
+    expect(requests.map(request => request.cwd)).toEqual(['/workspace/resumed', '/workspace/changed'])
+    requests[1]!.resolve([{ path: 'current.ts', directory: false }])
+    await test.terminal.settle()
+    requests[0]!.resolve([{ path: 'stale.ts', directory: false }])
+    test.terminal.send('@')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('current.ts')
+    expect(test.terminal.text()).not.toContain('stale.ts')
+    expect(test.terminal.text()).toContain('/workspace/changed')
+    expect(test.terminal.text()).not.toContain('/workspace/project')
+    expect(test.app.agent.session.header.cwd).toBe('/workspace/project')
     await app.dispose()
   })
 
@@ -1962,7 +1998,7 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('matches the captured foreground-subagent initialization and active-agent roster', async () => {
+  it('matches the captured delegation initialization and uses the child catalog for its roster', async () => {
     const reference = JSON.parse(readFileSync(
       new URL('./fixtures/claude-code-2.1.227/subagent-foreground-pending-80x24.json', import.meta.url),
       'utf8',
@@ -1982,8 +2018,14 @@ describe('ClaudeTuiApplication', () => {
       arguments: JSON.stringify({
         description: 'Inspect reference',
         prompt: 'Return exactly CHILD_REFERENCE.',
-        run_in_background: false,
       }),
+    })
+    session.append('subagent/catalog', {
+      version: 0,
+      childId: SessionId('subagent-reference-child'),
+      childCreatedAt: 1,
+      mode: 'continuable',
+      label: 'Inspect reference',
     })
     const coloredApp = new ClaudeTuiApplication(
       test.ctx,
@@ -2042,7 +2084,44 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('matches the captured foreground-subagent completion without inventing Claude-only metrics', async () => {
+  it('keeps concurrently published child labels tied to their catalog ids', async () => {
+    const test = bench(100, 30)
+    const session = test.app.agent.session
+    for (const label of ['First task', 'Second task']) {
+      session.append('tool/call', {
+        turn: 1, step: 1, callId: ToolCallId(label), name: 'subagent',
+        arguments: JSON.stringify({ description: label, prompt: 'inspect' }),
+      })
+    }
+    session.append('subagent/catalog', {
+      version: 0, childId: SessionId('local-child'), childCreatedAt: 1,
+      mode: 'continuable', label: 'First task',
+    })
+    session.append('subagent/catalog', {
+      version: 2, childId: SessionId('external-child'), childCreatedAt: 2,
+      mode: 'external', label: 'Second task',
+    })
+    await test.app.start()
+    test.app.agent.ctx.emit('subagent/start', {
+      runId: SubagentRunId('external-run'), provider: 'external', id: SessionId('external-child'), local: false,
+    })
+    test.app.agent.ctx.emit('subagent/start', {
+      runId: SubagentRunId('local-run'), provider: 'spawn', id: SessionId('local-child'), local: true,
+    })
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('external  Second task')
+    expect(test.terminal.text()).toContain('spawn  First task')
+    test.app.agent.ctx.emit('subagent/end', {
+      runId: SubagentRunId('external-run'), provider: 'external', id: SessionId('external-child'),
+      local: false, stopReason: 'error',
+    })
+    await test.terminal.settle()
+    expect(test.terminal.text()).not.toContain('external  Second task')
+    expect(test.terminal.text()).toContain('spawn  First task')
+    await test.app.dispose()
+  })
+
+  it('replays historical delegation completion without inventing Claude-only metrics', async () => {
     const reference = JSON.parse(readFileSync(
       new URL('./fixtures/claude-code-2.1.227/subagent-foreground-complete-80x24.json', import.meta.url),
       'utf8',
@@ -2116,7 +2195,7 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('renders the captured background-agent handoff without claiming an unavailable manager', async () => {
+  it('renders the rc.2 activation receipt as started without claiming child completion', async () => {
     const reference = JSON.parse(readFileSync(
       new URL('./fixtures/claude-code-2.1.227/subagent-background-pending-80x24.json', import.meta.url),
       'utf8',
@@ -2137,7 +2216,6 @@ describe('ClaudeTuiApplication', () => {
       arguments: JSON.stringify({
         description: 'Inspect reference',
         prompt: 'Return exactly CHILD_REFERENCE.',
-        run_in_background: true,
       }),
     })
     session.append('tool/result', {
@@ -2145,7 +2223,7 @@ describe('ClaudeTuiApplication', () => {
       step: 1,
       message: createToolResultMessage({
         callId,
-        content: [{ type: 'text', text: 'started background subagent task subagent-1' }],
+        content: [{ type: 'text', text: 'started subagent subagent-1' }],
         isError: false,
       }),
     }, { surfaceOp: 'append' })
@@ -2167,11 +2245,13 @@ describe('ClaudeTuiApplication', () => {
       outcome: actualLines[toolRow + 1]?.trimEnd(),
       toolGlyph: test.terminal.cellStyle(toolRow, 0),
       claimsClaudeManager: actualLines.some(line => line.includes('↓ to manage')),
+      claimsChildCompleted: actualLines.some(line => line.includes('Done') || line.includes('Backgrounded')),
     }).toEqual({
       title: expectedLines[expectedToolRow],
-      outcome: expectedLines[expectedToolRow + 1]?.replace('↓ to manage', '← for agents'),
+      outcome: '  ⎿ \u00a0Started (← for agents · ctrl+o to expand)',
       toolGlyph: referenceCell(reference, expectedToolRow, 0),
       claimsClaudeManager: false,
+      claimsChildCompleted: false,
     })
 
     await coloredApp.dispose()

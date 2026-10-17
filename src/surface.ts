@@ -19,7 +19,7 @@ export interface HeaderValues {
   title: string
   version?: string
   sessionId: string
-  cwd: string
+  cwd: string | (() => string)
   model: string | (() => string)
   runtime?: {
     readonly primary: string
@@ -56,7 +56,8 @@ export class HeaderComponent implements Component {
     const first = `${logo[0]}   ${this.palette.bold(this.values.title)}`
     const model = typeof this.values.model === 'function' ? this.values.model() : this.values.model
     const second = `${logo[1]}  ${this.palette.dim(`${model} · ${this.values.sessionId}`)}`
-    const thirdLeft = `${logo[2]}  ${this.palette.dim(this.values.cwd)}`
+    const cwd = typeof this.values.cwd === 'function' ? this.values.cwd() : this.values.cwd
+    const thirdLeft = `${logo[2]}  ${this.palette.dim(cwd)}`
     const third = safeWidth < 48
       ? thirdLeft
       : joinHeaderBadge(thirdLeft, this.palette.dshBadge(' powered by dsh '), safeWidth)
@@ -65,6 +66,7 @@ export class HeaderComponent implements Component {
 
   /** Full new-Session welcome panel captured from Claude Code's current startup surface. */
   private renderWelcome(safeWidth: number): string[] {
+    const cwd = typeof this.values.cwd === 'function' ? this.values.cwd() : this.values.cwd
     const panelWidth = Math.min(120, safeWidth)
     const leftWidth = Math.min(45, panelWidth - 3)
     const rightWidth = panelWidth - leftWidth - 3
@@ -111,7 +113,7 @@ export class HeaderComponent implements Component {
       row('', ''),
       row(this.palette.dim(model), ''),
       row(
-        this.palette.dim(this.values.cwd),
+        this.palette.dim(cwd),
         this.palette.dshBadge(' powered by dsh '),
         'right',
       ),

@@ -25,7 +25,7 @@ import {
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
 import type { DshToolsMode } from './runtime-snapshot.ts'
 
-const BUNDLED_DSH_VERSION = '0.2.0-rc.2'
+const BUNDLED_DSH_VERSION = '0.2.1-rc.2'
 const RUNTIME_ENV = 'DSH_CLAUDE_TUI_RUNTIME'
 const LAUNCH_NOTICE_ENV = 'DSH_CLAUDE_TUI_LAUNCH_NOTICE'
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
@@ -42,6 +42,8 @@ Options:
 Environment:
   DSH_CLAUDE_TUI_RUNTIME=auto|system|bundled
                      select automatic, compatible system, or bundled DSH
+  DSH_TOOLS_MODE=native|ptc
+                     choose native tools or programmatic tool calling (default)
 
 All other options and arguments are forwarded to the TUI.
 `
@@ -50,8 +52,19 @@ interface PackageManifest {
   version?: unknown
 }
 
-function isDshToolsMode(value: string): value is DshToolsMode {
-  return value === 'native' || value === 'ptc' || value === 'both'
+/** Reject obsolete modes before discovery, probes, or user Home writes. */
+function requestedToolsMode(): DshToolsMode {
+  const requested = process.env.DSH_TOOLS_MODE?.trim() || 'ptc'
+  if (requested === 'native') return 'native'
+  if (requested === 'ptc' || requested === 'code') return 'ptc'
+  if (requested === 'both') {
+    throw new Error(
+      'DSH_TOOLS_MODE=both is no longer supported by DeepSeek Harness 0.2.1; choose native or ptc',
+    )
+  }
+  throw new Error(
+    `DSH_TOOLS_MODE must be native or ptc (code is an alias for ptc); received ${JSON.stringify(requested)}`,
+  )
 }
 
 /** Fail before touching Harness state when npm only warned about an invalid engine. */
@@ -131,9 +144,7 @@ function launchAdapter(identity: PackageIdentity): LaunchPlannerAdapter {
 }
 
 /** Run Harness in the foreground while preserving the caller's process boundary. */
-async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<number> {
-  const requestedToolsMode = (process.env.DSH_TOOLS_MODE ?? 'ptc').trim()
-  const toolsMode = requestedToolsMode === 'code' ? 'ptc' : requestedToolsMode
+async function runHarness(plan: LaunchPlan, args: readonly string[], toolsMode: DshToolsMode): Promise<number> {
   const environment = harnessEnvironment({
     ...process.env,
     DSH_HOME: plan.home.path,
@@ -143,15 +154,13 @@ async function runHarness(plan: LaunchPlan, args: readonly string[]): Promise<nu
   delete environment[LAUNCH_NOTICE_ENV]
   delete environment[RUNTIME_SNAPSHOT_ENV]
   if (plan.notices.length > 0) environment[LAUNCH_NOTICE_ENV] = plan.notices.join(' ')
-  if (isDshToolsMode(toolsMode)) {
-    environment[RUNTIME_SNAPSHOT_ENV] = JSON.stringify({
-      harnessVersion: plan.runtime.version,
-      runtimeKind: plan.runtime.kind,
-      homeKind: plan.home.kind,
-      homePath: plan.home.path,
-      toolsMode,
-    })
-  }
+  environment[RUNTIME_SNAPSHOT_ENV] = JSON.stringify({
+    harnessVersion: plan.runtime.version,
+    runtimeKind: plan.runtime.kind,
+    homeKind: plan.home.kind,
+    homePath: plan.home.path,
+    toolsMode,
+  })
   const harnessArgs = harnessNodeArgs(plan.runtime.executable, ['--profile', plan.profile.name, ...args])
 
   // Supported POSIX Node lines expose execve: replacing this process gives
@@ -204,11 +213,12 @@ if (args.length === 1 && (args[0] === '-h' || args[0] === '--help')) {
 } else {
   try {
     assertSupportedNodeVersion()
+    const toolsMode = requestedToolsMode()
     const identity = packageIdentity()
     const plan = await createLaunchPlanner(launchAdapter(identity)).resolve(launchRequest())
     ensureManagedProfile(plan.home.path, plan.profile, identity)
     for (const notice of plan.notices) process.stderr.write(`dsh-claude-tui: ${notice}\n`)
-    process.exitCode = await runHarness(plan, args)
+    process.exitCode = await runHarness(plan, args, toolsMode)
   } catch (error) {
     process.stderr.write(`dsh-claude-tui: ${error instanceof Error ? error.message : String(error)}\n`)
     process.exitCode = 1
