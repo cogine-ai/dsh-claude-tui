@@ -129,7 +129,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 ## 兼容与验证
 
-主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。现有参考集包含 **24** 个独立捕获的 PTY 帧与 **22** 个自动视觉/语义锚点。`0.1.9` 复用这组基线；macOS arm64 上 Node `24.16.0` 完整检查与 Node `22.23.3` 全新缓存普通 npm peer 求解安装包门禁均已通过。精确结果及范围见 [0.2.1 适配记录](./docs/harness-0.2.1-rc.2-adaptation.md)。
+主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。现有参考集包含 **24** 个独立捕获的 PTY 帧与 **22** 个自动视觉/语义锚点。`0.1.9` 复用这组基线；PR review 前，macOS arm64 上 Node `24.16.0` 完整检查与 Node `22.23.3` 全新缓存普通 npm peer 求解安装包门禁均已通过。review 随后发现一处子代理 roster 标签顺序问题，修复后 64 项应用测试及类型检查通过。当前 review 和 [CI 结果](https://github.com/cogine-ai/dsh-claude-tui/pull/24/checks)由 [PR #24](https://github.com/cogine-ai/dsh-claude-tui/pull/24)记录；精确本地结果及范围见[适配记录](./docs/harness-0.2.1-rc.2-adaptation.md)。
 
 - 门禁包含 true-color、xterm-compatible 的 `80x24`、`100x30` 布局、图片与命令附件、审批、问题、计划模式按键、托管子代理及目录变化。
 - 安装产物门禁包含全新 npm 安装、两个命令入口、包内与独立外部运行时探针、本地 Messages/Files 与 MCP 服务、受沙箱约束的 Node PTC、安全退出与恢复，以及 V0/V3-to-V4 迁移和原件保留。本地服务不构成生产 Provider 验收。

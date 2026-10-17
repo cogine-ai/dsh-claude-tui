@@ -2020,13 +2020,6 @@ describe('ClaudeTuiApplication', () => {
         prompt: 'Return exactly CHILD_REFERENCE.',
       }),
     })
-    session.append('subagent/catalog', {
-      version: 0,
-      childId: SessionId('subagent-reference-child'),
-      childCreatedAt: 1,
-      mode: 'continuable',
-      label: 'Inspect reference',
-    })
     const coloredApp = new ClaudeTuiApplication(
       test.ctx,
       test.app.agent,
@@ -2041,6 +2034,15 @@ describe('ClaudeTuiApplication', () => {
       id: SessionId('subagent-reference-child'),
       local: true,
     })
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('spawn  subagent-reference-child')
+    test.app.agent.ctx.emit('session/event', session, session.append('subagent/catalog', {
+      version: 0,
+      childId: SessionId('subagent-reference-child'),
+      childCreatedAt: 1,
+      mode: 'continuable',
+      label: 'Inspect reference',
+    }))
     await test.terminal.settle()
 
     const expectedLines = reference.frame.lines.map(line => line.text)
@@ -2084,7 +2086,7 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('keeps concurrently published child labels tied to their catalog ids', async () => {
+  it('updates concurrently published local and external children when their catalogs arrive after start', async () => {
     const test = bench(100, 30)
     const session = test.app.agent.session
     for (const label of ['First task', 'Second task']) {
@@ -2093,14 +2095,6 @@ describe('ClaudeTuiApplication', () => {
         arguments: JSON.stringify({ description: label, prompt: 'inspect' }),
       })
     }
-    session.append('subagent/catalog', {
-      version: 0, childId: SessionId('local-child'), childCreatedAt: 1,
-      mode: 'continuable', label: 'First task',
-    })
-    session.append('subagent/catalog', {
-      version: 2, childId: SessionId('external-child'), childCreatedAt: 2,
-      mode: 'external', label: 'Second task',
-    })
     await test.app.start()
     test.app.agent.ctx.emit('subagent/start', {
       runId: SubagentRunId('external-run'), provider: 'external', id: SessionId('external-child'), local: false,
@@ -2109,8 +2103,24 @@ describe('ClaudeTuiApplication', () => {
       runId: SubagentRunId('local-run'), provider: 'spawn', id: SessionId('local-child'), local: true,
     })
     await test.terminal.settle()
+    expect(test.terminal.text()).toContain('external  external-child')
+    expect(test.terminal.text()).toContain('spawn  local-child')
+    test.app.agent.ctx.emit('session/event', session, session.append('subagent/catalog', {
+      version: 0, childId: SessionId('local-child'), childCreatedAt: 1,
+      mode: 'continuable', label: 'First task',
+    }))
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('spawn  First task')
+    expect(test.terminal.text()).toContain('external  external-child')
+    test.app.agent.ctx.emit('session/event', session, session.append('subagent/catalog', {
+      version: 2, childId: SessionId('external-child'), childCreatedAt: 2,
+      mode: 'external', label: 'Second task',
+    }))
+    await test.terminal.settle()
     expect(test.terminal.text()).toContain('external  Second task')
     expect(test.terminal.text()).toContain('spawn  First task')
+    expect(test.terminal.text()).not.toContain('external  First task')
+    expect(test.terminal.text()).not.toContain('spawn  Second task')
     test.app.agent.ctx.emit('subagent/end', {
       runId: SubagentRunId('external-run'), provider: 'external', id: SessionId('external-child'),
       local: false, stopReason: 'error',

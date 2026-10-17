@@ -72,8 +72,8 @@ interface HistorySearchState {
 
 /** Process-local live delegation state projected from Harness lifecycle events. */
 interface ActiveSubagent {
+  readonly childId: string
   readonly provider: string
-  readonly label: string
 }
 
 /** Second-gesture boundary measured from Claude Code 2.1.227's real PTY. */
@@ -209,7 +209,7 @@ export class ClaudeTuiApplication {
           ? {
               activeAgents: [...this.activeSubagents.values()].map(item => ({
                 provider: item.provider,
-                label: item.label,
+                label: this.subagentLabel(item.childId),
               })),
             }
           : {}),
@@ -332,8 +332,8 @@ export class ClaudeTuiApplication {
     this.disposers.push(this.agent.ctx.on('subagent/start', (info) => {
       if (this.closed) return
       this.activeSubagents.set(String(info.runId), {
+        childId: String(info.id),
         provider: displayText(info.provider),
-        label: this.subagentLabel(String(info.id)),
       })
       this.agentsVisible = true
       this.tui.requestRender()

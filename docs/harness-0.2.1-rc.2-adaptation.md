@@ -78,20 +78,29 @@ The following table records this adaptation's local checks. The existing 24 Clau
 PTY frames and 22 visual/semantic anchors are reused; this adaptation adds no
 independently captured Claude baseline.
 
-The complete check ran on macOS arm64 with Node `24.16.0` on 2026-10-18:
+The pre-review complete check ran on macOS arm64 with Node `24.16.0` on 2026-10-18:
 `CI=true corepack pnpm check` exited **0**, with **16 files, 215 passed, and
 1 skipped**. The skip was the opt-in real system-clipboard test.
 The later Node `22.23.3` ordinary npm peer-resolution installed-bundle gate
 also exited **0**: **1 file, 16 passed, 1 skipped** (17 total), in **331.66
 seconds**, with a fresh npm cache. It additionally verified packed-TUI replay of
 the released `0.2.0-rc.2` V4 fixture; that added case is not counted in the earlier
-Node 24 complete-run total.
+Node 24 complete-run total. Both runs establish the pre-review baseline.
+
+Review on [PR #24](https://github.com/cogine-ai/dsh-claude-tui/pull/24) then found
+one valid P2: a child start event can precede its parent catalog record, leaving
+a cached roster label as the child UUID. The fix retains the child ID and reads
+the latest catalog when rendering. Two regressions failed before the fix;
+afterward, **64 application tests and typecheck passed**, including local and
+external children started in concurrent reverse order. Subsequent review and
+[CI results](https://github.com/cogine-ai/dsh-claude-tui/pull/24/checks) are recorded
+on that PR rather than inferred from the local baseline.
 
 | Gate | Result |
 | --- | --- |
 | Exact-tag API/composition inspection | Confirmed against `687f282e8625c6b8d11ff58211a90524be2e4317`; read-only inspection is not runtime acceptance. |
 | Official documentation synchronization | Passed: integrity and completeness of 2,083 original files at the exact tag and commit. |
-| Typecheck, production build, and complete serial tests | Passed: Node `24.16.0`, `CI=true corepack pnpm check`, exit 0; 16 files / 215 passed / 1 optional real system-clipboard test skipped. |
+| Pre-review typecheck, build, and complete serial tests | Passed: Node `24.16.0`, `CI=true corepack pnpm check`, exit 0; 16 files / 215 passed / 1 optional real system-clipboard test skipped. |
 | Dependency tree and audits | Passed: full installed `npm ls` tree; workspace audit 0 and npm production audit 0. Production graph has 644 dependencies and 299 DSH packages, all DSH packages pinned to `0.2.1-rc.2`. |
 | Removed tools mode and Home-preservation checks | Passed: rejection before runtime discovery and writes, for new and existing Homes. |
 | Working-directory and terminal regressions | Passed: current-directory header/file mentions, stale-scan rejection, layouts, streams, images, command attachments, approvals, questions, and plan-mode keys. |
@@ -101,10 +110,10 @@ Node 24 complete-run total.
 | Historical V0/V3-to-V4 migration and predecessor preservation | Passed through the installed artifact; restored replies/tool results and original bytes checked. |
 | Released `0.2.0-rc.2` V4 fixture | Passed: real old-writer generation, new-backend read/write, and installed TUI resume on Node `22.23.3`; restored reply/tool result checked and original log bytes preserved as an unchanged prefix. This added case was not in the earlier Node 24 complete run. |
 | MCP and dependency-owner security regressions | Passed: owner-path stdio/HTTP MCP and image/Office ZIP/URI checks. The retained Office repack passed byte-for-byte `--check` reproduction. |
-| Independent implementation and dependency review | Completed with no blocking findings; the packed subagent gate was strengthened to require successful settlement and the closing message. |
-| Node `22.23.3` ordinary-peer-resolution installed bundle | Passed: exit 0; 1 file / 16 passed / 1 optional clipboard test skipped (17 total), 331.66 seconds. Fresh-cache ordinary npm resolution, native subagents, PTC, MCP, probes, resume, and all three historical writer fixtures were exercised. |
-| Final serial workspace consistency | Passed: Node 22 frozen install (4.2 seconds, 708 reused, 0 downloads), then Node 24 `tsc --noEmit` and runtime-probe/dependency-security/optional-MCP tests (3 files / 12 passed). Exact-source documentation verification matched all 2,083 files; `git diff --check` passed. |
-| Ubuntu CI for this adaptation | Local results below do not establish CI completion; earlier `0.2.0-rc.2` CI is historical. |
+| Independent review and roster-label repair | [PR #24](https://github.com/cogine-ai/dsh-claude-tui/pull/24) review found one valid P2 involving start/catalog ordering. Fixed with child-ID retention and render-time catalog lookup; 64 application tests and typecheck passed. Follow-up review is recorded on the PR. |
+| Pre-review Node `22.23.3` ordinary-peer-resolution installed bundle | Passed: exit 0; 1 file / 16 passed / 1 optional clipboard test skipped (17 total), 331.66 seconds. Fresh-cache ordinary npm resolution, native subagents, PTC, MCP, probes, resume, and all three historical writer fixtures were exercised. |
+| Pre-review serial workspace consistency | Passed: Node 22 frozen install (4.2 seconds, 708 reused, 0 downloads), then Node 24 `tsc --noEmit` and runtime-probe/dependency-security/optional-MCP tests (3 files / 12 passed). Exact-source documentation verification matched all 2,083 files; `git diff --check` passed. |
+| Ubuntu CI for this adaptation | Current results are recorded in [PR #24 checks](https://github.com/cogine-ai/dsh-claude-tui/pull/24/checks); local baseline checks do not establish their completion. Earlier `0.2.0-rc.2` CI is historical. |
 | Production-provider requests and Windows ConPTY | Not run for this adaptation. |
 | Real system clipboard | Opt-in test skipped in the complete check. |
 | Publication and registry identity | Verify separately through the [v0.1.9 Release](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.9) and npm metadata; the local checks above do not establish publication. |
@@ -118,12 +127,15 @@ Two overlapping preparatory workspace installs caused one transient `ENOENT`.
 The final serial frozen install and checks above completed successfully, with
 no unresolved installation or verification failure.
 
-2026-10-18 的 macOS arm64 / Node `24.16.0` 完整门禁退出 0：16 个文件、215 项通过、
+2026-10-18 的 macOS arm64 / Node `24.16.0` review 前完整门禁退出 0：16 个文件、215 项通过、
 1 项真实系统剪贴板 opt-in 检查跳过。全新安装、依赖树、真实 DSH 子代理消息与成功收尾、
 本地 PTC 轮次、恢复、旧格式迁移、外部运行时、目录与界面回归均通过；工作区及生产依赖
 审计均为 0。后续 Node `22.23.3` 全新缓存普通 peer 求解安装包门禁亦退出 0：1 个文件、
 16 项通过、1 项可选剪贴板检查跳过，耗时 331.66 秒，包含新增旧版 V4 fixture 的真实
 TUI 恢复、工具结果及原件字节前缀保留。此新增项不计入早前 Node 24 的 215 项通过。
+这两轮均为 review 前基线。PR #24 的独立 review 后确认一处有效 P2：start 早于 catalog
+时缓存的 UUID 标签无法更新。现改为保留 childId、渲染时读取最新 catalog；修前两条回归
+失败，修后 64 项应用测试及类型检查通过，后续 review/CI 状态以 PR 及其 checks 为准。
 
 安装产物测试使用本地 Messages/Files 和 MCP 服务，不代表生产模型、OAuth、自定义插件
 或所有平台的 LibreOffice 转换已验收。独立 Home 用于跨版本测试；旧日志原件保留不构成

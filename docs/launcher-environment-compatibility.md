@@ -10,8 +10,11 @@ registry identity are verified separately through the
 [v0.1.9 Release](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.9)
 and npm metadata.
 On macOS arm64, the complete check on Node `24.16.0` and the fresh-cache ordinary
-npm peer-resolution installed-bundle gate on Node `22.23.3` passed. Exact results
-belong to the [0.2.1 adaptation record](harness-0.2.1-rc.2-adaptation.md).
+npm peer-resolution installed-bundle gate on Node `22.23.3` passed before review.
+A subsequent roster-label ordering fix passed 64 application tests and typecheck.
+Current review and [CI results](https://github.com/cogine-ai/dsh-claude-tui/pull/24/checks)
+are tracked on [PR #24](https://github.com/cogine-ai/dsh-claude-tui/pull/24); local
+results belong to the [0.2.1 adaptation record](harness-0.2.1-rc.2-adaptation.md).
 The [0.2.0 adaptation record](harness-0.2.0-rc.2-adaptation.md) retains the old
 Node-engine investigation and historical macOS/Ubuntu results; those results
 do not qualify this version.
