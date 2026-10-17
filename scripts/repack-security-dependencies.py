@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce the two pinned, manifest-only production dependency repacks."""
+"""Reproduce the pinned, manifest-only Office dependency repack."""
 
 import argparse
 import base64
@@ -20,16 +20,6 @@ DESTINATION = ROOT / "vendor" / "security"
 MANIFEST = "package/package.json"
 PACKAGES = (
     {
-        "name": "@deepseek-ai/dsh-mcp-client",
-        "version": "0.2.0-rc.2",
-        "filename": "dsh-mcp-client-0.2.0-rc.2.tgz",
-        "url": "https://registry.npmjs.org/@deepseek-ai/dsh-mcp-client/-/dsh-mcp-client-0.2.0-rc.2.tgz",
-        "integrity": "sha512-UqP2sY1r6qAhBPFeuclqrXiMBBxPaCNrXlXRqKxAON7uI1wmZZ0B3/1GmBviQ3/WjjTQlOOkj0su2v4e5DMkug==",
-        "dependency": "@modelcontextprotocol/client",
-        "before": "2.0.0",
-        "after": "2.2.0",
-    },
-    {
         "name": "@deepseek-ai/libreoffice-kit",
         "version": "0.1.5",
         "filename": "libreoffice-kit-0.1.5.tgz",
@@ -49,7 +39,6 @@ following `package.json` dependency declarations change:
 
 | Owner | Dependency | Original | Patched |
 | --- | --- | --- | --- |
-| `@deepseek-ai/dsh-mcp-client@0.2.0-rc.2` | `@modelcontextprotocol/client` | `2.0.0` | `2.2.0` |
 | `@deepseek-ai/libreoffice-kit@0.1.5` | `fflate` | `0.8.2` | `0.8.3` |
 
 Every other archive member retains its contents, link target, type, and mode,
@@ -67,7 +56,7 @@ python3 scripts/repack-security-dependencies.py
 python3 scripts/repack-security-dependencies.py --check
 ```
 
-Both commands download the pinned original npm archives over HTTPS. No npm
+Both commands download the pinned original npm archive over HTTPS. No npm
 installation, lifecycle script, or archive extraction runs. `--check` regenerates
 all outputs in a temporary directory and fails if any committed output differs.
 Archives use sorted member order, fixed ownership and timestamps, preserved

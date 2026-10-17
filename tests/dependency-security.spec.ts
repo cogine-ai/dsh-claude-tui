@@ -11,7 +11,7 @@ describe('workspace dependency security and compatibility', () => {
     await verifySecurityDependencies(packageJsonPath)
   }, 40_000)
 
-  it('preserves DSH 0.2.0-rc.2 MCP behavior with the patched SDK', async () => {
+  it('preserves DSH 0.2.1-rc.2 MCP behavior with the official SDK', async () => {
     await verifyMcpCompatibility(packageJsonPath)
   }, 40_000)
 })

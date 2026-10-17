@@ -159,6 +159,68 @@ describe('TranscriptModel', () => {
     })])
   })
 
+  it('replays delegated messages and settlement output without attributing them to the parent assistant', () => {
+    const session = Session.create(SessionId('delegation-messages'))
+    session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'Agent child-1 sent a message: ' }, { type: 'text', text: 'Found the cause.' }],
+      source: { kind: 'agent-message', form: 'relay', senderSessionId: SessionId('child-1') },
+    }), { surfaceOp: 'append' })
+    session.append('user/message', createUserMessage({
+      content: [
+        { type: 'text', text: 'Background subagent external-1 finished. It cannot receive follow-up messages.' },
+        { type: 'text', text: 'Its closing message:' },
+        { type: 'text', text: 'External result\u001b' },
+      ],
+      source: {
+        kind: 'subagent-settled', form: 'notice', summary: 'External child finished.',
+        senderSessionId: SessionId('external-1'),
+      },
+    }), { surfaceOp: 'append' })
+    const live = new TranscriptModel()
+    for (const event of session.snapshotEvents()) live.apply(event)
+    const replay = new TranscriptModel()
+    replay.replay(session.snapshotEvents())
+    expect(replay.items).toEqual(live.items)
+    expect(replay.items).toEqual([
+      expect.objectContaining({ kind: 'notice', text: 'Agent child-1 sent a message: \nFound the cause.' }),
+      expect.objectContaining({
+        kind: 'notice',
+        text: 'Background subagent external-1 finished. It cannot receive follow-up messages.\nIts closing message:\nExternal result\\x1b',
+      }),
+    ])
+    expect(replay.items.some(item => item.kind === 'assistant' || item.kind === 'user')).toBe(false)
+  })
+
+  it('distinguishes an activation receipt from a completed historical delegation on replay', () => {
+    const session = Session.create(SessionId('delegation-activation'))
+    for (const [call, result, argumentsText] of [
+      ['activation', 'started subagent child-1', '{"description":"New child"}'],
+      ['old-receipt', 'started background subagent task child-2', '{"description":"Old receipt","run_in_background":true}'],
+      ['historical', 'Historical child result', '{"description":"Old child","run_in_background":true}'],
+    ] as const) {
+      const callId = ToolCallId(call)
+      session.append('tool/call', {
+        turn: 1, step: 1, callId, name: 'subagent', arguments: argumentsText,
+      })
+      session.append('tool/result', {
+        turn: 1, step: 1,
+        message: createToolResultMessage({ callId, isError: false, content: [{ type: 'text', text: result }] }),
+      }, { surfaceOp: 'append' })
+    }
+    const model = new TranscriptModel()
+    model.replay(session.snapshotEvents())
+    const view = new TranscriptComponent(model, createPalette(false), 100, 10, true)
+    const collapsed = view.render(100).join('\n')
+    expect(collapsed).toContain('Agent(New child)\n  ⎿ \u00a0Started')
+    expect(collapsed).toContain('Agent(Old receipt)\n  ⎿ \u00a0Started')
+    expect(collapsed).toContain('Agent(Old child)\n  ⎿ \u00a0Done')
+    expect(collapsed).not.toContain('Backgrounded')
+    view.toggleTranscript()
+    const expanded = view.render(100).join('\n')
+    expect(expanded).toContain('started subagent child-1')
+    expect(expanded).toContain('Historical child result')
+  })
+
   it('explains an unfinished turn inherited by a fork without marking it as a failed request', () => {
     const session = Session.create(SessionId('forked-projection'))
     const model = new TranscriptModel()

@@ -367,7 +367,7 @@ async function verifyHttp(modules: BridgeModules): Promise<void> {
   }
 }
 
-/** Resolves the patched SDK through the actual DSH owner before exercising both transports. */
+/** Resolves the official SDK through the actual DSH owner before exercising both transports. */
 export async function verifyMcpCompatibility(packageJsonPath: string): Promise<void> {
   const ownerRequire = mcpOwnerRequire(packageJsonPath)
   const clientEntry = ownerRequire.resolve('@modelcontextprotocol/client')

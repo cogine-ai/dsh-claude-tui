@@ -109,7 +109,10 @@ function writeSse(
   response.end()
 }
 
-async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServer> {
+async function startMockDeepSeekServer(
+  apiKey: string,
+  scenario: 'ptc' | 'subagent' = 'ptc',
+): Promise<MockDeepSeekServer> {
   const requests: MockRequest[] = []
   const fileRequests: MockDeepSeekServer['fileRequests'] = []
   let nextFile = 1
@@ -199,23 +202,58 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
             usage: { input_tokens: 10, output_tokens: 0 },
           },
         }
-        if (tools.length > 0 && !hasToolResult) {
+        let text = tools.length > 0 ? 'packed artifact reply' : 'Packed artifact session'
+        let toolCall: { id: string; name: string; input: Record<string, unknown> } | undefined
+        if (scenario === 'subagent' && tools.length > 0) {
+          const userText = messages.flatMap(message => {
+            if (typeof message !== 'object' || message === null || message.role !== 'user'
+              || !Array.isArray(message.content)) return []
+            return message.content.flatMap((block: { type?: string; text?: string }) =>
+              block.type === 'text' && typeof block.text === 'string' ? [block.text] : [])
+          }).join('\n')
+          if (userText.includes('packed-child-task')) {
+            if (toolResults.some(result => result.tool_use_id === 'call-packed-child-message')) {
+              text = 'packed child finished'
+            } else {
+              toolCall = {
+                id: 'call-packed-child-message', name: 'send_message',
+                input: { agent_id: 'packed-subagent-parent', message: 'packed child delivered its result' },
+              }
+            }
+          } else if (userText.includes('packed child delivered its result')) {
+            text = 'packed delegated reply'
+          } else if (toolResults.some(result => result.tool_use_id === 'call-packed-subagent')) {
+            text = 'packed parent awaiting child'
+          } else {
+            toolCall = {
+              id: 'call-packed-subagent', name: 'subagent',
+              input: { description: 'packed delegated task', prompt: 'packed-child-task' },
+            }
+          }
+        } else if (tools.length > 0 && !hasToolResult) {
           if (!tools.some(tool => typeof tool === 'object' && tool !== null && tool.name === 'run_code')) {
             throw new Error('packed Messages request omitted the run_code tool declaration')
           }
-          const toolArguments = JSON.stringify({
-            code: 'return "packed tool result"',
-            description: 'return a deterministic packed-artifact marker',
-          })
+          toolCall = {
+            id: 'call-packed-e2e', name: 'run_code', input: {
+              code: 'return "packed tool result"',
+              description: 'return a deterministic packed-artifact marker',
+            },
+          }
+        }
+        if (toolCall !== undefined) {
+          if (!tools.some(tool => typeof tool === 'object' && tool !== null && tool.name === toolCall.name)) {
+            throw new Error(`packed Messages request omitted ${toolCall.name}`)
+          }
           writeSse(response, [
             messageStart,
             {
               type: 'content_block_start', index: 0,
-              content_block: { type: 'tool_use', id: 'call-packed-e2e', name: 'run_code', input: {} },
+              content_block: { type: 'tool_use', id: toolCall.id, name: toolCall.name, input: {} },
             },
             {
               type: 'content_block_delta', index: 0,
-              delta: { type: 'input_json_delta', partial_json: toolArguments },
+              delta: { type: 'input_json_delta', partial_json: JSON.stringify(toolCall.input) },
             },
             { type: 'content_block_stop', index: 0 },
             { type: 'message_delta', delta: { stop_reason: 'tool_use', stop_sequence: null }, usage: { output_tokens: 5 } },
@@ -223,14 +261,13 @@ async function startMockDeepSeekServer(apiKey: string): Promise<MockDeepSeekServ
           ])
           return
         }
-        if (hasToolResult && !toolResults.some(result => result.tool_use_id === 'call-packed-e2e'
+        if (scenario === 'ptc' && hasToolResult && !toolResults.some(result => result.tool_use_id === 'call-packed-e2e'
           && result.is_error !== true && Array.isArray(result.content)
           && result.content.some(block => typeof block === 'object' && block !== null
             && block.type === 'text' && typeof block.text === 'string'
             && block.text.includes('packed tool result')))) {
           throw new Error('packed Messages request omitted the executed PTC tool result')
         }
-        const text = tools.length > 0 ? 'packed artifact reply' : 'Packed artifact session'
         writeSse(response, [
           messageStart,
           { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
@@ -415,7 +452,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.2.0-rc.2',
+      '0.2.1-rc.2',
     )
   }, 30_000)
 
@@ -437,6 +474,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/harness-0.1.2-rc.1-adaptation.md',
       'package/docs/harness-0.1.5-rc.2-adaptation.md',
       'package/docs/harness-0.2.0-rc.2-adaptation.md',
+      'package/docs/harness-0.2.1-rc.2-adaptation.md',
       'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
@@ -446,6 +484,8 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/releases/v0.1.7.zh-CN.md',
       'package/docs/releases/v0.1.8.md',
       'package/docs/releases/v0.1.8.zh-CN.md',
+      'package/docs/releases/v0.1.9.md',
+      'package/docs/releases/v0.1.9.zh-CN.md',
       'package/docs/visual-qualification-2.1.227.md',
       'package/lib/cli.d.ts',
       'package/lib/cli.js',
@@ -474,15 +514,15 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.8',
+      version: '0.1.9',
       engines: { node: '^22.19.0 || >=24.2.0' },
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.2.0-rc.2',
-        '@deepseek-ai/dsh-authorization': '0.2.0-rc.2',
+        '@deepseek-ai/dsh': '0.2.1-rc.2',
+        '@deepseek-ai/dsh-authorization': '0.2.1-rc.2',
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
@@ -497,7 +537,7 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.2.0-rc.2 <0.2.1')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.2.1-rc.2 <0.2.2')).toBe(true)
     expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
       .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
     expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
@@ -521,7 +561,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.2.0-rc.2',
+      '@deepseek-ai/dsh': '0.2.1-rc.2',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
@@ -532,7 +572,7 @@ describe('dsh-claude-tui bundle', () => {
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.2.0-rc.2']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.2.1-rc.2']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -546,7 +586,7 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.2.0-rc.2')
+    expect(installedDsh.version).toBe('0.2.1-rc.2')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
@@ -610,7 +650,7 @@ describe('dsh-claude-tui bundle', () => {
     await verifySecurityDependencies(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
   }, 40_000)
 
-  it('preserves DSH 0.2.0-rc.2 MCP behavior in the installed TUI', async () => {
+  it('preserves DSH 0.2.1-rc.2 MCP behavior in the installed TUI', async () => {
     await verifyMcpCompatibility(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
   }, 40_000)
 
@@ -660,7 +700,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.8\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.9\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -676,7 +716,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.8\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.9\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -811,8 +851,8 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.8')
-      expect(first.output).toContain('Harness 0.2.0-rc.2 · bundled · PTC')
+      expect(first.output).toContain('v0.1.9')
+      expect(first.output).toContain('Harness 0.2.1-rc.2 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -842,18 +882,87 @@ describe('dsh-claude-tui bundle', () => {
     }
   }, 120_000)
 
+  it('starts a real rc.2 child and delivers its message through the packed TUI', async () => {
+    const apiKey = 'packed-subagent-key'
+    const server = await startMockDeepSeekServer(apiKey, 'subagent')
+    const dshHome = join(packDirectory, 'subagent-dsh-home')
+    const workspace = join(packDirectory, 'subagent-workspace')
+    mkdirSync(workspace)
+    const env = stringEnvironment({
+      DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      DSH_TOOLS_MODE: 'native',
+      DSH_TELEMETRY_DISABLED: '1',
+      DEEPSEEK_API_KEY: apiKey,
+      DEEPSEEK_BASE_URL: server.baseURL,
+      TERM: 'xterm-256color',
+      COLORTERM: 'truecolor',
+    })
+    try {
+      const initialized = spawnSync(process.execPath, [installedExecutable, '--dump-config'], {
+        cwd: workspace, env, encoding: 'utf8', timeout: 30_000,
+      })
+      expect(initialized.status, initialized.stderr).toBe(0)
+      writeFileSync(join(dshHome, 'profiles/dsh-claude-tui/cordis.patch.yml'),
+        `- id: session-persistence-jsonl\n  config:\n    root: ${JSON.stringify(join(dshHome, 'sessions'))}\n    compression: none\n`)
+      const result = await runPackedTui(installedExecutable,
+        ['--session-id', 'packed-subagent-parent', 'delegate the packed child task'],
+        workspace, env, 'packed delegated reply',
+        async ({ waitForText }) => { await waitForText('packed child finished') })
+      expect(result.exitCode).toBe(0)
+      expect(result.signal).toBe(0)
+      expect(result.output).toContain('packed child delivered its result')
+      expect(result.output).toContain('packed child finished')
+      expect(result.output).not.toContain('Backgrounded agent')
+      expect(result.output).not.toContain(apiKey)
+      const parentLog = readdirSync(join(dshHome, 'sessions'), { recursive: true })
+        .find(path => String(path).endsWith('packed-subagent-parent/session.v4.jsonl'))
+      expect(parentLog).toBeDefined()
+      const logged = readFileSync(join(dshHome, 'sessions', String(parentLog)), 'utf8')
+      expect(logged).toContain('subagent/catalog')
+      expect(logged).toContain('started subagent ')
+      expect(logged).toContain('agent-message')
+      expect(logged).toContain('subagent-settled')
+      const events = logged.trim().split('\n').map(line => JSON.parse(line))
+      const settlement = events.find(event => event.type === 'user/message'
+        && event.data?.source?.kind === 'subagent-settled')
+      expect(settlement?.data.content).toEqual(expect.arrayContaining([
+        { type: 'text', text: 'packed child finished' },
+      ]))
+      expect(settlement?.data.source.summary)
+        .toMatch(/ finished and will do no further work unless you send it more\.$/u)
+      expect(logged).toContain('packed child delivered its result')
+      const wire = JSON.stringify(server.requests.map(request => request.body))
+      expect(wire).toContain('call-packed-subagent')
+      expect(wire).toContain('call-packed-child-message')
+      const delegationSchemas = server.requests.flatMap(request =>
+        Array.isArray(request.body.tools)
+          ? request.body.tools.filter(tool => tool.name === 'subagent') : [])
+      expect(delegationSchemas.length).toBeGreaterThan(0)
+      expect(delegationSchemas.map(tool => Object.hasOwn(tool.input_schema.properties, 'run_in_background')))
+        .not.toContain(true)
+    } finally {
+      await server.close()
+    }
+  }, 120_000)
+
   it.each([
     {
       writer: '0.1.2-rc.1', sessionId: 'legacy-tui-session', filename: 'session.jsonl',
       prompt: 'A prompt from DSH 0.1.2-rc.1', reply: 'A restored legacy reply.',
-      toolResult: undefined,
+      toolResult: undefined, toolCallId: undefined, currentGeneration: false,
     },
     {
       writer: '0.1.5-rc.2', sessionId: 'v3-tui-session', filename: 'session.v3.jsonl',
       prompt: 'A prompt from DSH 0.1.5-rc.2', reply: 'A restored V3 reply.',
-      toolResult: 'V3 tool result',
+      toolResult: 'V3 tool result', toolCallId: 'v3-call', currentGeneration: false,
     },
-  ])('migrates a $writer writer fixture while preserving its original log', async (fixture) => {
+    {
+      writer: '0.2.0-rc.2', sessionId: 'v4-tui-session', filename: 'session.v4.jsonl',
+      prompt: 'A prompt from DSH 0.2.0-rc.2', reply: 'A restored V4 reply.',
+      toolResult: 'V4 tool result', toolCallId: 'v4-call', currentGeneration: true,
+    },
+  ])('resumes a $writer Session while preserving its existing log bytes', async (fixture) => {
     const dshHome = join(packDirectory, `migration-home-${fixture.writer}`)
     const workspace = join(packDirectory, `migration-workspace-${fixture.writer}`)
     mkdirSync(workspace)
@@ -880,7 +989,8 @@ describe('dsh-claude-tui bundle', () => {
     expect(resumed.exitCode).toBe(0)
     expect(resumed.signal).toBe(0)
     expect(resumed.output).toContain(fixture.prompt)
-    expect(readFileSync(originalPath)).toEqual(original)
+    const preserved = readFileSync(originalPath)
+    expect(fixture.currentGeneration ? preserved.subarray(0, original.length) : preserved).toEqual(original)
     const migrated = readFileSync(join(sessionDirectory, 'session.v4.jsonl'), 'utf8')
       .trim().split('\n').map(line => JSON.parse(line) as { version?: number; type?: string })
     expect(migrated[0]?.version).toBe(4)
@@ -890,7 +1000,7 @@ describe('dsh-claude-tui bundle', () => {
       expect(resumed.output).toContain(fixture.toolResult)
       expect(migrated.find(event => event.type === 'tool/result')).toMatchObject({
         data: { message: {
-          role: 'tool', toolCallId: 'v3-call', isError: false,
+          role: 'tool', toolCallId: fixture.toolCallId, isError: false,
           content: [{ type: 'text', text: fixture.toolResult }],
         } },
       })
@@ -1041,7 +1151,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.2.0-rc.2 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.2.1-rc.2 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))

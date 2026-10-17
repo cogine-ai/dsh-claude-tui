@@ -48,7 +48,7 @@ function fixture(
     runtime: {
       kind: 'system',
       source: 'path',
-      version: '0.2.0-rc.2',
+      version: '0.2.1-rc.2',
       packageRoot,
       executable,
     },
@@ -101,7 +101,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token,
   package: 'dsh-claude-tui',
   version: '0.1.0',
-  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions', 'workingDirectory'],
 }) + '\\n')
 `)
 
@@ -136,7 +136,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
   package: 'dsh-claude-tui',
   version: 'different-version',
-  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions', 'workingDirectory'],
 }) + '\\n')
 `)
 
@@ -155,6 +155,24 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   package: 'dsh-claude-tui',
   version: '0.1.0',
   services: ['agentDefaultModel', 'agents', 'sessions'],
+}) + '\\n')
+`)
+
+    const result = await probeRuntimeCompatibility(runtime, identity)
+
+    expect(result).toEqual({
+      compatible: false,
+      reason: expect.stringContaining('unexpected probe result'),
+    })
+  })
+
+  it('rejects a pre-0.2.1 result that did not exercise the Session working directory', async () => {
+    const { runtime, identity } = fixture(`
+process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
+  token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
+  package: 'dsh-claude-tui',
+  version: '0.1.0',
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
 }) + '\\n')
 `)
 
@@ -214,7 +232,7 @@ process.stdout.write('DSH_CLAUDE_TUI_PROBE_RESULT ' + JSON.stringify({
   token: process.env.DSH_CLAUDE_TUI_PROBE_TOKEN,
   package: 'dsh-claude-tui',
   version: '0.1.0',
-  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
+  services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions', 'workingDirectory'],
 }) + '\\n')
 `)
     const removeProbeRoot = runtimeProbeInternals.removeProbeRoot

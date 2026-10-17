@@ -58,6 +58,20 @@ describe('launcher compatibility probe', () => {
     )).rejects.toThrow('attachment')
   })
 
+  it('rejects a runtime that does not compose the effective working-directory service', async () => {
+    const ctx = {
+      fiber: { entry: { parent: { tree: { await: async () => undefined } } } },
+      get: (service: string) => service === 'workingDirectory' ? undefined : {},
+    } as unknown as Context
+
+    await expect(runCompatibilityProbe(
+      ctx,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      new AbortController().signal,
+    )).rejects.toThrow('working-directory')
+  })
+
   it('creates, flushes, and disposes a temporary Agent without starting the terminal', async () => {
     const session = Session.create(SessionId('probe-session'))
     const whenIdle = vi.fn(async () => undefined)
@@ -74,6 +88,7 @@ describe('launcher compatibility probe', () => {
     }
     const saveImages = vi.fn(async () => [imageRef])
     const readImage = vi.fn(async () => ({ ref: imageRef, data: new Uint8Array([1]) }))
+    const getWorkingDirectory = vi.fn(() => internals.cwd())
     const localAwait = vi.fn(async () => undefined)
     const unregisterCommand = vi.fn()
     let commandHandler: ((invocation: never) => unknown) | undefined
@@ -100,6 +115,7 @@ describe('launcher compatibility probe', () => {
           return { currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }) }
         }
         if (service === 'sessions') return { flush }
+        if (service === 'workingDirectory') return { get: getWorkingDirectory }
         return undefined
       }),
     } as unknown as Context
@@ -116,15 +132,17 @@ describe('launcher compatibility probe', () => {
       token: '01234567-89ab-cdef-0123-456789abcdef',
       package: 'dsh-claude-tui',
       version: '0.1.0',
-      services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
+      services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions', 'workingDirectory'],
     })
     expect(localAwait).toHaveBeenCalledOnce()
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
       sessionId: expect.stringMatching(/^dsh-claude-tui-probe-/u),
       agentOptions: { provider: 'deepseek', model: 'deepseek-chat' },
+      meta: { cwd: internals.cwd() },
       signal: controller.signal,
     }))
     expect(whenIdle).toHaveBeenCalledOnce()
+    expect(getWorkingDirectory).toHaveBeenCalledWith(session)
     expect(saveImages).toHaveBeenCalledWith([
       expect.objectContaining({ mediaType: 'image/png', name: 'probe.png' }),
     ])
@@ -163,6 +181,15 @@ describe('launcher compatibility probe', () => {
     )).rejects.toThrow('could not read the appended Session event')
     expect(flush).toHaveBeenCalledTimes(2)
     expect(dispose).toHaveBeenCalledTimes(3)
+
+    getWorkingDirectory.mockReturnValueOnce('/unexpected')
+    await expect(runCompatibilityProbe(
+      ctx,
+      '01234567-89ab-cdef-0123-456789abcdef',
+      '0.1.0',
+      controller.signal,
+    )).rejects.toThrow('could not read the Session working directory')
+    expect(dispose).toHaveBeenCalledTimes(4)
   })
 
   it('enters the hidden probe branch before enforcing the interactive TTY contract', () => {

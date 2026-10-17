@@ -5,29 +5,35 @@ launcher must make an existing DSH environment useful when it is safe, while
 remaining able to start from a clean machine without adopting or overwriting
 unowned state.
 
-This document describes TUI `0.1.8`, targeting DSH `0.2.0-rc.2`.
-TUI `0.1.6` used DSH `0.1.2-rc.1` with external compatibility range
-`>=0.1.2-rc.1 <0.1.3`.
-Local macOS full and ordinary-install checks passed after the engine-gate
-change; their exact results and qualification limits are recorded in the
-[adaptation record](harness-0.2.0-rc.2-adaptation.md).
+This document describes TUI `0.1.9`, targeting DSH `0.2.1-rc.2`. Publication and
+registry identity are verified separately through the
+[v0.1.9 Release](https://github.com/cogine-ai/dsh-claude-tui/releases/tag/v0.1.9)
+and npm metadata.
+On macOS arm64, the complete check on Node `24.16.0` and the fresh-cache ordinary
+npm peer-resolution installed-bundle gate on Node `22.23.3` passed before review.
+A subsequent roster-label ordering fix passed 64 application tests and typecheck.
+Current review and [CI results](https://github.com/cogine-ai/dsh-claude-tui/pull/24/checks)
+are tracked on [PR #24](https://github.com/cogine-ai/dsh-claude-tui/pull/24); local
+results belong to the [0.2.1 adaptation record](harness-0.2.1-rc.2-adaptation.md).
+The [0.2.0 adaptation record](harness-0.2.0-rc.2-adaptation.md) retains the old
+Node-engine investigation and historical macOS/Ubuntu results; those results
+do not qualify this version.
 
-Version `0.1.8` requires Node **22.19+ in 22.x, or 24.2+**; its declared engines
+Version `0.1.9` retains Node **22.19+ in 22.x, or 24.2+**; its declared engines
 and launcher gate are `^22.19.0 || >=24.2.0`. Unsupported versions, including
 Node `24.0` and `24.1`, fail before external-runtime discovery or user DSH Home
 writes. Eligible versions invoke the Harness executable directly and preserve
 its arguments and foreground process behavior.
 
-The exact DSH release also uses `import.meta.main` in its private subprocess
-runner for Linux scopes and Windows Jobs. An explicit `runCli()` call can make
-the top-level CLI start on Node `24.0`/`24.1`, but cannot start that runner;
-Ubuntu PTC tests exposed the resulting unconsumed launch request. Node added
-the guard in [24.2.0 and 22.18.0](https://nodejs.org/api/esm.html#importmetamain).
-The TUI retains its existing 22.19 floor and raises the 24.x floor to 24.2.
-The complete four-version Ubuntu checks, including installed PTC, passed
-before PR review at `58143d3` in [run 38099441670](https://github.com/cogine-ai/dsh-claude-tui/actions/runs/38099441670),
-including the new 24.2 floor. Subsequent results are tracked by the
-[branch PR checks](https://github.com/cogine-ai/dsh-claude-tui/actions?query=branch%3Acliq%2Fdsh-0.2.0-rc.2).
+Node `24.0`/`24.1` remain excluded. The earlier Linux/Windows subprocess-runner
+investigation and Ubuntu checks explain that floor in the historical record;
+they are not a new platform result for DSH `0.2.1-rc.2`.
+
+`DSH_TOOLS_MODE` is validated before discovery, probes, or user Home writes.
+`native` and `ptc` are accepted, unset or blank values default to `ptc`, and the
+legacy `code` input normalizes to `ptc`. `both` and unknown values fail with an
+actionable error. In particular, setting `both` does not create, reconcile, or
+migrate a DSH Home.
 
 On macOS, Harness child processes default to `CHOKIDAR_USEPOLLING=true` and
 `CHOKIDAR_INTERVAL=1000`. This retains settings, skills, and profile updates
@@ -40,16 +46,16 @@ defaults apply to the child environment and may be inherited by its tools.
 With `DSH_CLAUDE_TUI_RUNTIME=auto` (the default), the launcher completes the
 whole decision before changing the selected user DSH home:
 
-1. Check the Node engine constraint before discovery or DSH Home writes.
+1. Check the Node engine constraint and tools mode before discovery or DSH Home writes.
 2. Inspect the requested/default DSH home and choose a launcher-owned profile.
 3. Look for `@deepseek-ai/dsh` associated with that home under
    `profiles/node_modules`, then for a verifiable `dsh` executable on `PATH`.
 4. Accept only package manifests named `@deepseek-ai/dsh` whose version is in
-   `>=0.2.0-rc.2 <0.2.1` and whose declared bin exists inside the package.
+   `>=0.2.1-rc.2 <0.2.2` and whose declared bin exists inside the package.
 5. Run each otherwise eligible external candidate through the current packed
    TUI's compatibility probe.
 6. Use the first candidate that passes; otherwise use the launcher-pinned
-   `@deepseek-ai/dsh@0.2.0-rc.2`.
+   `@deepseek-ai/dsh@0.2.1-rc.2`.
 7. Create or reconcile only the selected launcher-owned profile, then replace
    the launcher process with the selected Harness process.
 
@@ -71,15 +77,14 @@ to a Session, profile, credential store, prompt, or model request.
 The product labels stay mapped to DSH's real tools configuration:
 
 - `native` renders as `Standard`;
-- `ptc` renders as `PTC`; the legacy `code` input is normalized to `ptc`;
-- `both` renders as `Both (Native + PTC)`.
+- `ptc` renders as `PTC`; the legacy `code` input is normalized to `ptc`.
 
-DSH `0.2.0-rc.2` retains all three modes. PTC executes through the shared base
+DSH `0.2.1-rc.2` removes the mixed `both` mode. PTC executes through the shared base
 bundle's `@deepseek-ai/dsh-ptc-runtime-node` provider, which starts fresh Node
 processes under the Session's sandbox policy. The TUI patch does not mount the
 removed worker-thread code-runtime package.
 
-`Minimal` remains an Agent-composition choice, not a fourth DSH tools mode. A
+`Minimal` remains an Agent-composition choice, not a DSH tools mode. A
 direct `dsh --profile ...` launch has no launcher decision to report, so the
 panel says that provenance is unavailable rather than guessing it.
 
@@ -110,13 +115,35 @@ Sessions, credentials, settings, and the shared profile-module fallback are
 DSH-home scoped rather than profile scoped. A shared-home launch sees existing
 DSH state. An isolated-home launch intentionally does not.
 
-DSH `0.2.0-rc.2` writes V4 Session generations. Supported older logs migrate
+DSH `0.2.1-rc.2` retains V4 Session generations. Supported older logs migrate
 through upstream's adjacent converters and retain their predecessor files;
-older runtimes cannot read the new V4 generation. Use a separate DSH Home for
-cross-version checks, and stop other Harness processes before resuming existing
-Sessions with the new runtime. Preserving predecessors does not establish
-downgrade support. The removed SQLite Session backend requires export with its
-original runtime before migration; SQLite query/index storage is separate.
+the unchanged V4 number does not establish compatibility with every earlier
+V4 reader. New event types and experimental plugin records have their own
+admission rules. Use a separate DSH Home for cross-version checks, and stop other
+Harness processes before resuming existing Sessions with the new runtime.
+Preserving predecessors does not establish downgrade support. The removed
+SQLite Session backend requires export with its original runtime before
+migration; SQLite query/index storage is separate.
+
+## Credentials and current working directory
+
+The interactive TUI keeps the credential store, authorization, and account
+services from the shared base bundle. In DSH `0.2.1-rc.2`, a saved reference in
+`$DSH_HOME/.credentials.yaml` precedes the same name in the launch environment;
+project and Harness-home `.env` values remain fallbacks. `/provider` reads the
+effective source and writability from DSH. Saving a key can therefore replace
+an environment-backed value for this interactive profile.
+
+The upstream `headless` profile disables those stored-authentication services
+by default and uses launch-time authentication. This TUI does not inherit that
+headless-only change. Review duplicate credential reference names before
+choosing which account should authenticate a shared Home; do not print values.
+
+DSH records the current working directory separately from the immutable
+`Session.header.cwd`, which retains the original project identity. The TUI
+removes the unsupported `{{cwd}}` prompt variable and indexes file mentions
+using the directory service, refreshing after a committed directory change.
+Session-picker project filtering continues to use the original project.
 
 ## Compatibility probe
 
@@ -144,7 +171,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples for TUI v0.1.8 with DSH `0.2.0-rc.2`:
+Examples after building the TUI `0.1.9` checkout with DSH `0.2.1-rc.2`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
@@ -160,8 +187,9 @@ Harness maintains a home-level module fallback that either process may
 reconcile. Use sequential launches, or give concurrent runtimes separate
 `DSH_HOME` values.
 
-Compatibility is intentionally limited to the DSH `0.2.0` range above; the
-`0.2.1-alpha` series is outside version `0.1.8`'s target. A
-future DSH package may satisfy a wider-looking semantic range yet change an
-injected service contract; the runtime probe is therefore required in addition
-to the manifest version check.
+Compatibility is intentionally limited to `>=0.2.1-rc.2 <0.2.2`; the older
+`0.2.0` release, `0.2.1` alphas, and `0.2.1-rc.1` are outside this version's
+target. A future package may satisfy the semantic range yet change an injected
+service contract; the probe remains required in addition to the version check.
+The probe sends no model request, so installed-artifact tool-turn and replay
+tests remain separate qualification gates.

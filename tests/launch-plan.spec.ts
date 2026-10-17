@@ -11,7 +11,7 @@ import {
 const bundled: DshRuntime = {
   kind: 'bundled',
   source: 'bundled',
-  version: '0.2.0-rc.2',
+  version: '0.2.1-rc.2',
   packageRoot: '/package/node_modules/@deepseek-ai/dsh',
   executable: '/package/node_modules/@deepseek-ai/dsh/lib/bin.js',
 }
@@ -91,8 +91,8 @@ function adapter(options: {
 
 describe('launcher environment planning', () => {
   it('prefers a compatible DSH associated with the shared home', async () => {
-    const homeRuntime = system('0.2.0-rc.2', 'home', 'home-runtime')
-    const pathRuntime = system('0.2.0', 'path', 'path-runtime')
+    const homeRuntime = system('0.2.1-rc.2', 'home', 'home-runtime')
+    const pathRuntime = system('0.2.1', 'path', 'path-runtime')
     const boundary = adapter({ candidates: [homeRuntime, pathRuntime] })
 
     const plan = await createLaunchPlanner(boundary).resolve(request())
@@ -103,10 +103,22 @@ describe('launcher environment planning', () => {
     expect(boundary.probeRuntime).toHaveBeenCalledTimes(1)
   })
 
-  it.each(['0.1.2-rc.1', '0.1.5-rc.2', '0.1.5', '0.2.0-rc.1', '0.2.1-alpha.1', '0.2.1'])(
+  it.each(['0.2.1-rc.2', '0.2.1-rc.3', '0.2.1'])(
+    'requires a behavioral probe for eligible %s', async (version) => {
+      const runtime = system(version)
+      const boundary = adapter({ candidates: [runtime] })
+
+      const plan = await createLaunchPlanner(boundary).resolve(request())
+
+      expect(plan.runtime).toEqual(runtime)
+      expect(boundary.probeRuntime).toHaveBeenCalledExactlyOnceWith(runtime)
+    },
+  )
+
+  it.each(['0.1.2-rc.1', '0.1.5-rc.2', '0.1.5', '0.2.0-rc.2', '0.2.0', '0.2.1-alpha.5', '0.2.1-rc.1', '0.2.2-alpha.1', '0.2.2'])(
     'skips unsupported %s before probing the next compatible runtime', async (version) => {
       const oldHomeRuntime = system(version, 'home', 'old-home-runtime')
-      const pathRuntime = system('0.2.0-rc.2', 'path', 'path-runtime')
+      const pathRuntime = system('0.2.1-rc.2', 'path', 'path-runtime')
       const boundary = adapter({ candidates: [oldHomeRuntime, pathRuntime] })
 
       const plan = await createLaunchPlanner(boundary).resolve(request())
@@ -118,7 +130,7 @@ describe('launcher environment planning', () => {
   )
 
   it('falls back to the pinned bundled runtime when external probes fail', async () => {
-    const pathRuntime = system('0.2.0-rc.2', 'path')
+    const pathRuntime = system('0.2.1-rc.2', 'path')
     const boundary = adapter({
       candidates: [pathRuntime],
       compatible: { [pathRuntime.executable]: false },
@@ -127,7 +139,7 @@ describe('launcher environment planning', () => {
     const plan = await createLaunchPlanner(boundary).resolve(request())
 
     expect(plan.runtime).toEqual(bundled)
-    expect(plan.notices.join('\n')).toContain('probe rejected 0.2.0-rc.2')
+    expect(plan.notices.join('\n')).toContain('probe rejected 0.2.1-rc.2')
   })
 
   it('falls back to the pinned bundled runtime when discovery throws', async () => {
@@ -142,8 +154,8 @@ describe('launcher environment planning', () => {
   })
 
   it('continues to the next candidate when a compatibility probe throws', async () => {
-    const first = system('0.2.0-rc.2', 'home', 'first')
-    const second = system('0.2.0', 'path', 'second')
+    const first = system('0.2.1-rc.2', 'home', 'first')
+    const second = system('0.2.1', 'path', 'second')
     const boundary = adapter({ candidates: [first, second] })
     vi.mocked(boundary.probeRuntime)
       .mockRejectedValueOnce(new Error('cleanup failed'))

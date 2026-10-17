@@ -20,6 +20,7 @@ import { createAssistantMessage, createUserMessage, errorChain } from '@deepseek
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-user-approval'
 import type {} from '@deepseek-ai/dsh-user-questions'
+import type {} from '@deepseek-ai/dsh-working-directory'
 import { ClaudeTuiApplication } from './app.ts'
 import { readSystemClipboardImage } from './clipboard.ts'
 import { listLocalWorkspaceEntries } from './files.ts'
@@ -57,6 +58,7 @@ export const inject = [
   'llm',
   'settings',
   'userQuestions',
+  'workingDirectory',
   'claudeTuiStartup',
 ]
 
@@ -180,15 +182,17 @@ export async function runCompatibilityProbe(
   const commands = ctx.get('commands')
   const defaultModel = ctx.get('agentDefaultModel')
   const sessions = ctx.get('sessions')
+  const workingDirectory = ctx.get('workingDirectory')
   if (
     agents === undefined
     || attachments === undefined
     || commands === undefined
     || defaultModel === undefined
     || sessions === undefined
+    || workingDirectory === undefined
   ) {
     throw new Error(
-      'claude-tui: compatibility probe is missing Agent, attachment, command, or Session services',
+      'claude-tui: compatibility probe is missing Agent, attachment, command, Session, or working-directory services',
     )
   }
 
@@ -221,10 +225,11 @@ export async function runCompatibilityProbe(
     },
   })
   let handle: AgentHandle | undefined
+  const cwd = internals.cwd()
   try {
     handle = await agents.create({
       sessionId: SessionId(`dsh-claude-tui-probe-${randomUUID()}`),
-      meta: { cwd: internals.cwd() },
+      meta: { cwd },
       agentOptions: { provider: defaults.provider, model: defaults.model },
       setup: modelRuntime.setup,
       signal,
@@ -232,6 +237,9 @@ export async function runCompatibilityProbe(
     signal.throwIfAborted()
     await handle.agent.whenIdle()
     signal.throwIfAborted()
+    if (workingDirectory.get(handle.agent.session) !== cwd) {
+      throw new Error('claude-tui: compatibility probe could not read the Session working directory')
+    }
     const execution = await commands.execute(
       handle.agent,
       '/dsh-claude-tui-probe',
@@ -283,7 +291,7 @@ export async function runCompatibilityProbe(
     token,
     package: 'dsh-claude-tui',
     version,
-    services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
+    services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions', 'workingDirectory'],
   }
 }
 

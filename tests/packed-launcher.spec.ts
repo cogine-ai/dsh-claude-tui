@@ -64,7 +64,7 @@ describe('packed dsh-claude-tui launcher', () => {
     mkdirSync(fakeHarnessDirectory, { recursive: true })
     writeFileSync(join(fakeHarnessDirectory, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.2.0-rc.2',
+      version: '0.2.1-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
       exports: { './package.json': './package.json' },
@@ -142,7 +142,7 @@ setInterval(() => {}, 1_000)
       toolsMode: 'native',
       ...(process.platform === 'darwin' ? { watchUsePolling: 'true', watchInterval: '1000' } : {}),
       runtimeSnapshot: JSON.stringify({
-        harnessVersion: '0.2.0-rc.2',
+        harnessVersion: '0.2.1-rc.2',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: dshHome,
@@ -170,7 +170,7 @@ setInterval(() => {}, 1_000)
     })
   })
 
-  it.each([undefined, 'code', 'ptc'])('launches in PTC mode for input %s', (mode) => {
+  it.each([undefined, '', '   ', 'code', 'ptc'])('launches in PTC mode for input %s', (mode) => {
     const readyPath = join(temporaryDirectory, 'default-mode-record.json')
     const environment: NodeJS.ProcessEnv = bundledEnvironment({
       DSH_HOME: join(temporaryDirectory, 'default-mode-dsh-home'),
@@ -197,6 +197,67 @@ setInterval(() => {}, 1_000)
       homeKind: 'shared',
       toolsMode: 'ptc',
     })
+  })
+
+  it.each(['auto', 'system', 'bundled'].flatMap(runtime => [
+    { runtime, existingHome: false },
+    { runtime, existingHome: true },
+  ]))('rejects obsolete both mode before touching Home in $runtime mode (existing: $existingHome)', ({ runtime, existingHome }) => {
+    const dshHome = join(temporaryDirectory, `obsolete-both-${runtime}-${existingHome}`)
+    const readyPath = join(temporaryDirectory, `obsolete-both-${runtime}-${existingHome}-ready.json`)
+    const sessionPath = join(dshHome, 'session.jsonl')
+    const originalSession = '{"userSession":"preserve exactly"}\n'
+    if (existingHome) {
+      mkdirSync(dshHome)
+      writeFileSync(sessionPath, originalSession)
+      const referenceTime = new Date('2000-01-01T00:00:00.000Z')
+      utimesSync(sessionPath, referenceTime, referenceTime)
+    }
+    const sessionMtime = existingHome ? statSync(sessionPath).mtimeMs : undefined
+
+    const result = spawnSync(process.execPath, [executable], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: bundledEnvironment({
+        DSH_HOME: dshHome,
+        DSH_CLAUDE_TUI_RUNTIME: runtime,
+        DSH_TOOLS_MODE: ' both ',
+        DSH_FAKE_READY: readyPath,
+        DSH_FAKE_EXIT_CODE: '0',
+      }),
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('DSH_TOOLS_MODE=both is no longer supported')
+    expect(result.stderr).toContain('choose native or ptc')
+    expect(existsSync(readyPath)).toBe(false)
+    expect(existsSync(dshHome)).toBe(existingHome)
+    if (existingHome) {
+      expect(readdirSync(dshHome)).toEqual(['session.jsonl'])
+      expect(readFileSync(sessionPath, 'utf8')).toBe(originalSession)
+      expect(statSync(sessionPath).mtimeMs).toBe(sessionMtime)
+    }
+  })
+
+  it('rejects an unknown tools mode before creating Harness state', () => {
+    const dshHome = join(temporaryDirectory, 'unknown-tools-mode-home')
+    const readyPath = join(temporaryDirectory, 'unknown-tools-mode-ready.json')
+    const result = spawnSync(process.execPath, [executable], {
+      cwd: temporaryDirectory,
+      encoding: 'utf8',
+      env: bundledEnvironment({
+        DSH_HOME: dshHome,
+        DSH_TOOLS_MODE: 'invented',
+        DSH_FAKE_READY: readyPath,
+        DSH_FAKE_EXIT_CODE: '0',
+      }),
+    })
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('DSH_TOOLS_MODE must be native or ptc')
+    expect(result.stderr).toContain('"invented"')
+    expect(existsSync(dshHome)).toBe(false)
+    expect(existsSync(readyPath)).toBe(false)
   })
 
   it.each(['22.16.0', '24.0.0', '24.1.0'])('rejects unsupported Node %s before creating Harness state', (version) => {
@@ -314,7 +375,7 @@ setInterval(() => {}, 1_000)
     mkdirSync(systemPackage, { recursive: true })
     writeFileSync(join(systemPackage, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh',
-      version: '0.2.0-rc.2',
+      version: '0.2.1-rc.2',
       type: 'module',
       bin: { dsh: 'bin.js' },
     }, undefined, 2)}\n`)
@@ -332,7 +393,7 @@ if (token !== undefined) {
     token,
     package: 'dsh-claude-tui',
     version: manifest.version,
-    services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions'],
+    services: ['agentDefaultModel', 'agents', 'attachments', 'commands', 'sessions', 'workingDirectory'],
   }) + '\\n')
 } else {
   writeFileSync(${JSON.stringify(systemRecord)}, JSON.stringify({
@@ -365,7 +426,7 @@ if (token !== undefined) {
     })
   })
 
-  it.each(['0.1.5-rc.2', '0.1.5', '0.2.0-rc.1', '0.2.1-alpha.2'].flatMap(version => [
+  it.each(['0.1.5-rc.2', '0.1.5', '0.2.0-rc.2', '0.2.0', '0.2.1-alpha.5', '0.2.1-rc.1', '0.2.2-alpha.1', '0.2.2'].flatMap(version => [
     { version, mode: 'auto' },
     { version, mode: 'system' },
   ]))('does not execute unsupported DSH $version in $mode mode', ({ version, mode }) => {
@@ -399,7 +460,7 @@ writeFileSync(${JSON.stringify(systemRecord)}, 'executed')
     })
 
     expect(existsSync(systemRecord)).toBe(false)
-    expect(result.stderr).toContain(`DeepSeek Harness ${version}; supported system range is >=0.2.0-rc.2 <0.2.1`)
+    expect(result.stderr).toContain(`DeepSeek Harness ${version}; supported system range is >=0.2.1-rc.2 <0.2.2`)
     const managedProfile = join(dshHome, 'profiles/dsh-claude-tui')
     if (mode === 'auto') {
       expect(result.status).toBe(0)
@@ -407,7 +468,7 @@ writeFileSync(${JSON.stringify(systemRecord)}, 'executed')
         runtimeSnapshot: string
       }
       expect(JSON.parse(record.runtimeSnapshot)).toMatchObject({
-        harnessVersion: '0.2.0-rc.2',
+        harnessVersion: '0.2.1-rc.2',
         runtimeKind: 'bundled',
       })
       expect(existsSync(managedProfile)).toBe(true)

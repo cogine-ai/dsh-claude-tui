@@ -18,6 +18,7 @@ import { createUserMessage, errorChain, type ContentBlock } from '@deepseek-ai/d
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import type { AskUserQuestionRequest } from '@deepseek-ai/dsh-user-questions'
 import type {} from '@deepseek-ai/dsh-subagent'
+import type {} from '@deepseek-ai/dsh-working-directory'
 import type { ResolvedConfig } from './config.ts'
 import type { ReadClipboardImage } from './clipboard.ts'
 import { ModalQueue, askApproval, askUserQuestions } from './dialogs.ts'
@@ -35,12 +36,7 @@ import type { ClaudeTuiRuntimeSnapshot } from './runtime-snapshot.ts'
 import { ClaudePromptEditorComponent, HeaderComponent, PromptContextComponent } from './surface.ts'
 import { displayText } from './text.ts'
 import { createPalette, editorTheme } from './theme.ts'
-import {
-  TranscriptComponent,
-  TranscriptModel,
-  isSubagentTool,
-  subagentToolLabel,
-} from './transcript.ts'
+import { TranscriptComponent, TranscriptModel } from './transcript.ts'
 
 /** Process-facing effects kept replaceable for terminal integration tests. */
 export interface ClaudeTuiRuntime {
@@ -76,10 +72,8 @@ interface HistorySearchState {
 
 /** Process-local live delegation state projected from Harness lifecycle events. */
 interface ActiveSubagent {
-  readonly runId: string
-  readonly toolKey?: string
+  readonly childId: string
   readonly provider: string
-  readonly label: string
 }
 
 /** Second-gesture boundary measured from Claude Code 2.1.227's real PTY. */
@@ -104,7 +98,6 @@ function foldPlanMode(events: readonly unknown[]): boolean {
 const toolsModeLabels = {
   native: 'Standard',
   ptc: 'PTC',
-  both: 'Both (Native + PTC)',
 } as const
 
 /** Keep user-home provenance concise without changing the actual DSH_HOME. */
@@ -150,6 +143,7 @@ export class ClaudeTuiApplication {
   private slashSelection = 0
   private slashMenuDismissed = false
   private workspaceEntries: readonly WorkspaceEntry[] = []
+  private workspaceIndexGeneration = 0
   private fileSelection = 0
   private fileMenuDismissed = false
   private planModeActive = false
@@ -215,7 +209,7 @@ export class ClaudeTuiApplication {
           ? {
               activeAgents: [...this.activeSubagents.values()].map(item => ({
                 provider: item.provider,
-                label: item.label,
+                label: this.subagentLabel(item.childId),
               })),
             }
           : {}),
@@ -239,7 +233,7 @@ export class ClaudeTuiApplication {
         ? {}
         : { version: displayText(this.runtime.tuiVersion) }),
       sessionId: displayText(String(agent.id)),
-      cwd: displayText(agent.session.header.cwd ?? process.cwd()),
+      cwd: () => displayText(this.currentWorkingDirectory()),
       model: () => {
         const selected = this.runtime.modelSelection?.current
         if (selected === undefined) {
@@ -322,6 +316,7 @@ export class ClaudeTuiApplication {
       this.transcript.apply(event)
       const planMode = planModeEvent(event)
       if (planMode !== undefined) this.planModeActive = planMode
+      if (event.type === 'working-directory/change') this.loadWorkspaceEntries()
       this.tui.requestRender()
     }))
     this.disposers.push(this.agent.ctx.on('agent/assistant-stream', ({ agent, frame }) => {
@@ -336,12 +331,9 @@ export class ClaudeTuiApplication {
     }))
     this.disposers.push(this.agent.ctx.on('subagent/start', (info) => {
       if (this.closed) return
-      const presentation = this.unclaimedSubagentPresentation()
       this.activeSubagents.set(String(info.runId), {
-        runId: String(info.runId),
-        ...(presentation?.toolKey === undefined ? {} : { toolKey: presentation.toolKey }),
+        childId: String(info.id),
         provider: displayText(info.provider),
-        label: presentation?.label ?? displayText(String(info.id)),
       })
       this.agentsVisible = true
       this.tui.requestRender()
@@ -401,17 +393,14 @@ export class ClaudeTuiApplication {
     }
   }
 
-  /** Match a just-started child to the oldest still-unclaimed visible delegation. */
-  private unclaimedSubagentPresentation(): { toolKey: string; label: string } | undefined {
-    const claimed = new Set(
-      [...this.activeSubagents.values()].flatMap(item => item.toolKey === undefined ? [] : [item.toolKey]),
-    )
-    for (const item of this.transcript.items) {
-      if (item.kind !== 'tool' || !item.pending || claimed.has(item.key) || !isSubagentTool(item)) continue
-      const label = subagentToolLabel(item)
-      if (label !== undefined) return { toolKey: item.key, label }
+  /** Resolve a published child's label by durable identity, independent of start ordering. */
+  private subagentLabel(childId: string): string {
+    for (const event of this.agent.session.snapshotEvents()) {
+      if (event.type === 'subagent/catalog' && String(event.data.childId) === childId) {
+        return displayText(event.data.label ?? childId).replaceAll('\n', ' ')
+      }
     }
-    return undefined
+    return displayText(childId)
   }
 
   /** Submit an editor value to a local command, Harness command, or the Agent inbox. */
@@ -787,15 +776,25 @@ export class ClaudeTuiApplication {
   private loadWorkspaceEntries(): void {
     const list = this.runtime.listWorkspaceEntries
     if (list === undefined) return
-    void list(this.agent.session.header.cwd ?? process.cwd(), this.interactionAbort.signal).then((entries) => {
-      if (this.closed) return
+    const generation = ++this.workspaceIndexGeneration
+    this.workspaceEntries = []
+    this.fileSelection = 0
+    const cwd = this.currentWorkingDirectory()
+    void list(cwd, this.interactionAbort.signal).then((entries) => {
+      if (this.closed || generation !== this.workspaceIndexGeneration) return
       this.workspaceEntries = entries
       this.tui.requestRender()
     }, (error: unknown) => {
-      if (this.closed || this.interactionAbort.signal.aborted) return
+      if (this.closed || this.interactionAbort.signal.aborted || generation !== this.workspaceIndexGeneration) return
       this.transcript.addNotice(`Unable to index workspace files: ${errorChain(error)}`, 'warning')
       this.tui.requestRender()
     })
+  }
+
+  /** Use DSH's persisted execution directory while keeping project identity in the Session header. */
+  private currentWorkingDirectory(): string {
+    return this.agent.ctx.get('workingDirectory')?.get(this.agent.session)
+      ?? this.agent.session.header.cwd ?? process.cwd()
   }
 
   /** Keyboard navigation and completion for the visible workspace menu. */
