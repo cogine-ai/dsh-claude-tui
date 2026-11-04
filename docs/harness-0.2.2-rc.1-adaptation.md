@@ -241,8 +241,10 @@ installation claim. The corrected local Node `24.22.1` complete gate passed
 249 cases with the same optional clipboard skip (69.65 seconds).
 
 CodeRabbit initially skipped review because 1,283 files exceeded its 300-file
-limit. The review filter excludes only nested upstream-original snapshot files;
-root provenance, index and license files remain reviewable, along with runtime,
-packaging, security, tests and maintained documentation. Snapshot integrity
-remains checked in CI. Corrected remote CI and review results are tracked on
+limit. A schema-valid feature-branch path filter reduced the intended maintained
+scope to 113 files, but CodeRabbit still rejected the PR's full file count before
+running its review. That ineffective configuration was removed. CodeRabbit's
+skipped check is not review approval. A separate Standards/Spec review of the
+maintained changes is used instead; original snapshot bytes remain checked in CI.
+Corrected remote CI and review results are tracked on
 [PR #26](https://github.com/cogine-ai/dsh-claude-tui/pull/26).

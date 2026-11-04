@@ -1,6 +1,0 @@
-# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-inheritance: true
-reviews:
-  path_filters:
-    # CI verifies this unmodified upstream mirror; keep root provenance/index/license files in review.
-    - "!docs/upstream/dsh/snapshot/*/**"
