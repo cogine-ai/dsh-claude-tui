@@ -13,7 +13,7 @@ Node.js **24.9+** is required (`>=24.9.0`), matching upstream. All Node 22
 versions and Node 24 below 24.9 fail before runtime discovery or user Home writes.
 Eligible versions invoke the Harness executable directly.
 
-`DSH_TOOLS_MODE` is validated before discovery, probes, or user Home writes.
+The launcher validates `DSH_TOOLS_MODE` before discovery, probes, or user Home writes. Direct-profile startup applies the same mode validation before the TUI starts; upstream DSH still owns any earlier profile/Home initialization.
 `native` and `ptc` are accepted, unset or blank values default to `ptc`, and the
 legacy `code` input normalizes to `ptc`. `both` and unknown values fail with an
 actionable error. In particular, setting `both` does not create, reconcile, or
@@ -155,7 +155,7 @@ candidate cannot modify the requested user DSH home.
 - `system` — require a qualified external DSH and fail if none passes;
 - `bundled` — bypass external discovery and use the pinned bundled DSH.
 
-Examples after building the TUI `0.1.9` checkout with DSH `0.2.2-rc.1`:
+Examples after building the TUI `0.1.10` checkout with DSH `0.2.2-rc.1`:
 
 ```sh
 DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js

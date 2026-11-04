@@ -55,7 +55,7 @@ The global install exposes both `dshtui` and the canonical `dsh-claude-tui` comm
 
 Development version `0.1.10` pins Harness `0.2.2-rc.1` at upstream commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db` and requires Node.js **24.9+**. External runtimes must satisfy `>=0.2.2-rc.1 <0.2.3` and pass the behavioral probe. See the [adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md) and [unreleased notes](./docs/releases/v0.1.10.md). This checkout has not been published as `0.1.10`.
 
-- Native and PTC execution use DSH's explicit executor plugins. `DSH_TOOLS_MODE=native|ptc` remains a TUI option, with `code` as a PTC alias; `both` is rejected before discovery or Home writes.
+- Native and PTC execution use DSH's explicit executor plugins. `DSH_TOOLS_MODE=native|ptc` remains a TUI option, with `code` as a PTC alias; the launcher rejects `both` before discovery or Home writes. Direct-profile startup uses the same validation, and executor selection trims surrounding whitespace.
 - Model selection uses `agent.model.current()` and `select()`. Selections persist immediately, including choices not yet used in a request. Resume preserves them unless this invocation explicitly selects another route; a prepared step and retries retain their captured model.
 - Cordis, Loader, Group, and Schemastery follow the target's published versions. Session projections follow their owning services and activation lifecycle.
 - The [official bilingual documentation mirror](./docs/upstream/dsh/README.md) contains 2,373 original files from the exact release and is excluded from npm packages.

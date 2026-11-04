@@ -54,7 +54,7 @@ dshtui
 
 开发版 `0.1.10` 固定 Harness `0.2.2-rc.1`，对应上游提交 `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`，需要 Node.js **24.9+**。外部运行时须满足 `>=0.2.2-rc.1 <0.2.3` 并通过行为探针。详见[适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)和[未发布说明](./docs/releases/v0.1.10.zh-CN.md)。本次工作区尚未发布 `0.1.10`。
 
-- Native/PTC 改由上游独立执行器插件提供。TUI 保留 `DSH_TOOLS_MODE=native|ptc`，`code` 仍为 PTC 别名；`both` 在发现运行时或写入 Home 前报错。
+- Native/PTC 改由上游独立执行器插件提供。TUI 保留 `DSH_TOOLS_MODE=native|ptc`，`code` 仍为 PTC 别名；启动器会在发现运行时或写入 Home 前拒绝 `both`。直接启动 profile 时也使用同一校验，执行器选择会去除首尾空白。
 - 模型选择改用 `agent.model.current()` / `select()`，立即持久化，尚未发起请求的选择也可恢复。恢复默认保留会话选择，仅显式指定模型时覆盖；已准备的步骤及重试保留已捕获的模型。
 - Cordis、Loader、Group 和 Schemastery 跟随目标版本；Session 投影使用归属服务及其激活生命周期。
 - [官方双语文档镜像](./docs/upstream/dsh/README.md)包含精确发布版本的 2,373 份原文件，不进入 npm 安装包。

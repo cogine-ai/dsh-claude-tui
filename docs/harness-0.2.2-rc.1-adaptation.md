@@ -248,3 +248,29 @@ skipped check is not review approval. A separate Standards/Spec review of the
 maintained changes is used instead; original snapshot bytes remain checked in CI.
 Corrected remote CI and review results are tracked on
 [PR #26](https://github.com/cogine-ai/dsh-claude-tui/pull/26).
+
+### Maintained-code review follow-up / 代码审阅跟进
+
+Independent Standards and Spec reviewers assessed the maintained diff against
+`ea920c6`, separately from the mechanically verified original snapshot. The
+Standards review found one stale `0.1.9` example in the launcher guide; it is
+corrected to `0.1.10`. An optional suggestion to extract repeated bounded-worker
+orchestration is deferred because it is not a functional issue.
+
+The Spec review found a direct-profile bypass of the tool-mode contract. The
+launcher and startup plugin now share `parseDshToolsMode`; invalid direct-profile
+modes print a diagnostic and request a failing application exit instead of merely
+failing Cordis activation with a successful process status. Executor conditions
+trim whitespace, preserving native selection and the PTC/code alias. Launcher
+validation remains before discovery/Home writes; direct-profile validation is
+before TUI startup, after any upstream-owned profile/Home initialization.
+
+Installed tests invoke the actual DSH executable for `both` and unknown values,
+and evaluate nine accepted settings through the upstream patch parser and
+interpolator. The emitted shared tools-mode JS chunk is included in the strict
+artifact inventory; source maps and unrelated files remain excluded. Both review
+findings were independently rechecked as closed. On Node `24.9.0`, ordinary npm
+bundle + startup + packed-launcher checks pass **80 tests, 1 optional clipboard
+skip** (61.37 seconds). The reviewed Node `24.22.1` complete gate passes **18 files, 252 tests,
+1 optional clipboard skip** (70.81 seconds). Previous counts above remain
+historical measurements; corrected remote checks are reported on PR #26.

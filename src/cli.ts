@@ -24,6 +24,7 @@ import {
 } from './runtime-discovery.ts'
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
 import { assertPatchedDshDependencies } from './runtime-dependency-policy.ts'
+import { parseDshToolsMode } from './tools-mode.ts'
 import type { DshToolsMode } from './runtime-snapshot.ts'
 
 const BUNDLED_DSH_VERSION = '0.2.2-rc.1'
@@ -51,21 +52,6 @@ All other options and arguments are forwarded to the TUI.
 
 interface PackageManifest {
   version?: unknown
-}
-
-/** Reject obsolete modes before discovery, probes, or user Home writes. */
-function requestedToolsMode(): DshToolsMode {
-  const requested = process.env.DSH_TOOLS_MODE?.trim() || 'ptc'
-  if (requested === 'native') return 'native'
-  if (requested === 'ptc' || requested === 'code') return 'ptc'
-  if (requested === 'both') {
-    throw new Error(
-      'DSH_TOOLS_MODE=both is no longer supported by DeepSeek Harness 0.2.2; choose native or ptc',
-    )
-  }
-  throw new Error(
-    `DSH_TOOLS_MODE must be native or ptc (code is an alias for ptc); received ${JSON.stringify(requested)}`,
-  )
 }
 
 /** Fail before touching Harness state when npm only warned about an invalid engine. */
@@ -215,7 +201,7 @@ if (args.length === 1 && (args[0] === '-h' || args[0] === '--help')) {
 } else {
   try {
     assertSupportedNodeVersion()
-    const toolsMode = requestedToolsMode()
+    const toolsMode = parseDshToolsMode(process.env.DSH_TOOLS_MODE)
     const identity = packageIdentity()
     const plan = await createLaunchPlanner(launchAdapter(identity)).resolve(launchRequest())
     ensureManagedProfile(plan.home.path, plan.profile, identity)

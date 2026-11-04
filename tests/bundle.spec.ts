@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os'
 import { delimiter, dirname, join } from 'node:path'
 import { createRequire } from 'node:module'
 import { setTimeout as delay } from 'node:timers/promises'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as pty from 'node-pty'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { verifyMcpCompatibility } from './mcp-compat.ts'
@@ -464,7 +464,9 @@ describe('dsh-claude-tui bundle', () => {
       .trim()
       .split('\n')
       .sort()
-    expect(entries.filter(entry => !entry.startsWith('package/node_modules/'))).toEqual([
+    const toolsModeChunks = entries.filter(entry => /^package\/lib\/tools-mode-[A-Za-z0-9_-]{8}\.js$/u.test(entry))
+    expect(toolsModeChunks).toHaveLength(1)
+    expect(entries.filter(entry => !entry.startsWith('package/node_modules/') && !toolsModeChunks.includes(entry))).toEqual([
       'package/LICENSE',
       'package/README.md',
       'package/README.zh-CN.md',
@@ -785,6 +787,48 @@ describe('dsh-claude-tui bundle', () => {
     expect(existsSync(join(profileDirectory, 'cordis.patch.yml'))).toBe(true)
     expect(existsSync(join(profileDirectory, '.dsh-claude-tui-managed.json'))).toBe(true)
   }, 120_000)
+
+  it('validates direct-profile modes and normalizes executor selection without the launcher', async () => {
+    const installedRequire = createRequire(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
+    const dshManifestPath = installedRequire.resolve('@deepseek-ai/dsh/package.json')
+    const dshRequire = createRequire(dshManifestPath)
+    const boot = await import(pathToFileURL(dshRequire.resolve('@deepseek-ai/dsh-app-boot')).href) as {
+      loadOverlayPatches(name: string, path: string): Array<{ id?: string; disabled?: unknown }>
+    }
+    const loader = await import(pathToFileURL(dshRequire.resolve('@deepseek-ai/cordis-plugin-loader')).href) as {
+      interpolate(ctx: Record<string, unknown>, value: unknown): unknown
+    }
+    const patches = boot.loadOverlayPatches('direct-profile-test', join(packageDirectory, 'cordis.patch.yml'))
+    const native = patches.find(patch => patch.id === 'tool-executor-native')!
+    const ptc = patches.find(patch => patch.id === 'tool-executor-ptc')!
+    expect(native).toBeDefined()
+    expect(ptc).toBeDefined()
+    for (const [raw, isNative] of [
+      [undefined, false], ['', false], ['   ', false], ['native', true], [' native ', true],
+      ['ptc', false], [' ptc ', false], ['code', false], [' code ', false],
+    ] as const) {
+      const ctx = { process: { env: { DSH_TOOLS_MODE: raw } } }
+      expect(loader.interpolate(ctx, native.disabled), String(raw)).toBe(!isNative)
+      expect(loader.interpolate(ctx, ptc.disabled), String(raw)).toBe(isNative)
+    }
+
+    const dshHome = join(packDirectory, 'direct-profile-modes-home')
+    const env = stringEnvironment({ DSH_HOME: dshHome, DSH_CLAUDE_TUI_RUNTIME: 'bundled', DSH_TOOLS_MODE: 'ptc' })
+    const initialized = spawnSync(process.execPath, [installedExecutable, '--dump-config'], {
+      cwd: packDirectory, encoding: 'utf8', env, timeout: 30_000,
+    })
+    expect(initialized.status, initialized.stderr).toBe(0)
+    const dshManifest = JSON.parse(readFileSync(dshManifestPath, 'utf8')) as { bin: { dsh: string } }
+    const dshExecutable = join(dirname(dshManifestPath), dshManifest.bin.dsh)
+    for (const mode of ['both', 'invented']) {
+      const result = spawnSync(process.execPath, [dshExecutable, '--profile', 'dsh-claude-tui'], {
+        cwd: packDirectory, encoding: 'utf8', env: { ...env, DSH_TOOLS_MODE: mode }, timeout: 30_000,
+      })
+      expect(result.status, result.stderr).toBe(1)
+      expect(result.stderr).toContain('DSH_TOOLS_MODE')
+      expect(result.stderr).not.toContain('both stdin and stdout must be TTYs')
+    }
+  }, 90_000)
 
   it('uses its pinned Harness and preserves existing user state across repeat runs', () => {
     const workspaceDirectory = join(packDirectory, 'repeat-workspace')
