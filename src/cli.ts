@@ -23,9 +23,11 @@ import {
   resolveBundledDshRuntime,
 } from './runtime-discovery.ts'
 import { probeRuntimeCompatibility } from './runtime-probe.ts'
+import { assertPatchedDshDependencies } from './runtime-dependency-policy.ts'
+import { parseDshToolsMode } from './tools-mode.ts'
 import type { DshToolsMode } from './runtime-snapshot.ts'
 
-const BUNDLED_DSH_VERSION = '0.2.1-rc.2'
+const BUNDLED_DSH_VERSION = '0.2.2-rc.1'
 const RUNTIME_ENV = 'DSH_CLAUDE_TUI_RUNTIME'
 const LAUNCH_NOTICE_ENV = 'DSH_CLAUDE_TUI_LAUNCH_NOTICE'
 const PROBE_TOKEN_ENV = 'DSH_CLAUDE_TUI_PROBE_TOKEN'
@@ -52,32 +54,15 @@ interface PackageManifest {
   version?: unknown
 }
 
-/** Reject obsolete modes before discovery, probes, or user Home writes. */
-function requestedToolsMode(): DshToolsMode {
-  const requested = process.env.DSH_TOOLS_MODE?.trim() || 'ptc'
-  if (requested === 'native') return 'native'
-  if (requested === 'ptc' || requested === 'code') return 'ptc'
-  if (requested === 'both') {
-    throw new Error(
-      'DSH_TOOLS_MODE=both is no longer supported by DeepSeek Harness 0.2.1; choose native or ptc',
-    )
-  }
-  throw new Error(
-    `DSH_TOOLS_MODE must be native or ptc (code is an alias for ptc); received ${JSON.stringify(requested)}`,
-  )
-}
-
 /** Fail before touching Harness state when npm only warned about an invalid engine. */
 function assertSupportedNodeVersion(): void {
   const [majorText, minorText] = process.versions.node.split('.')
   const major = Number(majorText)
   const minor = Number(minorText)
-  const supported = (major === 22 && minor >= 19)
-    || (major === 24 && minor >= 2)
-    || major > 24
+  const supported = (major === 24 && minor >= 9) || major > 24
   if (!supported) {
     throw new Error(
-      `Node.js ${process.versions.node} is unsupported; install Node.js 22.19+ or 24.2+`,
+      `Node.js ${process.versions.node} is unsupported; install Node.js 24.9+`,
     )
   }
 }
@@ -139,7 +124,10 @@ function launchAdapter(identity: PackageIdentity): LaunchPlannerAdapter {
       bundledPackageRoot: bundled.packageRoot,
     }),
     bundledRuntime: () => bundled,
-    probeRuntime: async runtime => await probeRuntimeCompatibility(runtime, identity),
+    probeRuntime: async runtime => {
+      assertPatchedDshDependencies(runtime.packageRoot)
+      return await probeRuntimeCompatibility(runtime, identity)
+    },
   }
 }
 
@@ -213,7 +201,7 @@ if (args.length === 1 && (args[0] === '-h' || args[0] === '--help')) {
 } else {
   try {
     assertSupportedNodeVersion()
-    const toolsMode = requestedToolsMode()
+    const toolsMode = parseDshToolsMode(process.env.DSH_TOOLS_MODE)
     const identity = packageIdentity()
     const plan = await createLaunchPlanner(launchAdapter(identity)).resolve(launchRequest())
     ensureManagedProfile(plan.home.path, plan.profile, identity)

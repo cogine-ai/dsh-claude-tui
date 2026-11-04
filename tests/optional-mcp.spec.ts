@@ -72,7 +72,7 @@ describe('optional workspace MCP compatibility', () => {
     const workspaceRequire = createRequire(fileURLToPath(new URL('../package.json', import.meta.url)))
     const dshRequire = createRequire(workspaceRequire.resolve('@deepseek-ai/dsh/package.json'))
     const piOwnerPath = dshRequire.resolve('@deepseek-ai/dsh-llm-pi-ai/package.json')
-    expect(JSON.parse(readFileSync(piOwnerPath, 'utf8')).version).toBe('0.2.1-rc.2')
+    expect(JSON.parse(readFileSync(piOwnerPath, 'utf8')).version).toBe('0.2.2-rc.1')
     const piOwnerRequire = createRequire(piOwnerPath)
     // pi-ai exposes only an import entry and hides its manifest. Use this
     // owner's lookup paths, then resolve the symlink to keep its peer context.
@@ -83,7 +83,7 @@ describe('optional workspace MCP compatibility', () => {
     const genAiEntry = piRequire.resolve('@google/genai')
     const genAiRequire = createRequire(genAiEntry)
     const clientEntry = genAiRequire.resolve('@modelcontextprotocol/sdk/client/index.js')
-    expect(sdkManifest(clientEntry).version).toBe('1.31.0')
+    expect(sdkManifest(clientEntry).version).toBe('1.32.0')
     const { Client } = genAiRequire('@modelcontextprotocol/sdk/client/index.js') as ClientModule
     const { StdioClientTransport, DEFAULT_INHERITED_ENV_VARS } =
       genAiRequire('@modelcontextprotocol/sdk/client/stdio.js') as StdioModule

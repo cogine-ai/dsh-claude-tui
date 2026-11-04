@@ -13,9 +13,13 @@
 - id: skill-filesystem
   config: !!js "process.platform === 'darwin' ? { watchUsePolling: true, watchPollIntervalMs: 1000 } : {}"
 
-- id: tools
-  config:
-    mode: !!js "process.env.DSH_TOOLS_MODE === 'code' ? 'ptc' : (process.env.DSH_TOOLS_MODE || 'ptc')"
+# DSH 0.2.2 selects execution through executor plugins. Keep this TUI's
+# native|ptc environment option for both launcher and direct-profile users.
+- id: tool-executor-native
+  disabled: !!js "(process.env.DSH_TOOLS_MODE?.trim() || 'ptc') !== 'native'"
+
+- id: tool-executor-ptc
+  disabled: !!js "process.env.DSH_TOOLS_MODE?.trim() === 'native'"
 
 - insert:
     # The base bundle provides the question service; this consumer exposes it

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Reproduce the pinned, manifest-only Office dependency repack."""
+"""Reproduce pinned, manifest-only dependency repacks without changing source code."""
 
 import argparse
 import base64
 import copy
+from concurrent.futures import ThreadPoolExecutor
 import gzip
 import hashlib
 import io
@@ -12,24 +13,15 @@ from pathlib import Path, PurePosixPath
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DESTINATION = ROOT / "vendor" / "security"
 MANIFEST = "package/package.json"
-PACKAGES = (
-    {
-        "name": "@deepseek-ai/libreoffice-kit",
-        "version": "0.1.5",
-        "filename": "libreoffice-kit-0.1.5.tgz",
-        "url": "https://registry.npmjs.org/@deepseek-ai/libreoffice-kit/-/libreoffice-kit-0.1.5.tgz",
-        "integrity": "sha512-H12xtUsAyl70zFeQ5pk5GGRc3N1+6zn+DVAcqwlguI6EvqopBGP3xkUmePU7g5f6ydYlDZLWedHT9lTSL7zLxA==",
-        "dependency": "fflate",
-        "before": "0.8.2",
-        "after": "0.8.3",
-    },
-)
+NPM_CACHE = None
+PACKAGES = json.loads((ROOT / "scripts" / "security-repacks.json").read_text())
 
 README = """# Manifest-only security repacks
 
@@ -39,7 +31,7 @@ following `package.json` dependency declarations change:
 
 | Owner | Dependency | Original | Patched |
 | --- | --- | --- | --- |
-| `@deepseek-ai/libreoffice-kit@0.1.5` | `fflate` | `0.8.2` | `0.8.3` |
+{patch_table}
 
 Every other archive member retains its contents, link target, type, and mode,
 including all upstream sources and `package/LICENSE`. The generator verifies
@@ -60,13 +52,17 @@ Both commands download the pinned original npm archive over HTTPS. No npm
 installation, lifecycle script, or archive extraction runs. `--check` regenerates
 all outputs in a temporary directory and fails if any committed output differs.
 Archives use sorted member order, fixed ownership and timestamps, preserved
-modes, gzip `mtime=0`, and a normalized gzip OS header. The download URLs and integrity pins are in the script;
+modes, gzip `mtime=0`, and a normalized gzip OS header. The download URLs and integrity pins are in `scripts/security-repacks.json`;
 changing them requires review of the original source and patch.
 
-The consuming manifest and shrinkwrap must use public HTTPS artifact URLs pinned
-to the exact Git commit containing these files, together with the repacked
-SHA-512 integrity values. Relative `file:` tarballs and root-only overrides do
-not provide the required portable consumer dependency graph.
+The workspace uses these verified local archives through pnpm overrides.
+The npm artifact embeds all 324 integrity-verified DSH packages, including the
+60 repaired owners, with standard `bundleDependencies`. Bundling the complete
+DSH closure prevents external parents from loading original vulnerable owners
+through npm hoisting. Other dependencies remain external and pinned by the
+shrinkwrap. This makes the repair portable without uploading new tarballs.
+The unchanged Office repack retains its previously published commit-pinned URL.
+Root-only overrides and source-relative archive paths are not the consumer fix.
 """
 
 
@@ -83,13 +79,27 @@ def json_bytes(value):
 
 
 def download(spec):
-    request = urllib.request.Request(
-        spec["url"], headers={"User-Agent": "dsh-claude-tui-security-repack/1"}
-    )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        if not response.geturl().startswith("https://"):
-            raise ValueError("original archive redirected outside HTTPS")
-        data = response.read()
+    data = None
+    if NPM_CACHE is not None:
+        digest = base64.b64decode(spec["integrity"].removeprefix("sha512-")).hex()
+        cached = NPM_CACHE / "_cacache" / "content-v2" / "sha512" / digest[:2] / digest[2:4] / digest[4:]
+        if cached.is_file():
+            data = cached.read_bytes()
+    if data is None:
+        request = urllib.request.Request(
+            spec["url"], headers={"User-Agent": "dsh-claude-tui-security-repack/1"}
+        )
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    if not response.geturl().startswith("https://"):
+                        raise ValueError("original archive redirected outside HTTPS")
+                    data = response.read()
+                break
+            except OSError:
+                if attempt == 2:
+                    raise
+                time.sleep(attempt + 1)
     if sri(data) != spec["integrity"]:
         raise ValueError("original archive SHA-512 mismatch: " + spec["name"])
     return data
@@ -238,19 +248,26 @@ def generate(destination):
         "archive_format": "sorted PAX tar; uid/gid/mtime=0; empty ownership names; gzip mtime=0, OS=255",
         "packages": [],
     }
-    for spec in PACKAGES:
-        packed, record = repack(spec)
-        (destination / spec["filename"]).write_bytes(packed)
-        provenance["packages"].append(record)
-        print("Verified manifest-only repack: " + spec["name"] + "@" + spec["version"], flush=True)
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        for spec, (packed, record) in zip(PACKAGES, pool.map(repack, PACKAGES)):
+            (destination / spec["filename"]).write_bytes(packed)
+            provenance["packages"].append(record)
+            print("Verified manifest-only repack: " + spec["name"] + "@" + spec["version"], flush=True)
     (destination / "provenance.json").write_bytes(json_bytes(provenance))
-    (destination / "README.md").write_bytes(README.encode("utf-8"))
+    table = "\n".join(
+        f"| `{spec['name']}@{spec['version']}` | `{spec['dependency']}` | `{spec['before']}` | `{spec['after']}` |"
+        for spec in PACKAGES
+    )
+    (destination / "README.md").write_bytes(README.replace("{patch_table}", table).encode("utf-8"))
 
 
 def main():
+    global NPM_CACHE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="regenerate in temp and compare committed outputs")
+    parser.add_argument("--npm-cache", type=Path, help="reuse original tarballs from an npm cache; integrity is always verified")
     args = parser.parse_args()
+    NPM_CACHE = args.npm_cache
     try:
         if args.check:
             with tempfile.TemporaryDirectory(prefix="dsh-security-repack-check-") as temporary:

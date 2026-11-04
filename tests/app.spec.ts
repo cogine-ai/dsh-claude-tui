@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import type { Agent, ModelSelection, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
+import type { Agent, ModelSelection } from '@deepseek-ai/dsh-agent'
 import { emitAgentEvent } from '@deepseek-ai/dsh-agent'
 import type { ImageAttachmentRef, SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import {
@@ -46,7 +46,7 @@ interface Bench {
 }
 
 interface ModelFixture {
-  readonly selection: ModelSelectionRef
+  readonly selection: { current: ModelSelection | undefined }
   defaultSelection: ModelSelection
   readonly catalogModels: string[]
   readonly efforts: Record<string, Array<{ id: string; name: string }>>
@@ -214,6 +214,13 @@ function bench(
     id: { value: session.id },
     options: { value: { provider: 'test', model: 'model' } },
     session: { value: session },
+    model: { value: {
+      current: () => options.models?.selection.current,
+      select: (selection: ModelSelection) => {
+        if (options.models !== undefined) options.models.selection.current = { ...selection }
+        session.append('model/selection', { ...selection })
+      },
+    } },
 
     status: { get: () => status },
     ctx: { value: agentCtx },
@@ -245,7 +252,6 @@ function bench(
     ...(options.runtimeSnapshot === undefined
       ? {}
       : { runtimeSnapshot: options.runtimeSnapshot }),
-    ...(options.models === undefined ? {} : { modelSelection: options.models.selection }),
     ...(options.readClipboardImage === undefined
       ? {}
       : { readClipboardImage: options.readClipboardImage }),
@@ -271,7 +277,6 @@ function modelFixture(): ModelFixture {
         model: 'deepseek-v4-flash',
         reasoningEffort: 'high' as never,
       },
-      assembled: undefined,
     },
     defaultSelection: {
       provider: 'deepseek-official',
@@ -387,7 +392,7 @@ describe('ClaudeTuiApplication', () => {
       models: modelFixture(),
       tuiVersion: '0.1.1',
       runtimeSnapshot: {
-        harnessVersion: '0.2.1-rc.2',
+        harnessVersion: '0.2.2-rc.1',
         runtimeKind: 'bundled',
         homeKind: 'shared',
         homePath: join(homedir(), '.dsh'),
@@ -409,7 +414,7 @@ describe('ClaudeTuiApplication', () => {
       tipsRow: lines.findIndex(line => line.includes('Tips for getting started')),
       runtimeRow: lines.findIndex(line => line.includes('Runtime')),
       helpVisible: text.includes('Run /help for commands and shortcuts'),
-      harnessVisible: text.includes('Harness 0.2.1-rc.2 · bundled · PTC'),
+      harnessVisible: text.includes('Harness 0.2.2-rc.1 · bundled · PTC'),
       homeVisible: text.includes('Home ~/.dsh · shared'),
       modelVisible: text.includes('deepseek-official/deepseek-v4-flash · high'),
       sessionIdVisible: text.includes('terminal-test'),
@@ -467,7 +472,7 @@ describe('ClaudeTuiApplication', () => {
         welcomeExpanded: true,
         tuiVersion: '0.1.1',
         runtimeSnapshot: {
-          harnessVersion: '0.2.1-rc.2',
+          harnessVersion: '0.2.2-rc.1',
           runtimeKind: 'system',
           homeKind: 'isolated',
           homePath: '/tmp/dsh-claude-tui',
@@ -477,7 +482,7 @@ describe('ClaudeTuiApplication', () => {
 
       await test.app.start()
       await test.terminal.settle()
-      expect(test.terminal.text()).toContain(`Harness 0.2.1-rc.2 · system · ${label}`)
+      expect(test.terminal.text()).toContain(`Harness 0.2.2-rc.1 · system · ${label}`)
       await test.app.dispose()
     }
   })
@@ -1263,11 +1268,6 @@ describe('ClaudeTuiApplication', () => {
 
   it('opens the live DSH model catalog with Alt+P and keeps the prompt draft', async () => {
     const models = modelFixture()
-    models.selection.assembled = {
-      provider: 'deepseek-official',
-      model: 'deepseek-v4-flash',
-      reasoningEffort: 'high' as never,
-    }
     const test = bench(90, 28, () => 1_000, { models })
     await test.app.start()
     for (const character of 'keep this draft') test.terminal.send(character)
@@ -1293,12 +1293,11 @@ describe('ClaudeTuiApplication', () => {
       model: 'deepseek-v4-pro',
       reasoningEffort: 'max',
     })
-    expect(models.savedDefaults).toEqual([])
-    expect(models.selection.assembled).toEqual({
-      provider: 'deepseek-official',
-      model: 'deepseek-v4-flash',
-      reasoningEffort: 'high',
+    expect(test.app.agent.session.snapshotEvents().at(-1)).toMatchObject({
+      type: 'model/selection',
+      data: { provider: 'deepseek-official', model: 'deepseek-v4-pro', reasoningEffort: 'max' },
     })
+    expect(models.savedDefaults).toEqual([])
     expect(test.terminal.text()).toContain('keep this draft')
 
     await test.app.dispose()

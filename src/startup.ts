@@ -3,6 +3,7 @@ import { Command } from 'commander'
 import type { Context } from '@deepseek-ai/cordis'
 import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 import type { ClaudeTuiRuntimeSnapshot, DshToolsMode } from './runtime-snapshot.ts'
+import { parseDshToolsMode } from './tools-mode.ts'
 
 const RUNTIME_SNAPSHOT_ENV = 'DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT'
 
@@ -101,6 +102,15 @@ Examples:
 
 /** Parse the app-owned flags and publish an immutable startup service. */
 export function apply(ctx: Context): void {
+  // Direct `dsh --profile` invocations bypass the executable launcher's validation.
+  try {
+    parseDshToolsMode(process.env.DSH_TOOLS_MODE)
+  } catch (error) {
+    // Cordis reports failed plugin activation without failing the process itself.
+    process.stderr.write(`dsh-claude-tui: ${error instanceof Error ? error.message : String(error)}\n`)
+    ctx.get('appExit')?.(1)
+    throw error
+  }
   const program = tuiCommand()
   program.action(() => {
     const options = program.opts<{

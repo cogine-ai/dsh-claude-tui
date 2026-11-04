@@ -9,15 +9,26 @@ afterEach(async () => {
   await Promise.all(contexts.splice(0).map(ctx => ctx.fiber.dispose()))
 })
 
-function parse(args: readonly string[]) {
+function parse(args: readonly string[], exit: (code: number) => void = () => {}) {
   const ctx = new Context()
   contexts.push(ctx)
-  provideCmdline(ctx, { args, exit: () => {} })
+  provideCmdline(ctx, { args, exit })
   apply(ctx)
   return ctx.claudeTuiStartup
 }
 
 describe('claude-tui startup grammar', () => {
+  it.each(['both', 'invented'])('rejects %s in direct-profile startup', mode => {
+    vi.stubEnv('DSH_TOOLS_MODE', mode)
+    try {
+      const exit = vi.fn()
+      expect(() => parse([], exit)).toThrow(/DSH_TOOLS_MODE/)
+      expect(exit).toHaveBeenCalledWith(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('distinguishes an interactive --resume picker from exact-id resume', () => {
     expect(parse(['--resume'])).toMatchObject({ resumePicker: true, color: true })
     expect(parse(['--resume', 'session-123'])).toMatchObject({
@@ -40,7 +51,7 @@ describe('claude-tui startup grammar', () => {
 
   it('accepts only a valid launcher runtime snapshot', () => {
     vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', JSON.stringify({
-      harnessVersion: '0.2.1-rc.2',
+      harnessVersion: '0.2.2-rc.1',
       runtimeKind: 'bundled',
       homeKind: 'shared',
       homePath: '/tmp/test-dsh-home',
@@ -49,7 +60,7 @@ describe('claude-tui startup grammar', () => {
     try {
       expect(parse([])).toMatchObject({
         runtimeSnapshot: {
-          harnessVersion: '0.2.1-rc.2',
+          harnessVersion: '0.2.2-rc.1',
           runtimeKind: 'bundled',
           homeKind: 'shared',
           homePath: '/tmp/test-dsh-home',
@@ -70,7 +81,7 @@ describe('claude-tui startup grammar', () => {
 
   it('rejects an obsolete both-mode runtime snapshot', () => {
     vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', JSON.stringify({
-      harnessVersion: '0.2.1-rc.2',
+      harnessVersion: '0.2.2-rc.1',
       runtimeKind: 'bundled',
       homeKind: 'shared',
       homePath: '/tmp/test-dsh-home',

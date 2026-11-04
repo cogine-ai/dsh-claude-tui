@@ -1,0 +1,612 @@
+[
+  {
+    "name": "@deepseek-ai/libreoffice-kit",
+    "version": "0.1.5",
+    "filename": "libreoffice-kit-0.1.5.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/libreoffice-kit/-/libreoffice-kit-0.1.5.tgz",
+    "integrity": "sha512-H12xtUsAyl70zFeQ5pk5GGRc3N1+6zn+DVAcqwlguI6EvqopBGP3xkUmePU7g5f6ydYlDZLWedHT9lTSL7zLxA==",
+    "dependency": "fflate",
+    "before": "0.8.2",
+    "after": "0.8.3"
+  },
+  {
+    "name": "@deepseek-ai/dsh-action-cards",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-action-cards-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-action-cards/-/dsh-action-cards-0.2.2-rc.1.tgz",
+    "integrity": "sha512-WByA9PbbL+N6yKWaYzm+c54g/E9sI7RVB8bOoz3lle738aE55ayna4HeS0cEKivzEKjDiX92OcJG436aVNZWEg==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-agent",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-agent-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-agent/-/dsh-agent-0.2.2-rc.1.tgz",
+    "integrity": "sha512-3zNf9+SRLKkzItWN83OAZtG1M2TO3fPB6vi3w/Z44jiXJioz1WoZJj6qFYHwP57i+8RmMUOWP7OBPpV9m/Sqlw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-agent-loop",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-agent-loop-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-agent-loop/-/dsh-agent-loop-0.2.2-rc.1.tgz",
+    "integrity": "sha512-LsmoSB/wckh2bNVMIKan+6G3QlAYM9Uhthh+9ti6N5AXqFqR7m7gWdEbQ/MWks9DgjWw/EP6x943UBga+TADCA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-agent-preset-registry",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-agent-preset-registry-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-agent-preset-registry/-/dsh-agent-preset-registry-0.2.2-rc.1.tgz",
+    "integrity": "sha512-ODRb9BSGJ1OPsZvYSjsVwQkIV/Cr4GxbwJmAAMagtigVgWrF7rhpbRwHKoFNXb8qTOVVMToVQGP+6UTeINonMg==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-account-controller",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-account-controller-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-account-controller/-/dsh-api-account-controller-0.2.2-rc.1.tgz",
+    "integrity": "sha512-ioZxz7yllZ58t/QV1xoltuB/slN1x1ldw4vd1Vl0lAiAY2C/LuJULcQiP0SyqzGEZdy8om9wXBUNdqHZjL7gyA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-job-controller",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-job-controller-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-job-controller/-/dsh-api-job-controller-0.2.2-rc.1.tgz",
+    "integrity": "sha512-SJPBWnq03BV2AYE1MTLLP43ybe8oKa9mwSi7JCzdSvZ96mMoEOtZgEe/Y4mEUoZIJh106utPyJvQMCyq69OfQg==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-remote-access",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-remote-access-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-remote-access/-/dsh-api-remote-access-0.2.2-rc.1.tgz",
+    "integrity": "sha512-UupADKJ/D6yyZKzvN6jyKrCzl8GXWgYxYoHQ00LEIYSmLUVmHXy6ABoeKkm2GIzcMLhWheEj01tvfynT0vhnNA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-session-controller",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-session-controller-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-session-controller/-/dsh-api-session-controller-0.2.2-rc.1.tgz",
+    "integrity": "sha512-BtAWPuxMzaEKTQWR2D4vNbZf+3eJ9Zi9Y2XFx843SJF/nECakC+QVXeT3WB+YguU0i+9RqEf4Fy/R7nXNfJOyw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-settings-controller",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-settings-controller-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-settings-controller/-/dsh-api-settings-controller-0.2.2-rc.1.tgz",
+    "integrity": "sha512-AQ6dw6IkHAF2ObpS36e/m7ogoQHuYBcHegb0xZ7oHvovno80pvsOJD23iypN6wkPRmRxm/x/WTtbzKgjddtX5A==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-terminal-controller",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-terminal-controller-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-terminal-controller/-/dsh-api-terminal-controller-0.2.2-rc.1.tgz",
+    "integrity": "sha512-Ls1rA8Q6dmhC9l4X1yYBRoS96APNqFmfNE6hfksP9YcwvfMbQGk8tHlFbfxZdzcyEjVhjuCE3ZVYREvGdlGK3A==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-workspace-controller",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-workspace-controller-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-workspace-controller/-/dsh-api-workspace-controller-0.2.2-rc.1.tgz",
+    "integrity": "sha512-X1Uvm8HTA1624di5CUAxZxz+4QLy46Q2SFajyU1tJt98wlfarrl3WwGYGXjmu/aF0mmUHekp56LXr2oXb7hEVg==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-api-workspace-files",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-api-workspace-files-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-api-workspace-files/-/dsh-api-workspace-files-0.2.2-rc.1.tgz",
+    "integrity": "sha512-jmZZQuTuY8fwvdY619bKaeLbfScFJNhZdsPesNFquI1OPR+QLmSBnTIEOr/oSowAc4OyYHFpH+sQXHv56qJBAA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-chunked-list",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-chunked-list-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-chunked-list/-/dsh-chunked-list-0.2.2-rc.1.tgz",
+    "integrity": "sha512-j+dDDoMdsMbRzHQ1P6wn1otxDnt6YDUNfGh0SuW5vuCr0nJ3LJHCv2sLdXZFKSyPBIMiQToo5A9sD8ostZaV7g==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-client-connection",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-client-connection-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-client-connection/-/dsh-client-connection-0.2.2-rc.1.tgz",
+    "integrity": "sha512-GuUgWVWP3+ngXcZhU9ctzVxD78owjP1JVIbXNIGJm2RW9avhBg3590x95EJNPD4YIFuOISg72q8pbXT4Nd1UMw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-client-file-upload",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-client-file-upload-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-client-file-upload/-/dsh-client-file-upload-0.2.2-rc.1.tgz",
+    "integrity": "sha512-MipvUhc+bLgexDff+vFNUZodd3WQ9Q+OZnYW8kAv6MU6ieSRUeVxgGOlNsM5rKVZNjxDmmzXaXeXq2d5VnvTTA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-client-product-analytics",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-client-product-analytics-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-client-product-analytics/-/dsh-client-product-analytics-0.2.2-rc.1.tgz",
+    "integrity": "sha512-/o3yb+pkMfSbzbqmSdfgx6pUupr8MrlNHkUC/SkFEaKz9rzSKQmBfPSttmsAe6LuW/dTOSF9EMoUBnmGtyQhEA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-client-ui-plugin-manager",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-client-ui-plugin-manager-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-plugin-manager/-/dsh-client-ui-plugin-manager-0.2.2-rc.1.tgz",
+    "integrity": "sha512-7BK/GjW28g8eU2dY8AHx/mD2Hv+wZXAJ6XU/3j2D1Pef2eOyZyiO4o71rMPaQUBzMawujpoIQj/MgOvu3hHcIw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-client-ui-trajectory",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-client-ui-trajectory-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-trajectory/-/dsh-client-ui-trajectory-0.2.2-rc.1.tgz",
+    "integrity": "sha512-I2nVYuu4eN5dCr1uzquUUxE6o7xXSs4XT8H10g/ffoOsbY5XFDhZFMzWW4G0yFN6zr4v2pJShFZ0VBPwVXFj8A==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-command-feedback",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-command-feedback-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-command-feedback/-/dsh-command-feedback-0.2.2-rc.1.tgz",
+    "integrity": "sha512-Z2HeCM6TGxcYovfism+hs2pnlsvcrJhPwt5JmPxyM1p7VASmhYkx3FhbhGH9QGI26iiJ7RTjO9TyXFMKsOJarQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-commands",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-commands-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-commands/-/dsh-commands-0.2.2-rc.1.tgz",
+    "integrity": "sha512-k09pXprTPRbSwMzsbt0o0bFuD4RQQgjQ1lusL12zQ9H59FhurJj8yogaEpz35+H6/VTVr6qG20je2pdvZ++DuA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-cordis-host-runner",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-cordis-host-runner-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-cordis-host-runner/-/dsh-cordis-host-runner-0.2.2-rc.1.tgz",
+    "integrity": "sha512-e+92CtfJqM+5GG7okK97Uc2XMVkdEWg/D0cIIFuX/KWqX842A8aRy1eDElMCqO+6JVwdqGWZ9OOztMqqh31TbQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-creation-recommendations",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-creation-recommendations-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-creation-recommendations/-/dsh-creation-recommendations-0.2.2-rc.1.tgz",
+    "integrity": "sha512-3JtBLXALOohc1FXALrT0hbKQQKDzVKOkpbj5Iq+1IFLzJCI3FuLO1RM8cunF8/Lsw47ZvJVlnrKmmM7nA342Mw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-deepseek-account-platform",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-deepseek-account-platform-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-deepseek-account-platform/-/dsh-deepseek-account-platform-0.2.2-rc.1.tgz",
+    "integrity": "sha512-WlaiEThGHIJt272YSS1LF/hh6b/sOmi/TDMctpzgsbNLQ22YJDoft3sAT0fm8GetOuti+RT5bFtUkZ+izcU6cQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-experimental-agent-team",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-experimental-agent-team-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-experimental-agent-team/-/dsh-experimental-agent-team-0.2.2-rc.1.tgz",
+    "integrity": "sha512-CQ3AntAEnrUEgnDZRs1lfp9B6xycL6gnK0SRkgPePw8iKt9C/6bzX8M2cbPUbTltLuBI1GQxkAaQBGE4ZzvCmA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-experimental-api-speech-to-text",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-experimental-api-speech-to-text-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-experimental-api-speech-to-text/-/dsh-experimental-api-speech-to-text-0.2.2-rc.1.tgz",
+    "integrity": "sha512-ULQNqAhr/Q7MmInAFRJ/6G1yggDb3wpevRskouZUIUyCul8C32rOKhfVkipQmJmJ1D5r8EIRYAemZAZjJDyLIA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-experimental-liveshare",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-experimental-liveshare-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-experimental-liveshare/-/dsh-experimental-liveshare-0.2.2-rc.1.tgz",
+    "integrity": "sha512-+pW32aC5VDFJqFKe2s6dyWawWOF2caqQ5Vc2iBhS8TuYmQgqoqIeSX79FInw8lI5e4sNQOvgzPbUopsceF4WLA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-experimental-speech-to-text-sensevoice",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-experimental-speech-to-text-sensevoice-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-experimental-speech-to-text-sensevoice/-/dsh-experimental-speech-to-text-sensevoice-0.2.2-rc.1.tgz",
+    "integrity": "sha512-ZrHJQXfKWSe6yYRJAutr7aq1z12jzrfZxckY/7cYCmG/tQom00H1tFhAcMlGuUq0dfDEbb6jszUaJDBpdGyXYQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-goal",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-goal-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-goal/-/dsh-goal-0.2.2-rc.1.tgz",
+    "integrity": "sha512-a3fGpLeXd5SF5vxNviX/w5UhzLaslUmN5As7Dk/SwkcyP1lUJK1BOZjpyNJxqz9OpAOdZygS9IqOWLkA+GPPjA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-harness-dev-context",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-harness-dev-context-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-harness-dev-context/-/dsh-harness-dev-context-0.2.2-rc.1.tgz",
+    "integrity": "sha512-3dMi2WDWn2n7+NZ3UVMOT+dwn/KxkQfwMaKJUJ7P8IDxgLzTmq9vW9bI3kWOHRgdEeL0Qzzmo27EH+WmW2sxDQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-host-plugin-inventory",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-host-plugin-inventory-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-host-plugin-inventory/-/dsh-host-plugin-inventory-0.2.2-rc.1.tgz",
+    "integrity": "sha512-Ok/uqKaXnOH0MPZkz3VmnlIgmiKcB5GqjGU3vL0vd1yZ/7+VV8AllaQbMPN/YBbKPdRna0thRRQtLHNqOTEy9Q==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-http-proxy",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-http-proxy-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-http-proxy/-/dsh-http-proxy-0.2.2-rc.1.tgz",
+    "integrity": "sha512-D2kdq55p1UdrgW2vquUELqfyRl3oAb4lyUXKEPn3TsPzx8BRgXlVic/mxbgvncY7DXlw25dXJg9RG4/7iur9dw==",
+    "dependency": "undici",
+    "before": "8.11.2",
+    "after": "8.12.2"
+  },
+  {
+    "name": "@deepseek-ai/dsh-llm",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-llm-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-llm/-/dsh-llm-0.2.2-rc.1.tgz",
+    "integrity": "sha512-XeEvH+6bpkjx0E2P1B5ZE+WWa+VHp4DimQaJDKNUZEFouqHMuN1B61TIz6IzUquRxa/6X4yJy+qXQ9WwAeMw5w==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-llm-retry",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-llm-retry-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-llm-retry/-/dsh-llm-retry-0.2.2-rc.1.tgz",
+    "integrity": "sha512-B8tHQuC0BGRNUIJ0uLU0oE0ntDEqLaJ2WMXEDkxhJBI2+wREHxPgpB9gdUpr3fzKk6VDW0Db74ppixqhyZJ4Gw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-mcp-client",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-mcp-client-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-mcp-client/-/dsh-mcp-client-0.2.2-rc.1.tgz",
+    "integrity": "sha512-hPyBjoKNDMdTyM7PYNkcacMwJ7hpb/QMoIv3tnCgymvVghqdh/0SzHVd3koev8SIg79SKfPR4DPgGuar3zDzKA==",
+    "dependency": "@modelcontextprotocol/client",
+    "before": "2.2.0",
+    "after": "2.3.0"
+  },
+  {
+    "name": "@deepseek-ai/dsh-message-feedback",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-message-feedback-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-message-feedback/-/dsh-message-feedback-0.2.2-rc.1.tgz",
+    "integrity": "sha512-3CrgCRkQo99X8uLjDsJPQCz0zlBU8XfmyZk0EsEGUkWVRJjyv4g24ZHqNE6LKGSleLgY/SqyohvTutIKMxIUhA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-office-to-pdf",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-office-to-pdf-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-office-to-pdf/-/dsh-office-to-pdf-0.2.2-rc.1.tgz",
+    "integrity": "sha512-I2jNDO0ugZRdkWuKG/2/OUQqBeDZZ5TFiAMUKjUsEKlyQnbS+nJWo/38Zkj/H2VrIQjooFIB1nhvECKjjoT5/w==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-permission-presets",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-permission-presets-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-permission-presets/-/dsh-permission-presets-0.2.2-rc.1.tgz",
+    "integrity": "sha512-K+OxkJFs4HTo6rEk7ZxpHmQztL4S9BUqimWNFm8tAs8tJpcLQ2j6vCQrRdKOrNGj5bOROAVQKi31yJMuSVXBUQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-plan-mode",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-plan-mode-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-plan-mode/-/dsh-plan-mode-0.2.2-rc.1.tgz",
+    "integrity": "sha512-JwMJVCsEKMyJ+gNBak9MWAajTPo4Qkn/FJqJCPeMtQ1g6P+ABoKYzmWrYys/tOBJ0MzkKr75ZF1ZJOoTQHyH1g==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-plugin-manager",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-plugin-manager-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-plugin-manager/-/dsh-plugin-manager-0.2.2-rc.1.tgz",
+    "integrity": "sha512-6C48x7f9H6OJecb0NrO//ccOE9/xoHPMTiW5yYAYXrsHqpneXMvVdjuOR/hbeKaBOUZQEjwHRM6wu2BX6jngrQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-plugin-recommendations",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-plugin-recommendations-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-plugin-recommendations/-/dsh-plugin-recommendations-0.2.2-rc.1.tgz",
+    "integrity": "sha512-AluNe3fDmMXBw/1ysJm5Y7onscNm5v8Av0w3f4aw/ecePn31VpnxcGqWu6fjeLjzgykAklFXRKkHify7+D8kJA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-sandbox-policy",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-sandbox-policy-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-sandbox-policy/-/dsh-sandbox-policy-0.2.2-rc.1.tgz",
+    "integrity": "sha512-6wQTMIewCYpw98Mne78a0Muf5Mov5BqvR5RmIx6ifhNCPU6efueL27KuJhrOqNS/BgWrhleNdtn1E9bu+S829w==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-schedule",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-schedule-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-schedule/-/dsh-schedule-0.2.2-rc.1.tgz",
+    "integrity": "sha512-W83Zx76rCWqHPvc7BVX0J8/eokBknjGh5hmcisC4co4pE9mnSFZ8P6VZ/0BRyGTBPpvspOKalL4XH3WXAsNtMg==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-session-projection",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-session-projection-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-session-projection/-/dsh-session-projection-0.2.2-rc.1.tgz",
+    "integrity": "sha512-+wGhr1kVdhYv7E355HJUCq+foG1Dt40ehGULCdCxT46we6S1Ie2d1yUH18VvVCsEw0eM1ATe241mx3UCUMDYWQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-session-projection-cache",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-session-projection-cache-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-session-projection-cache/-/dsh-session-projection-cache-0.2.2-rc.1.tgz",
+    "integrity": "sha512-8k6DnBZ3tW6ApUwi8IB5LBGEYQE4EKevjZCsNezJkSctNfgXOE4veq52tSlZTMejUD7Weg9PBdHihsrKgMJwmw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-session-reference",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-session-reference-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-session-reference/-/dsh-session-reference-0.2.2-rc.1.tgz",
+    "integrity": "sha512-HqpaCx522LGOic++4VmdGI/Aomf3/Bmb/K7K2TKN3pSvUCD7sYWV3LVti+yqb9FtshUGyQvypVHBYAYzK8CP9Q==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-session-stats",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-session-stats-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-session-stats/-/dsh-session-stats-0.2.2-rc.1.tgz",
+    "integrity": "sha512-mxzJy5QgWO1v4QPi4f+Lf7XtJptKiosJqtZtIV6tKqjzBiimMKt0sTVXXZ7W01TV1bRq2VUYSGxyb+EVOfTRdQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-session-title",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-session-title-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-session-title/-/dsh-session-title-0.2.2-rc.1.tgz",
+    "integrity": "sha512-v8qHB0FIN6Fgc/YuXk3HYfC03/yndLj76J1VSEmdI0Jn+lb8IAQ+uryrRmDBdyx91b6w3HikczsBJM4/r5ZpQQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-session-turn-outline",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-session-turn-outline-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-session-turn-outline/-/dsh-session-turn-outline-0.2.2-rc.1.tgz",
+    "integrity": "sha512-jpKogdsAcJvBZqEqmvMh1O40eJuvpwNNUBETiOBr9MFpY1m7wi+vgRlLnoBLH4nW9Fx3G4M4yEEa9R/m5HsETA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-storage-domain",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-storage-domain-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-storage-domain/-/dsh-storage-domain-0.2.2-rc.1.tgz",
+    "integrity": "sha512-W/hwyekWgvHCPLlbYPSHVUYZNIOM0zP96WgIIPG3ZVMGoNn7VuoE7X/3/Jo5uANoS2UqZk+Ey7zc1Tx3sYRqxQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-subagent",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-subagent-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-subagent/-/dsh-subagent-0.2.2-rc.1.tgz",
+    "integrity": "sha512-UeWI8SlxUgPvIwv0ABo/5UauOAC6NyfE8V4sUUkUSqYpZ6I+Des4eI0NTasDf7+bF4Q6/5AIjZczvusWZ3O4wQ==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-time-context",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-time-context-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-time-context/-/dsh-time-context-0.2.2-rc.1.tgz",
+    "integrity": "sha512-mEGUldSyv4ixwYT60DxVlzijqoj+LOAM0vsQ39zhfMt1IYoPPi1m8JwJabG9sst4zsNSxtIi73KYJPeNyQ/xlw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-tmux-context",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-tmux-context-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-tmux-context/-/dsh-tmux-context-0.2.2-rc.1.tgz",
+    "integrity": "sha512-31Azl22Aln8bqNzNn223GDr/O9ZJbSqe/PdctEMv71j9tAaAzrVpyG8T78SrMYuDdUQ1c07+ce6giieWR1dqmA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-token-meter",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-token-meter-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-token-meter/-/dsh-token-meter-0.2.2-rc.1.tgz",
+    "integrity": "sha512-Q9hkNw8uLig/fvgJkJzeY5fQOcKw2KZ/bCfnUKr1hSHHGHDb0qUZCcdnwBmjdIx8XbuWj4raCJmM4Qu1NwaX2A==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-tool-subagent",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-tool-subagent-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-tool-subagent/-/dsh-tool-subagent-0.2.2-rc.1.tgz",
+    "integrity": "sha512-q0bq6taXvKjEH4Q1gSkMBSLsnL9+FtzKgViw5gs780BHmmPXVIm/daWxs7hagvn78tpjsux5J8VMqf11vqncIw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-tool-todo",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-tool-todo-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-tool-todo/-/dsh-tool-todo-0.2.2-rc.1.tgz",
+    "integrity": "sha512-APubdzuWEL+9mXwKe7OCiHMAN8wPzOpWPXo5viB43ykMCrjwyoprf3cSZjrwhIGuUDEhUz3dGWKQHq78rbuURA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-typert-registry",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-typert-registry-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-typert-registry/-/dsh-typert-registry-0.2.2-rc.1.tgz",
+    "integrity": "sha512-rc4uZ17kD+fe2Cbk57S9OcSHfTI9Nui7HLymVodSfMr6uhRrImhoUFMBghgQeh1CGoUX2zJMr5+g4R0S86Ndcw==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-user-approval",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-user-approval-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-user-approval/-/dsh-user-approval-0.2.2-rc.1.tgz",
+    "integrity": "sha512-zH3TXxkzwIxIlHZfqqjv/lzDr/kOGkKk3BHPEwkyRyaJNi+dx68LiMgmzylYBVziHgqyGtYcYmbOutGCzJoCUA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-user-questions",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-user-questions-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-user-questions/-/dsh-user-questions-0.2.2-rc.1.tgz",
+    "integrity": "sha512-COY40boWZ7XEszSvMGZ4CY5ze5ujCdA+Trtqx5C6ioqWzH9e8YbkY7AxyCOadxVO++5zAsqvsAfq65cZUPIMGA==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  },
+  {
+    "name": "@deepseek-ai/dsh-web-fetch-http",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-web-fetch-http-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-web-fetch-http/-/dsh-web-fetch-http-0.2.2-rc.1.tgz",
+    "integrity": "sha512-3rMViGbwI0pgSPNYUfffTNO1TVmL9dOJ1646np8QLGQvYpXoXxKGXDSyg3Hh/uTAkanbll7C9wUWW03Csqzu1g==",
+    "dependency": "undici",
+    "before": "8.11.2",
+    "after": "8.12.2"
+  },
+  {
+    "name": "@deepseek-ai/dsh-workspace",
+    "version": "0.2.2-rc.1",
+    "filename": "dsh-workspace-0.2.2-rc.1.tgz",
+    "url": "https://registry.npmjs.org/@deepseek-ai/dsh-workspace/-/dsh-workspace-0.2.2-rc.1.tgz",
+    "integrity": "sha512-zLxakuwRwuVagCeGpKN4zzXF0+GByJp5PH3gFlFFRIAiCb4+oU62uR3pbG19HmFqjye4d+aYhFcA/bALPjpxLg==",
+    "dependency": "zod",
+    "before": "4.4.3",
+    "after": "4.6.6"
+  }
+]

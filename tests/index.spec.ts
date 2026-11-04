@@ -76,7 +76,13 @@ describe('launcher compatibility probe', () => {
     const session = Session.create(SessionId('probe-session'))
     const whenIdle = vi.fn(async () => undefined)
     const dispose = vi.fn(async () => undefined)
-    const agent = { session, whenIdle }
+    const agent = {
+      session, whenIdle,
+      model: {
+        current: () => ({ provider: 'deepseek', model: 'deepseek-chat' }),
+        select: () => { session.append('model/selection', { provider: 'deepseek', model: 'deepseek-chat' }) },
+      },
+    }
     const create = vi.fn(async () => ({ agent, dispose }))
     const flush = vi.fn(async () => undefined)
     const imageRef = {
@@ -178,7 +184,7 @@ describe('launcher compatibility probe', () => {
       '01234567-89ab-cdef-0123-456789abcdef',
       '0.1.0',
       controller.signal,
-    )).rejects.toThrow('could not read the appended Session event')
+    )).rejects.toThrow('could not persist the Agent model selection')
     expect(flush).toHaveBeenCalledTimes(2)
     expect(dispose).toHaveBeenCalledTimes(3)
 
