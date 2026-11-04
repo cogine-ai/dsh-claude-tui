@@ -11,7 +11,7 @@ This document fixes the ownership boundary for the model picker and API-key setu
 | Providers and models | DSH | Read `llm.listProviders()` and `llm.listModels(provider)` every time the picker opens. Never add a provider or model that DSH did not return. |
 | Exact model capabilities | DSH | Read `llm.resolveModelInfo(provider, model)`. Only returned reasoning efforts are selectable. |
 | Advisory catalog boundary | DSH | Keep the current or default route visible as `not advertised`; absence from `listModels()` is not treated as invalid. |
-| Current-Agent selection | DSH Agent seam | Mutate the Agent's `ModelSelectionRef.current`. The in-flight `assembled` selection is never rewritten, so a switch applies to the next DSH model request. |
+| Current-Agent selection | DSH Agent seam | Read `agent.model.current()` and call `agent.model.select()`. DSH durably records the choice; prepared steps and retries retain their captured selection. |
 | Default model | DSH | Read `agentDefaultModel.currentSelection()` and persist only through `saveSelection()`. The UI does not maintain another default. |
 | Catalog changes | DSH | Refresh an open picker on `llm/adapters-updated`; a later open always performs a fresh read. |
 | Provider configuration | DSH | Merge active routes with `llm.listConfigurableProviders()` and follow its `settingsNs` / `settingsPath`. Do not infer configuration from provider names. |
@@ -35,7 +35,7 @@ closed
   -> if d: ask DSH to save the same selection as its default
 ```
 
-Selecting a new route while an Agent is running is allowed. DSH snapshots `ModelSelectionRef.current` into `assembled` during prompt assembly; therefore the current HTTP/model operation is unchanged and the new selection starts with the next request. The footer and confirmation copy say “next request” rather than claiming an immediate swap.
+Selecting a new route while an Agent is running is allowed. DSH captures `agent.model.current()` before step preparation; the current operation and retries keep that selection, while the next prepared step uses the new choice. Choices survive exit and resume even before their first model request. The footer and confirmation copy say “next request” rather than claiming an immediate swap.
 
 An effort left untouched on an ordinary different model remains absent in the selection, preserving that adapter's default. If the row is the DSH-saved default route, its saved effort is preserved instead. Once the user presses left or right, the exact returned effort id is stored. No aliases, clamping across models, or invented `low`/`medium`/`high` ladder is allowed.
 

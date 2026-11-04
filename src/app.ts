@@ -12,7 +12,7 @@ import {
   type TuiInputListenerResult,
 } from '@earendil-works/pi-tui'
 import type { Context } from '@deepseek-ai/cordis'
-import type { Agent, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SaveImageAttachment } from '@deepseek-ai/dsh-attachment'
 import { createUserMessage, errorChain, type ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
@@ -48,8 +48,6 @@ export interface ClaudeTuiRuntime {
   now?(): number
   /** Read-only workspace index used by the file-mention completion surface. */
   listWorkspaceEntries?: ListWorkspaceEntries
-  /** Agent-scoped DSH selection; the loop snapshots it for the next model request. */
-  modelSelection?: ModelSelectionRef
   /** Launcher-only fallback notice; rendered locally and never persisted to the Session. */
   launchNotice?: string
   /** New Sessions use Claude's expanded welcome surface; resumed Sessions stay compact. */
@@ -195,7 +193,7 @@ export class ClaudeTuiApplication {
       const slashMenu = this.slashMenuView()
       const fileMenu = this.fileMentionView()
       const historyMatch = this.selectedHistory()
-      const selectedModel = this.runtime.modelSelection?.current
+      const selectedModel = this.agent.model.current()
       return {
         status: this.agent.status,
         provider: selectedModel?.provider ?? this.transcript.provider ?? this.agent.options.provider,
@@ -235,7 +233,7 @@ export class ClaudeTuiApplication {
       sessionId: displayText(String(agent.id)),
       cwd: () => displayText(this.currentWorkingDirectory()),
       model: () => {
-        const selected = this.runtime.modelSelection?.current
+        const selected = this.agent.model.current()
         if (selected === undefined) {
           return displayText(`${agent.options.provider}/${agent.options.model}`)
         }
@@ -959,7 +957,7 @@ export class ClaudeTuiApplication {
 
   /** Open the Claude-shaped picker over DSH-owned routes, efforts, and defaults. */
   private openModelPicker(): void {
-    const selection = this.runtime.modelSelection
+    const selection = this.agent.model
     if (selection === undefined) {
       this.transcript.addNotice('This entry point did not expose a DSH model selection.', 'warning')
       this.tui.requestRender()
@@ -970,7 +968,7 @@ export class ClaudeTuiApplication {
         this.tui,
         this.palette,
         async () => {
-          const current = selection.current
+          const current = selection.current()
           if (current === undefined) throw new Error('The current DSH model selection is unavailable')
           const defaultModel = this.ctx.get('agentDefaultModel')
           return loadModelCatalog(
@@ -984,7 +982,7 @@ export class ClaudeTuiApplication {
         this.interactionAbort.signal,
       )
       if (result === undefined || this.closed) return
-      const previous = selection.current
+      const previous = selection.current()
       const routeChanged = previous === undefined
         || previous.provider !== result.selection.provider
         || previous.model !== result.selection.model
@@ -999,7 +997,7 @@ export class ClaudeTuiApplication {
         if (!confirmed || this.closed) return
       }
 
-      selection.current = result.selection
+      selection.select(result.selection)
       const route = `${displayText(result.selection.provider)}/${displayText(result.selection.model)}`
       if (!result.saveDefault) {
         this.promptNotice = `Using ${route} from the next model request`

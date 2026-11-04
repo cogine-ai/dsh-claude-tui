@@ -30,7 +30,7 @@
 
 需要：
 
-- Node.js 22.x 的 `22.19+`，或 `24.2+`（`^22.19.0 || >=24.2.0`）；
+- Node.js `24.9+`（`>=24.9.0`）；
 - Corepack；
 - 用于交互检查的 xterm-compatible 终端。
 
@@ -116,3 +116,7 @@ DSH_HOME=/tmp/dsh-claude-tui-dev DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
 ## 官方 DSH 文档
 
 本仓库的[官方文档镜像](./docs/upstream/dsh/README.md)随运行时版本维护。升级 DSH 依赖时运行 `corepack pnpm docs:dsh:sync`；`corepack pnpm docs:dsh:check` 在 CI 中检查版本及原文完整性。不要手改 `snapshot/` 中的上游文档，本项目的说明应写在镜像外。
+
+本地修正后的重复验证可用 `DSH_CLAUDE_TUI_NPM_CACHE` 指定保留的 npm 缓存；记录时须与默认全新缓存安装验证区分。
+
+本地安装包使用 `corepack pnpm run pack:artifact` 构建：先验证并暂存完整 DSH 依赖链，再用 npm 打包。不支持直接从源码目录打包。通过 `python3 scripts/repack-security-dependencies.py --check` 复验依赖修补；`--npm-cache PATH` 可复用原始压缩包，仍校验完整性。使用 `corepack pnpm lock:npm` 更新可移植的生产依赖锁。

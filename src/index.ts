@@ -9,7 +9,6 @@ import {
   type Agent,
   type AgentHandle,
   type ModelSelection,
-  type ModelSelectionRef,
 } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
@@ -92,51 +91,19 @@ function fail(exit: (code: number) => void, error: unknown): void {
   exit(1)
 }
 
-/** Resolve the optional invocation override over the live default. */
-function initialSelection(
-  defaults: ModelSelection,
-  startup: ClaudeTuiStartupValues,
-): { initial: ModelSelection; override: ModelSelection | undefined } {
-  if (startup.provider === undefined || startup.model === undefined) {
-    return { initial: defaults, override: undefined }
-  }
-  const override: ModelSelection = {
-    provider: startup.provider,
-    model: startup.model,
-    ...defaults.reasoningEffort === undefined ? {} : { reasoningEffort: defaults.reasoningEffort },
-  }
-  return { initial: override, override }
-}
-
-/** Install a selection whose persisted request header wins unless this invocation overrides it. */
-function selectionSetup(
-  defaults: ModelSelection,
-  override: ModelSelection | undefined,
-): { setup(agentCtx: Context, subject: Agent): void; selection: ModelSelectionRef } {
-  let agent: Agent | undefined
-  let picked = override
-  const selection: ModelSelectionRef = {
-    get current(): ModelSelection {
-      if (picked !== undefined) return picked
-      const logged = agent?.session.requestHeader()?.config
-      if (logged === undefined) return defaults
-      return {
-        provider: logged.provider,
-        model: logged.model,
-        ...logged.reasoningEffort === undefined ? {} : { reasoningEffort: logged.reasoningEffort },
-      }
-    },
-    set current(next: ModelSelection | undefined) {
-      picked = next
-    },
-    assembled: undefined,
-  }
-  return {
-    selection,
-    setup(agentCtx: Context, subject: Agent): void {
-      agent = subject
-      installModelSelection(agentCtx, selection)
-    },
+/** Keep resumed choices unless this invocation explicitly selects a route. */
+export function setupModelSelection(override?: ModelSelection) {
+  return (agentCtx: Context, agent: Pick<Agent, 'model'>): void => {
+    installModelSelection(agentCtx)
+    if (override === undefined) return
+    const saved = agent.model.current()
+    const sameRoute = saved?.provider === override.provider && saved.model === override.model
+    agent.model.select({
+      ...override,
+      ...(override.reasoningEffort === undefined && sameRoute && saved.reasoningEffort !== undefined
+        ? { reasoningEffort: saved.reasoningEffort }
+        : {}),
+    })
   }
 }
 
@@ -210,7 +177,6 @@ export async function runCompatibilityProbe(
   }
 
   const defaults = defaultModel.currentSelection()
-  const modelRuntime = selectionSetup(defaults, undefined)
   let commandInvoked = false
   const unregisterCommand = commands.register({
     name: 'dsh-claude-tui-probe',
@@ -231,12 +197,22 @@ export async function runCompatibilityProbe(
       sessionId: SessionId(`dsh-claude-tui-probe-${randomUUID()}`),
       meta: { cwd },
       agentOptions: { provider: defaults.provider, model: defaults.model },
-      setup: modelRuntime.setup,
+      setup: setupModelSelection(),
       signal,
     })
     signal.throwIfAborted()
     await handle.agent.whenIdle()
     signal.throwIfAborted()
+    const model = handle.agent.model
+    model.select(defaults)
+    const selected = model.current()
+    if (
+      selected?.provider !== defaults.provider
+      || selected.model !== defaults.model
+      || handle.agent.session.snapshotEvents().at(-1)?.type !== 'model/selection'
+    ) {
+      throw new Error('claude-tui: compatibility probe could not persist the Agent model selection')
+    }
     if (workingDirectory.get(handle.agent.session) !== cwd) {
       throw new Error('claude-tui: compatibility probe could not read the Session working directory')
     }
@@ -346,9 +322,11 @@ async function boot(
   if (agents === undefined || defaultModel === undefined || sessions === undefined) return undefined
 
   const defaults = defaultModel.currentSelection()
-  const selected = initialSelection(defaults, startup)
-  const modelRuntime = selectionSetup(defaults, selected.override)
-  const agentOptions = { provider: selected.initial.provider, model: selected.initial.model }
+  const override = startup.provider === undefined || startup.model === undefined
+    ? undefined
+    : { provider: startup.provider, model: startup.model }
+  const agentOptions = { ...defaults }
+  const setup = setupModelSelection(override)
   const resolved = resolveConfig(config)
   const appConfig: ResolvedConfig = {
     ...resolved,
@@ -378,13 +356,13 @@ async function boot(
           sessionId: SessionId(startup.sessionId ?? `session-${randomUUID()}`),
           meta: { cwd: internals.cwd() },
           agentOptions,
-          setup: modelRuntime.setup,
+          setup,
           signal,
         })
       : await agents.resume({
           resumeSessionId: SessionId(resumeSessionId),
           agentOptions,
-          setup: modelRuntime.setup,
+          setup,
           signal,
         })
     if (signal.aborted) {
@@ -400,7 +378,6 @@ async function boot(
     let exitRequested = false
     const app = new ClaudeTuiApplication(ctx, handle.agent, appConfig, {
       terminal,
-      modelSelection: modelRuntime.selection,
       listWorkspaceEntries: listLocalWorkspaceEntries,
       readClipboardImage: readSystemClipboardImage,
       welcomeExpanded: resumeSessionId === undefined,

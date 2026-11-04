@@ -1,4 +1,5 @@
 /** Public bundle artifact contracts for a self-contained installed profile. */
+import { createHash } from 'node:crypto'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 import {
@@ -23,6 +24,7 @@ import * as pty from 'node-pty'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { verifyMcpCompatibility } from './mcp-compat.ts'
 import { verifySecurityDependencies } from './security-dependency-checks.ts'
+import { verifyUndiciSecurity, verifyZodSecurity } from './harness-security-checks.ts'
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const usesDefaultNpmPeerResolution =
@@ -111,7 +113,7 @@ function writeSse(
 
 async function startMockDeepSeekServer(
   apiKey: string,
-  scenario: 'ptc' | 'subagent' = 'ptc',
+  scenario: 'ptc' | 'subagent' | 'subagent-closing' = 'ptc',
 ): Promise<MockDeepSeekServer> {
   const requests: MockRequest[] = []
   const fileRequests: MockDeepSeekServer['fileRequests'] = []
@@ -204,7 +206,7 @@ async function startMockDeepSeekServer(
         }
         let text = tools.length > 0 ? 'packed artifact reply' : 'Packed artifact session'
         let toolCall: { id: string; name: string; input: Record<string, unknown> } | undefined
-        if (scenario === 'subagent' && tools.length > 0) {
+        if (scenario !== 'ptc' && tools.length > 0) {
           const userText = messages.flatMap(message => {
             if (typeof message !== 'object' || message === null || message.role !== 'user'
               || !Array.isArray(message.content)) return []
@@ -212,7 +214,7 @@ async function startMockDeepSeekServer(
               block.type === 'text' && typeof block.text === 'string' ? [block.text] : [])
           }).join('\n')
           if (userText.includes('packed-child-task')) {
-            if (toolResults.some(result => result.tool_use_id === 'call-packed-child-message')) {
+            if (scenario === 'subagent-closing' || toolResults.some(result => result.tool_use_id === 'call-packed-child-message')) {
               text = 'packed child finished'
             } else {
               toolCall = {
@@ -220,7 +222,7 @@ async function startMockDeepSeekServer(
                 input: { agent_id: 'packed-subagent-parent', message: 'packed child delivered its result' },
               }
             }
-          } else if (userText.includes('packed child delivered its result')) {
+          } else if (userText.includes('packed child delivered its result') || userText.includes('packed child finished')) {
             text = 'packed delegated reply'
           } else if (toolResults.some(result => result.tool_use_id === 'call-packed-subagent')) {
             text = 'packed parent awaiting child'
@@ -404,9 +406,10 @@ describe('dsh-claude-tui bundle', () => {
     packDirectory = realpathSync(
       mkdtempSync(join(tmpdir(), 'dsh-claude-tui-pack-')),
     )
-    execFileSync('corepack', ['pnpm', 'pack', '--pack-destination', packDirectory], {
+    execFileSync('corepack', ['pnpm', 'run', 'pack:artifact', '--pack-destination', packDirectory], {
       cwd: repositoryRoot,
       stdio: 'pipe',
+      maxBuffer: 32 * 1024 * 1024,
     })
 
     const tarballs = readdirSync(packDirectory).filter((name) => name.endsWith('.tgz'))
@@ -427,7 +430,7 @@ describe('dsh-claude-tui bundle', () => {
         ? []
         : ['--legacy-peer-deps'],
       '--cache',
-      join(packDirectory, 'npm-cache'),
+      process.env.DSH_CLAUDE_TUI_NPM_CACHE ?? join(packDirectory, 'npm-cache'),
       '--prefix',
       installDirectory,
       tarballPath,
@@ -452,7 +455,7 @@ describe('dsh-claude-tui bundle', () => {
       /- id: tool-ask-user\n\s+name: ['"]@deepseek-ai\/dsh-tool-ask-user['"]/u,
     )
     expect(manifest.dependencies?.['@deepseek-ai/dsh-tool-ask-user']).toBe(
-      '0.2.1-rc.2',
+      '0.2.2-rc.1',
     )
   }, 30_000)
 
@@ -461,7 +464,7 @@ describe('dsh-claude-tui bundle', () => {
       .trim()
       .split('\n')
       .sort()
-    expect(entries).toEqual([
+    expect(entries.filter(entry => !entry.startsWith('package/node_modules/'))).toEqual([
       'package/LICENSE',
       'package/README.md',
       'package/README.zh-CN.md',
@@ -475,6 +478,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/harness-0.1.5-rc.2-adaptation.md',
       'package/docs/harness-0.2.0-rc.2-adaptation.md',
       'package/docs/harness-0.2.1-rc.2-adaptation.md',
+      'package/docs/harness-0.2.2-rc.1-adaptation.md',
       'package/docs/launcher-environment-compatibility.md',
       'package/docs/model-provider-interactions.md',
       'package/docs/release-hardening-v0.1.0.md',
@@ -486,6 +490,8 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/releases/v0.1.8.zh-CN.md',
       'package/docs/releases/v0.1.9.md',
       'package/docs/releases/v0.1.9.zh-CN.md',
+      'package/docs/releases/v0.1.10.md',
+      'package/docs/releases/v0.1.10.zh-CN.md',
       'package/docs/visual-qualification-2.1.227.md',
       'package/lib/cli.d.ts',
       'package/lib/cli.js',
@@ -495,7 +501,18 @@ describe('dsh-claude-tui bundle', () => {
       'package/lib/startup.js',
       'package/npm-shrinkwrap.json',
       'package/package.json',
+      'package/vendor/security/bundle-inventory.json',
+      'package/vendor/security/README.md',
+      'package/vendor/security/provenance.json',
     ].sort())
+
+    const inventory = JSON.parse(readFileSync(join(packageDirectory, 'vendor/security/bundle-inventory.json'), 'utf8')) as Record<string, { sha512: string; mode: number }>
+    expect(entries.filter(entry => entry.startsWith('package/node_modules/')).sort())
+      .toEqual(Object.keys(inventory).map(path => `package/${path}`).sort())
+    for (const [path, record] of Object.entries(inventory)) {
+      expect(`sha512-${createHash('sha512').update(readFileSync(join(packageDirectory, path))).digest('base64')}`, path).toBe(record.sha512)
+      expect(statSync(join(packageDirectory, path)).mode & 0o777, path).toBe(record.mode)
+    }
 
     const manifest = JSON.parse(
       readFileSync(join(packageDirectory, 'package.json'), 'utf8'),
@@ -514,15 +531,16 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.9',
-      engines: { node: '^22.19.0 || >=24.2.0' },
+      version: '0.1.10',
+      engines: { node: '>=24.9.0' },
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
         dshtui: 'lib/cli.js',
       },
       dependencies: {
-        '@deepseek-ai/dsh': '0.2.1-rc.2',
-        '@deepseek-ai/dsh-authorization': '0.2.1-rc.2',
+        '@deepseek-ai/dsh': '0.2.2-rc.1',
+        '@deepseek-ai/dsh-authorization': '0.2.2-rc.1',
+        '@opentelemetry/api': '1.9.1',
         react: '18.3.1',
         'react-dom': '18.3.1',
         semver: '7.8.5',
@@ -537,7 +555,7 @@ describe('dsh-claude-tui bundle', () => {
     const dshPeers = Object.entries(manifest.peerDependencies ?? {})
       .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
     expect(dshPeers.length).toBeGreaterThan(0)
-    expect(dshPeers.every(([, range]) => range === '>=0.2.1-rc.2 <0.2.2')).toBe(true)
+    expect(dshPeers.every(([, range]) => range === '>=0.2.2-rc.1 <0.2.3')).toBe(true)
     expect(Object.keys(manifest.peerDependenciesMeta ?? {}).sort())
       .toEqual(Object.keys(manifest.peerDependencies ?? {}).sort())
     expect(Object.values(manifest.peerDependenciesMeta ?? {}).every(meta => meta.optional === true))
@@ -561,10 +579,11 @@ describe('dsh-claude-tui bundle', () => {
     expect(shrinkwrap.packages?.['']?.peerDependenciesMeta).toEqual(manifest.peerDependenciesMeta)
     expect(shrinkwrap.packages?.['']?.dependencies).toMatchObject({
       '@aws-sdk/credential-provider-node': '3.972.79',
-      '@deepseek-ai/dsh': '0.2.1-rc.2',
+      '@deepseek-ai/dsh': '0.2.2-rc.1',
     })
     expect(shrinkwrap.packages?.['node_modules/@aws-sdk/credential-provider-node']?.version)
       .toBe('3.972.79')
+    expect(shrinkwrap.packages?.['node_modules/@opentelemetry/api']?.version).toBe('1.9.1')
     expect(shrinkwrap.packages?.['node_modules/react']?.version).toBe('18.3.1')
     expect(shrinkwrap.packages?.['node_modules/react-dom']?.version).toBe('18.3.1')
     expect(shrinkwrap.packages?.['node_modules/sharp']?.version).toBe('0.35.5')
@@ -572,7 +591,7 @@ describe('dsh-claude-tui bundle', () => {
       .filter(([path]) => /node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(path))
       .map(([, entry]) => entry.version)
     expect(dshVersions.length).toBeGreaterThan(0)
-    expect(new Set(dshVersions)).toEqual(new Set(['0.2.1-rc.2']))
+    expect(new Set(dshVersions)).toEqual(new Set(['0.2.2-rc.1']))
 
     const installedRequire = createRequire(
       join(installDirectory, 'node_modules/dsh-claude-tui/package.json'),
@@ -586,7 +605,7 @@ describe('dsh-claude-tui bundle', () => {
         'utf8',
       ),
     ) as { version?: string }
-    expect(installedDsh.version).toBe('0.2.1-rc.2')
+    expect(installedDsh.version).toBe('0.2.2-rc.1')
     expect(installedAwsCredentialProvider.version).toBe('3.972.79')
     expect(JSON.parse(
       readFileSync(installedRequire.resolve('react/package.json'), 'utf8'),
@@ -600,7 +619,7 @@ describe('dsh-claude-tui bundle', () => {
     expect((attachmentRequire('sharp') as { versions: { sharp: string } }).versions.sharp)
       .toBe('0.35.5')
 
-    const installedDeepSeekScope = join(installDirectory, 'node_modules/@deepseek-ai')
+    const installedDeepSeekScope = dirname(dirname(installedRequire.resolve('@deepseek-ai/dsh/package.json')))
     const requiredDeepSeekPeers = new Set<string>()
     for (const packageName of readdirSync(installedDeepSeekScope)) {
       const installedManifest = JSON.parse(
@@ -617,7 +636,7 @@ describe('dsh-claude-tui bundle', () => {
       }
     }
     expect([...requiredDeepSeekPeers].filter(peer => {
-      return !existsSync(join(installDirectory, 'node_modules', peer, 'package.json'))
+      try { installedRequire.resolve(`${peer}/package.json`); return false } catch { return true }
     }))
       .toEqual([])
 
@@ -637,6 +656,12 @@ describe('dsh-claude-tui bundle', () => {
         .test(problem)
     })).toEqual([])
 
+    const audit = spawnSync('npm', ['audit', '--omit=dev', '--json', '--prefix', installDirectory], {
+      encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
+    })
+    expect(audit.status, audit.stderr || audit.stdout).toBe(0)
+    expect(JSON.parse(audit.stdout).metadata.vulnerabilities.total).toBe(0)
+
     const publishedText = entries
       .filter(entry => !entry.endsWith('.svg'))
       .map(entry => readFileSync(join(packDirectory, entry), 'utf8'))
@@ -650,7 +675,7 @@ describe('dsh-claude-tui bundle', () => {
     await verifySecurityDependencies(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
   }, 40_000)
 
-  it('preserves DSH 0.2.1-rc.2 MCP behavior in the installed TUI', async () => {
+  it('preserves DSH 0.2.2-rc.1 MCP behavior in the installed TUI', async () => {
     await verifyMcpCompatibility(join(installDirectory, 'node_modules/dsh-claude-tui/package.json'))
   }, 40_000)
 
@@ -700,7 +725,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.9\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.10\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -716,9 +741,15 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.9\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.10\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
+
+  it('closes Zod and undici security regressions through the installed dependency owners', async () => {
+    const path = join(installDirectory, 'node_modules/dsh-claude-tui/package.json')
+    await verifyZodSecurity(path)
+    await verifyUndiciSecurity(path)
+  }, 40_000)
 
   it('initializes and boots the managed profile from the installed tarball', () => {
     const workspaceDirectory = join(packDirectory, 'workspace')
@@ -851,8 +882,8 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.9')
-      expect(first.output).toContain('Harness 0.2.1-rc.2 · bundled · PTC')
+      expect(first.output).toContain('v0.1.10')
+      expect(first.output).toContain('Harness 0.2.2-rc.1 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')
       expect(first.output).not.toContain('Use /provider to configure API access')
@@ -882,11 +913,11 @@ describe('dsh-claude-tui bundle', () => {
     }
   }, 120_000)
 
-  it('starts a real rc.2 child and delivers its message through the packed TUI', async () => {
+  it.each([true, false])('settles a real rc.1 child with parent messaging=%s through the packed TUI', async sendsMessage => {
     const apiKey = 'packed-subagent-key'
-    const server = await startMockDeepSeekServer(apiKey, 'subagent')
-    const dshHome = join(packDirectory, 'subagent-dsh-home')
-    const workspace = join(packDirectory, 'subagent-workspace')
+    const server = await startMockDeepSeekServer(apiKey, sendsMessage ? 'subagent' : 'subagent-closing')
+    const dshHome = join(packDirectory, `subagent-${sendsMessage}-dsh-home`)
+    const workspace = join(packDirectory, `subagent-${sendsMessage}-workspace`)
     mkdirSync(workspace)
     const env = stringEnvironment({
       DSH_HOME: dshHome,
@@ -898,6 +929,9 @@ describe('dsh-claude-tui bundle', () => {
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
     })
+    const closingNotice = sendsMessage
+      ? 'It sent you a message just before finishing, so its closing message is omitted.'
+      : 'packed child finished'
     try {
       const initialized = spawnSync(process.execPath, [installedExecutable, '--dump-config'], {
         cwd: workspace, env, encoding: 'utf8', timeout: 30_000,
@@ -908,11 +942,11 @@ describe('dsh-claude-tui bundle', () => {
       const result = await runPackedTui(installedExecutable,
         ['--session-id', 'packed-subagent-parent', 'delegate the packed child task'],
         workspace, env, 'packed delegated reply',
-        async ({ waitForText }) => { await waitForText('packed child finished') })
+        async ({ waitForText }) => { await waitForText(closingNotice) })
       expect(result.exitCode).toBe(0)
       expect(result.signal).toBe(0)
-      expect(result.output).toContain('packed child delivered its result')
-      expect(result.output).toContain('packed child finished')
+      expect(result.output).toContain(sendsMessage ? 'packed child delivered its result' : 'packed child finished')
+      expect(result.output).toContain(closingNotice)
       expect(result.output).not.toContain('Backgrounded agent')
       expect(result.output).not.toContain(apiKey)
       const parentLog = readdirSync(join(dshHome, 'sessions'), { recursive: true })
@@ -921,20 +955,20 @@ describe('dsh-claude-tui bundle', () => {
       const logged = readFileSync(join(dshHome, 'sessions', String(parentLog)), 'utf8')
       expect(logged).toContain('subagent/catalog')
       expect(logged).toContain('started subagent ')
-      expect(logged).toContain('agent-message')
+      if (sendsMessage) expect(logged).toContain('agent-message')
       expect(logged).toContain('subagent-settled')
       const events = logged.trim().split('\n').map(line => JSON.parse(line))
       const settlement = events.find(event => event.type === 'user/message'
         && event.data?.source?.kind === 'subagent-settled')
       expect(settlement?.data.content).toEqual(expect.arrayContaining([
-        { type: 'text', text: 'packed child finished' },
+        { type: 'text', text: closingNotice },
       ]))
       expect(settlement?.data.source.summary)
         .toMatch(/ finished and will do no further work unless you send it more\.$/u)
-      expect(logged).toContain('packed child delivered its result')
+      if (sendsMessage) expect(logged).toContain('packed child delivered its result')
       const wire = JSON.stringify(server.requests.map(request => request.body))
       expect(wire).toContain('call-packed-subagent')
-      expect(wire).toContain('call-packed-child-message')
+      if (sendsMessage) expect(wire).toContain('call-packed-child-message')
       const delegationSchemas = server.requests.flatMap(request =>
         Array.isArray(request.body.tools)
           ? request.body.tools.filter(tool => tool.name === 'subagent') : [])
@@ -962,6 +996,7 @@ describe('dsh-claude-tui bundle', () => {
       prompt: 'A prompt from DSH 0.2.0-rc.2', reply: 'A restored V4 reply.',
       toolResult: 'V4 tool result', toolCallId: 'v4-call', currentGeneration: true,
     },
+    { writer: '0.2.1-rc.2', filename: 'session.v4.jsonl', sessionId: 'rc21-tui-session', prompt: 'A prompt from DSH 0.2.1-rc.2', reply: 'A restored rc.21 reply.', toolResult: 'RC21 tool result', toolCallId: 'rc21-call', currentGeneration: true },
   ])('resumes a $writer Session while preserving its existing log bytes', async (fixture) => {
     const dshHome = join(packDirectory, `migration-home-${fixture.writer}`)
     const workspace = join(packDirectory, `migration-workspace-${fixture.writer}`)
@@ -1006,6 +1041,41 @@ describe('dsh-claude-tui bundle', () => {
       })
     }
   }, 60_000)
+
+  it('restores an explicit model choice without any model request in the installed PTY', async () => {
+    const server = await startMockDeepSeekServer('pending-model-fixture-key')
+    const dshHome = join(packDirectory, 'pending-model-dsh-home')
+    const workspace = join(packDirectory, 'pending-model-workspace')
+    mkdirSync(workspace)
+    const env = stringEnvironment({
+      DSH_HOME: dshHome,
+      DSH_CLAUDE_TUI_RUNTIME: 'bundled',
+      DSH_TELEMETRY_DISABLED: '1',
+      DEEPSEEK_API_KEY: 'pending-model-fixture-key',
+      DEEPSEEK_BASE_URL: server.baseURL,
+      TERM: 'xterm-256color',
+    })
+    try {
+      const selected = await runPackedTui(installedExecutable,
+        ['--session-id', 'pending-model-session', '--model', 'deepseek-official/pending-test-model'],
+        workspace, env, 'pending-test-model')
+      expect(selected.exitCode).toBe(0)
+      const resumed = await runPackedTui(installedExecutable,
+        ['--resume', 'pending-model-session'], workspace, env, 'pending-test-model')
+      expect(resumed.exitCode).toBe(0)
+      expect(resumed.output).not.toContain('Welcome back!')
+      const overridden = await runPackedTui(installedExecutable,
+        ['--resume', 'pending-model-session', '--model', 'deepseek-official/explicit-override-model'],
+        workspace, env, 'explicit-override-model')
+      expect(overridden.exitCode).toBe(0)
+      const resumedOverride = await runPackedTui(installedExecutable,
+        ['--resume', 'pending-model-session'], workspace, env, 'explicit-override-model')
+      expect(resumedOverride.exitCode).toBe(0)
+      expect(server.requests).toEqual([])
+    } finally {
+      await server.close()
+    }
+  }, 90_000)
 
   it('toggles and resumes plan mode through macOS Shift+Tab in the installed PTY', async () => {
     const dshHome = join(packDirectory, 'shift-tab-dsh-home')
@@ -1151,7 +1221,7 @@ describe('dsh-claude-tui bundle', () => {
 
       expect(outcome.exitCode).toBe(0)
       expect(outcome.signal).toBe(0)
-      expect(outcome.output).toContain('Harness 0.2.1-rc.2 · system · PTC')
+      expect(outcome.output).toContain('Harness 0.2.2-rc.1 · system · PTC')
       expect(outcome.output).toContain('packed tool result')
       expect(outcome.output).not.toContain(apiKey)
       expect(realpathSync(join(modules, 'dsh'))).toBe(realpathSync(externalDshRoot))

@@ -1,6 +1,6 @@
 import satisfies from 'semver/functions/satisfies.js'
 
-export const EXTERNAL_DSH_RANGE = '>=0.2.1-rc.2 <0.2.2'
+export const EXTERNAL_DSH_RANGE = '>=0.2.2-rc.1 <0.2.3'
 export const LEGACY_PROFILE_NAME = 'claude-tui'
 export const PROFILE_NAME = 'dsh-claude-tui'
 

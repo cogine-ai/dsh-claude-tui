@@ -40,7 +40,7 @@ describe('claude-tui startup grammar', () => {
 
   it('accepts only a valid launcher runtime snapshot', () => {
     vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', JSON.stringify({
-      harnessVersion: '0.2.1-rc.2',
+      harnessVersion: '0.2.2-rc.1',
       runtimeKind: 'bundled',
       homeKind: 'shared',
       homePath: '/tmp/test-dsh-home',
@@ -49,7 +49,7 @@ describe('claude-tui startup grammar', () => {
     try {
       expect(parse([])).toMatchObject({
         runtimeSnapshot: {
-          harnessVersion: '0.2.1-rc.2',
+          harnessVersion: '0.2.2-rc.1',
           runtimeKind: 'bundled',
           homeKind: 'shared',
           homePath: '/tmp/test-dsh-home',
@@ -70,7 +70,7 @@ describe('claude-tui startup grammar', () => {
 
   it('rejects an obsolete both-mode runtime snapshot', () => {
     vi.stubEnv('DSH_CLAUDE_TUI_RUNTIME_SNAPSHOT', JSON.stringify({
-      harnessVersion: '0.2.1-rc.2',
+      harnessVersion: '0.2.2-rc.1',
       runtimeKind: 'bundled',
       homeKind: 'shared',
       homePath: '/tmp/test-dsh-home',

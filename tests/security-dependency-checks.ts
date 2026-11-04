@@ -170,7 +170,7 @@ async function verifyOfficeZip(kitPath: string): Promise<void> {
 function verifyFastUri(appBootRequire: DependencyRequire): void {
   const ajvPath = appBootRequire.resolve('ajv/package.json')
   const ajvRequire = createRequire(ajvPath)
-  assertDependencyVersion(ajvRequire, 'fast-uri', '3.1.8')
+  assertDependencyVersion(ajvRequire, 'fast-uri', '3.1.9')
   const fastUri = ajvRequire('fast-uri') as UriResolver
   const Ajv = appBootRequire('ajv') as new () => AjvInstance
   const ajv = new Ajv()

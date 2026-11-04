@@ -7,6 +7,66 @@ following `package.json` dependency declarations change:
 | Owner | Dependency | Original | Patched |
 | --- | --- | --- | --- |
 | `@deepseek-ai/libreoffice-kit@0.1.5` | `fflate` | `0.8.2` | `0.8.3` |
+| `@deepseek-ai/dsh-action-cards@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-agent@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-agent-loop@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-agent-preset-registry@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-account-controller@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-job-controller@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-remote-access@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-session-controller@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-settings-controller@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-terminal-controller@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-workspace-controller@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-api-workspace-files@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-chunked-list@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-client-connection@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-client-file-upload@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-client-product-analytics@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-client-ui-plugin-manager@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-client-ui-trajectory@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-command-feedback@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-commands@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-cordis-host-runner@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-creation-recommendations@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-deepseek-account-platform@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-experimental-agent-team@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-experimental-api-speech-to-text@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-experimental-liveshare@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-experimental-speech-to-text-sensevoice@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-goal@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-harness-dev-context@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-host-plugin-inventory@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-http-proxy@0.2.2-rc.1` | `undici` | `8.11.2` | `8.12.2` |
+| `@deepseek-ai/dsh-llm@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-llm-retry@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-mcp-client@0.2.2-rc.1` | `@modelcontextprotocol/client` | `2.2.0` | `2.3.0` |
+| `@deepseek-ai/dsh-message-feedback@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-office-to-pdf@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-permission-presets@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-plan-mode@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-plugin-manager@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-plugin-recommendations@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-sandbox-policy@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-schedule@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-session-projection@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-session-projection-cache@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-session-reference@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-session-stats@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-session-title@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-session-turn-outline@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-storage-domain@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-subagent@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-time-context@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-tmux-context@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-token-meter@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-tool-subagent@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-tool-todo@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-typert-registry@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-user-approval@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-user-questions@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
+| `@deepseek-ai/dsh-web-fetch-http@0.2.2-rc.1` | `undici` | `8.11.2` | `8.12.2` |
+| `@deepseek-ai/dsh-workspace@0.2.2-rc.1` | `zod` | `4.4.3` | `4.6.6` |
 
 Every other archive member retains its contents, link target, type, and mode,
 including all upstream sources and `package/LICENSE`. The generator verifies
@@ -27,10 +87,14 @@ Both commands download the pinned original npm archive over HTTPS. No npm
 installation, lifecycle script, or archive extraction runs. `--check` regenerates
 all outputs in a temporary directory and fails if any committed output differs.
 Archives use sorted member order, fixed ownership and timestamps, preserved
-modes, gzip `mtime=0`, and a normalized gzip OS header. The download URLs and integrity pins are in the script;
+modes, gzip `mtime=0`, and a normalized gzip OS header. The download URLs and integrity pins are in `scripts/security-repacks.json`;
 changing them requires review of the original source and patch.
 
-The consuming manifest and shrinkwrap must use public HTTPS artifact URLs pinned
-to the exact Git commit containing these files, together with the repacked
-SHA-512 integrity values. Relative `file:` tarballs and root-only overrides do
-not provide the required portable consumer dependency graph.
+The workspace uses these verified local archives through pnpm overrides.
+The npm artifact embeds all 324 integrity-verified DSH packages, including the
+60 repaired owners, with standard `bundleDependencies`. Bundling the complete
+DSH closure prevents external parents from loading original vulnerable owners
+through npm hoisting. Other dependencies remain external and pinned by the
+shrinkwrap. This makes the repair portable without uploading new tarballs.
+The unchanged Office repack retains its previously published commit-pinned URL.
+Root-only overrides and source-relative archive paths are not the consumer fix.

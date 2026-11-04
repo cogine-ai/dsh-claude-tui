@@ -30,7 +30,7 @@ If an issue is not yet filed, use the repository's issue chooser. A small reprod
 
 Requirements:
 
-- Node.js `22.19+` in 22.x, or `24.2+` (`^22.19.0 || >=24.2.0`);
+- Node.js `24.9+` (`>=24.9.0`);
 - Corepack;
 - an xterm-compatible terminal for interactive checks.
 
@@ -43,7 +43,7 @@ corepack pnpm check
 
 `pnpm check` verifies the official documentation snapshot, runs TypeScript validation, builds the production code, and runs the complete serial Vitest suite. Most tests do not need a provider credential. Never commit credentials or a populated DSH Home.
 
-Release maintainers also run `corepack pnpm test:bundle:default` to qualify plain npm peer resolution with a fresh npm cache. Allow several minutes for upstream peer resolution. Routine CI tests the `--legacy-peer-deps` installation path and verifies the installed dependency tree and runtime behavior.
+Release maintainers also run `corepack pnpm test:bundle:default` to qualify plain npm peer resolution with a fresh npm cache. Allow several minutes for upstream peer resolution. Routine CI tests the `--legacy-peer-deps` installation path and verifies the installed dependency tree and runtime behavior. Local corrective reruns can set `DSH_CLAUDE_TUI_NPM_CACHE` to a retained npm cache; record that reuse separately from fresh-cache installation evidence.
 
 For a quick local launch from the repository:
 
@@ -116,3 +116,5 @@ Release publication remains a maintainer action. Contributors should not change 
 ## Official DSH documentation
 
 The [official documentation mirror](./docs/upstream/dsh/README.md) follows the runtime pin. Run `corepack pnpm docs:dsh:sync` when upgrading DSH; CI runs `corepack pnpm docs:dsh:check` to verify version and content integrity. Keep project guidance outside the generated `snapshot/` tree.
+
+Local artifacts use `corepack pnpm run pack:artifact` (build, verify/stage the complete DSH closure, then npm pack). Direct source packing is unsupported. Reproduce dependency repairs with `python3 scripts/repack-security-dependencies.py --check`; `--npm-cache PATH` reuses original archives with full integrity verification. Refresh the portable production lock with `corepack pnpm lock:npm`.
