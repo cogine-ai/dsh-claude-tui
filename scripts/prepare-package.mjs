@@ -27,6 +27,20 @@ mkdirSync(join(destination, 'vendor/security'), { recursive: true })
 for (const name of ['README.md', 'provenance.json']) cpSync(join(root, 'vendor/security', name), join(destination, 'vendor/security', name))
 const inventory = {}
 const sha512 = bytes => `sha512-${createHash('sha512').update(bytes).digest('base64')}`
+const cache = process.env.DSH_CLAUDE_TUI_NPM_CACHE ?? join(homedir(), '.npm')
+const cachedArchive = original => {
+  const hex = Buffer.from(original.integrity.slice(7), 'base64').toString('hex')
+  return join(cache, '_cacache/content-v2/sha512', hex.slice(0, 2), hex.slice(2, 4), hex.slice(4))
+}
+const missing = closure.filter(original => !specs.some(spec => spec.name === original.name)
+  && !existsSync(cachedArchive(original)))
+if (missing.length) {
+  // npm fetches these tarballs concurrently and retains them for subsequent packs.
+  // Each archive is still checked against its canonical SHA-512 below.
+  execFileSync('npm', ['cache', 'add', ...missing.map(original => original.url), '--cache', cache, '--ignore-scripts'], {
+    stdio: 'inherit',
+  })
+}
 for (const original of closure) {
   const spec = specs.find(spec => spec.name === original.name)
   let bytes
@@ -36,15 +50,7 @@ for (const original of closure) {
     integrity = provenance.packages.find(record => record.package === spec.name)?.repacked.integrity
   } else {
     integrity = original.integrity
-    const hex = Buffer.from(integrity.slice(7), 'base64').toString('hex')
-    const cache = process.env.DSH_CLAUDE_TUI_NPM_CACHE ?? join(homedir(), '.npm')
-    const cached = join(cache, '_cacache/content-v2/sha512', hex.slice(0, 2), hex.slice(2, 4), hex.slice(4))
-    if (existsSync(cached)) bytes = readFileSync(cached)
-    else {
-      const response = await fetch(original.url)
-      if (!response.ok) throw new Error(`Cannot retrieve ${original.name}: ${response.status}`)
-      bytes = Buffer.from(await response.arrayBuffer())
-    }
+    bytes = readFileSync(cachedArchive(original))
   }
   if (sha512(bytes) !== integrity) throw new Error(`DSH archive integrity differs: ${original.name}`)
   const target = join(destination, 'node_modules', original.name)

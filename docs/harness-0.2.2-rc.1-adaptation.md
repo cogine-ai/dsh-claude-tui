@@ -220,3 +220,29 @@ required after dependency qualification.
 
 A separate real external-DSH probe loading the fully staged TUI also returned
 `compatible: true`; positive external reuse is not established solely by fake CLI fixtures.
+
+### PR CI follow-up / CI 跟进（2026-11-05）
+
+The initial Ubuntu run for `97af482` passed the complete Node `24.22.1` gate
+(249 passed, one optional clipboard test skipped). Node `24.9.0` passed the
+installed-bundle and security checks but failed the packed-launcher setup:
+cold artifact preparation took 58.5 seconds against its legacy 30-second hook
+budget, leaving all 53 launcher assertions unexecuted.
+
+Preparation now uses `npm cache add` to fetch missing canonical archives
+concurrently into the existing npm cache and reuse them on subsequent packs.
+Every archive still undergoes the same pinned SHA-512 check before extraction;
+no dependency install or lifecycle script is run by this prefetch. The launcher
+setup budget is 120 seconds; runtime and security assertions are unchanged.
+A Node `24.9.0` launcher run starting with an empty canonical-archive cache
+passed all 53 cases in 37.76 seconds. Reusing that cache also stages successfully
+with npm offline mode. This is cold archive preparation, not a new cold consumer
+installation claim. The corrected local Node `24.22.1` complete gate passed
+249 cases with the same optional clipboard skip (69.65 seconds).
+
+CodeRabbit initially skipped review because 1,283 files exceeded its 300-file
+limit. The review filter excludes only nested upstream-original snapshot files;
+root provenance, index and license files remain reviewable, along with runtime,
+packaging, security, tests and maintained documentation. Snapshot integrity
+remains checked in CI. Corrected remote CI and review results are tracked on
+[PR #26](https://github.com/cogine-ai/dsh-claude-tui/pull/26).
