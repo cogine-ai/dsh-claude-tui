@@ -421,7 +421,7 @@ describe('ClaudeTuiApplication', () => {
     const test = bench(42, 12)
     await test.app.start()
     const answer = test.askQuestions({ agent: test.app.agent, questions: [{
-      id: 'multi', question: 'Pick several', multiSelect: true,
+      id: 'multi', question: 'Pick several', detail: 'Only workspace files', multiSelect: true,
       options: Array.from({ length: 8 }, (_, index) => ({ label: `Option ${index}`, description: 'Detail' })),
     }] })
     await test.terminal.settle()
@@ -430,6 +430,7 @@ describe('ClaudeTuiApplication', () => {
     test.terminal.send(' ')
     await test.terminal.settle()
     expect(test.terminal.text()).toContain('❯ [x] Option 7')
+    expect(test.terminal.text()).toContain('Only workspace files')
     expect(test.terminal.text()).toContain('Esc cancel')
     test.terminal.send('\r')
     await expect(answer).resolves.toEqual({ answers: [{ id: 'multi', selected: ['Option 0', 'Option 7'] }] })
