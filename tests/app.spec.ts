@@ -388,6 +388,7 @@ describe('ClaudeTuiApplication', () => {
     expect(test.terminal.text()).toContain('1. Yes')
     expect(test.terminal.text()).toContain('3. No')
     expect(test.terminal.text()).toContain('Esc cancel')
+    expect(test.terminal.text()).toContain('Modify one workspace file')
     test.terminal.send('\u001b[B')
     await test.terminal.settle()
     expect(test.terminal.lines()[test.terminal.cursor().row]).toContain('3. No')

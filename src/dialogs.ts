@@ -94,9 +94,9 @@ class ApprovalDialog implements Component, Focusable {
     const details = approvalDetails(this.request, this.presentation)
     if (this.availableRows() < 12) {
       return [
-        truncateToWidth(` ${this.palette.bold(approvalHeading(this.request.toolName))}`, safeWidth, '…'),
+        truncateToWidth(` ${this.palette.bold(`${approvalHeading(this.request.toolName)} · proceed?`)}`, safeWidth, '…'),
         detailRow(details.primary, safeWidth, this.palette.plain),
-        truncateToWidth(' Do you want to proceed?', safeWidth, '…'),
+        detailRow(details.secondary, safeWidth, this.palette.dim),
         this.optionRow('allow', '1.', 'Yes', safeWidth),
         this.optionRow('reject', '3.', 'No', safeWidth),
         truncateToWidth(` ${this.palette.dim('Esc cancel · 1/3 choose')}`, safeWidth, '…'),
