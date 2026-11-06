@@ -378,6 +378,195 @@ function descriptionColumn(line: string): number {
 }
 
 describe('ClaudeTuiApplication', () => {
+  it.each([[42, 12], [32, 8]])('keeps both approval outcomes visible at %ix%i and rejects the selected action', async (columns, rows) => {
+    const test = bench(columns, rows)
+    await test.app.start()
+    const outcome = test.app.agent.ctx.waterfall('approval/request', {
+      agent: test.app.agent, toolName: 'write', reason: 'Modify one workspace file',
+    }, () => Promise.resolve('unavailable'))
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('1. Yes')
+    expect(test.terminal.text()).toContain('3. No')
+    expect(test.terminal.text()).toContain('Esc cancel')
+    expect(test.terminal.text()).toContain('Modify one workspace file')
+    test.terminal.send('\u001b[B')
+    await test.terminal.settle()
+    expect(test.terminal.lines()[test.terminal.cursor().row]).toContain('3. No')
+    test.terminal.send('\r')
+    await expect(outcome).resolves.toBe('rejected')
+    await test.app.dispose()
+  })
+
+  it.each([[42, 12], [32, 8]])('keeps later structured answers visible at %ix%i', async (columns, rows) => {
+    const test = bench(columns, rows)
+    await test.app.start()
+    const answer = test.askQuestions({
+      agent: test.app.agent,
+      questions: [{ id: 'short', question: 'Pick an option', options: Array.from({ length: 8 }, (_, index) => ({
+        label: `Option ${index}`, description: 'A longer explanatory detail',
+      })) }],
+    })
+    await test.terminal.settle()
+    for (let i = 0; i < 7; i++) test.terminal.send('\u001b[B')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('Pick an option')
+    expect(test.terminal.text()).toContain('Esc cancel')
+    expect(test.terminal.lines()[test.terminal.cursor().row]).toContain('Option 7')
+    test.terminal.send('\r')
+    await expect(answer).resolves.toEqual({ answers: [{ id: 'short', selected: ['Option 7'] }] })
+    await test.app.dispose()
+  })
+
+  it('keeps later multi-select answers visible and preserves checked choices in a short terminal', async () => {
+    const test = bench(42, 12)
+    await test.app.start()
+    const answer = test.askQuestions({ agent: test.app.agent, questions: [{
+      id: 'multi', question: 'Pick several', multiSelect: true,
+      options: Array.from({ length: 8 }, (_, index) => ({ label: `Option ${index}`, description: 'Detail' })),
+    }] })
+    await test.terminal.settle()
+    test.terminal.send(' ')
+    for (let i = 0; i < 7; i++) test.terminal.send('\u001b[B')
+    test.terminal.send(' ')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('❯ [x] Option 7')
+    expect(test.terminal.text()).toContain('Esc cancel')
+    test.terminal.send('\r')
+    await expect(answer).resolves.toEqual({ answers: [{ id: 'multi', selected: ['Option 0', 'Option 7'] }] })
+    await test.app.dispose()
+  })
+
+  it.each([true, false])('keeps a later command visible and executes it with color=%s', async color => {
+    const test = bench(80, 24, () => 1_000, {
+      color,
+      commands: [{ name: 'seventh', description: 'An upstream command after local shortcuts' }],
+    })
+    await test.app.start()
+    test.terminal.send('/')
+    for (let i = 0; i < 6; i++) test.terminal.send('\u001b[B')
+    await test.terminal.settle()
+    const row = test.terminal.lines().findIndex(line => line.includes('❯ /seventh'))
+    expect(row).toBeGreaterThan(0)
+    expect(test.terminal.cellStyle(row, 2)?.fg).toBe(color ? '#b1b9f9' : 'default')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.commandCalls[0]?.line).toBe('/seventh')
+    await test.app.dispose()
+  })
+
+  it('preserves the composer and selected command while a short window resizes', async () => {
+    const test = bench(42, 12, () => 1_000, { color: true })
+    await test.app.start()
+    test.terminal.send('/')
+    test.terminal.resize(32, 8)
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('/transcript')
+    for (let i = 0; i < 5; i++) test.terminal.send('\u001b[B')
+    await test.terminal.settle()
+    const lines = test.terminal.lines()
+    expect(lines.some(line => line.startsWith('❯\u00a0/'))).toBe(true)
+    expect(lines.some(line => line.includes('❯ /provider'))).toBe(true)
+    expect(test.terminal.cursor().row).toBeLessThan(8)
+    test.terminal.send('\u001b')
+    await test.terminal.settle()
+    expect(test.terminal.text()).not.toContain('/provider')
+    expect(test.terminal.text()).toContain('❯\u00a0/')
+    await test.app.dispose()
+  })
+
+  it('keeps the composer visible when upstream command descriptions would fill the viewport', async () => {
+    const test = bench(80, 24, () => 1_000, {
+      commands: [{ name: 'verbose', description: 'A very long plugin description. '.repeat(100) }],
+    })
+    await test.app.start()
+    for (const char of '/verbose') test.terminal.send(char)
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('❯\u00a0/verbose')
+    expect(test.terminal.text()).toContain('❯ /verbose')
+    expect(test.terminal.cursor().row).toBeLessThan(24)
+    await test.app.dispose()
+  })
+
+  it('keeps file selection visible without color while scrolling a short completion list', async () => {
+    const test = bench(32, 8)
+    const app = new ClaudeTuiApplication(test.ctx, test.app.agent, resolveConfig({ color: false }), {
+      terminal: test.terminal, exit: () => {},
+      listWorkspaceEntries: async () => Array.from({ length: 12 }, (_, index) => ({
+        path: `file-${index}.ts`, directory: false,
+      })),
+    })
+    await app.start()
+    await test.terminal.settle()
+    test.terminal.send('@')
+    for (let i = 0; i < 10; i++) test.terminal.send('\u001b[B')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('❯ file-10.ts')
+    expect(test.terminal.text()).toContain('❯\u00a0@')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('❯\u00a0@file-10.ts')
+    expect(test.followups).toEqual([])
+    await app.dispose()
+  })
+
+  it('keeps the chosen model, effort and cancel hint visible in a short model picker', async () => {
+    const models = modelFixture()
+    models.catalogModels.push(...Array.from({ length: 12 }, (_, index) => `extra-${index}`))
+    const test = bench(42, 12, () => 1_000, { models })
+    await test.app.start()
+    for (const char of '/model') test.terminal.send(char)
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    for (let i = 0; i < 11; i++) test.terminal.send('\u001b[B')
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('extra-9')
+    expect(test.terminal.text()).toContain('effort:')
+    expect(test.terminal.text()).toContain('Esc cancel')
+    const row = test.terminal.cursor().row
+    expect(test.terminal.lines()[row]).toContain('extra-9')
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(models.selection.current?.model).toBe('extra-9')
+    await test.app.dispose()
+  })
+
+  it('collapses the new-session welcome after a durable user message without losing the draft', async () => {
+    const test = bench(100, 30, () => 1_000, { welcomeExpanded: true })
+    await test.app.start()
+    await test.terminal.settle()
+    expect(test.terminal.text()).toContain('Welcome back!')
+    test.app.agent.session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'Start this conversation' }],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+    // Deliver the same committed-event notification used by DSH's session store.
+    const event = test.app.agent.session.snapshotEvents().at(-1)!
+    test.app.agent.ctx.emit('session/event', test.app.agent.session, event)
+    test.terminal.send('后续草稿')
+    await test.terminal.settle()
+    expect(test.terminal.text()).not.toContain('Welcome back!')
+    expect(test.terminal.text()).toContain('后续草稿')
+    expect(test.terminal.text()).toContain('Start this conversation')
+    await test.app.dispose()
+  })
+
+  it('preserves pasted Chinese, emoji and newlines across narrow-to-wide resizes and submission', async () => {
+    const test = bench(80, 24)
+    const draft = '检查 src/example.ts\n第二行：保留草稿与光标\n第三行 🙂'
+    await test.app.start()
+    test.terminal.send(`\u001b[200~${draft}\u001b[201~`)
+    for (const width of [32, 42, 100]) {
+      test.terminal.resize(width, 24)
+      await test.terminal.settle()
+      expect(test.terminal.text()).toContain('第三行')
+    }
+    test.terminal.send('\r')
+    await test.terminal.settle()
+    expect(test.followups).toHaveLength(1)
+    expect(test.followups[0]?.content).toEqual([{ type: 'text', text: draft }])
+    await test.app.dispose()
+  })
+
   it('renders the captured full welcome panel for a new Session', async () => {
     const reference = JSON.parse(readFileSync(
       new URL('./fixtures/claude-code-2.1.227/welcome-100x30.json', import.meta.url),
@@ -655,9 +844,9 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('matches the Claude Code idle shell geometry captured from a real PTY', async () => {
+  it.each(['2.1.227', '2.1.311'])('matches the Claude Code idle shell geometry captured from a real PTY (%s)', async version => {
     const reference = JSON.parse(readFileSync(
-      new URL('./fixtures/claude-code-2.1.227/idle-80x24.json', import.meta.url),
+      new URL(`./fixtures/claude-code-${version}/idle-80x24.json`, import.meta.url),
       'utf8',
     )) as ReferenceFrame
     const test = bench(80, 24)
@@ -671,9 +860,9 @@ describe('ClaudeTuiApplication', () => {
     await test.app.dispose()
   })
 
-  it('matches the Claude Code welcome and prompt palette captured from a real PTY', async () => {
+  it.each(['2.1.227', '2.1.311'])('matches the Claude Code welcome and prompt palette captured from a real PTY (%s)', async version => {
     const reference = JSON.parse(readFileSync(
-      new URL('./fixtures/claude-code-2.1.227/idle-80x24.json', import.meta.url),
+      new URL(`./fixtures/claude-code-${version}/idle-80x24.json`, import.meta.url),
       'utf8',
     )) as ReferenceFrame
     const test = bench(80, 24)
@@ -723,7 +912,7 @@ describe('ClaudeTuiApplication', () => {
 
   it('opens slash suggestions directly below the prompt like the real Claude PTY', async () => {
     const reference = JSON.parse(readFileSync(
-      new URL('./fixtures/claude-code-2.1.227/slash-80x24.json', import.meta.url),
+      new URL('./fixtures/claude-code-2.1.311/slash-80x24.json', import.meta.url),
       'utf8',
     )) as ReferenceFrame
     const test = bench(80, 24)
@@ -739,19 +928,19 @@ describe('ClaudeTuiApplication', () => {
 
     const expectedLines = reference.frame.lines.map(line => line.text)
     const actualLines = test.terminal.lines()
-    const actualSuggestionRow = actualLines.findIndex((line, row) => row > 7 && line.startsWith('/'))
-    const expectedSuggestionRow = expectedLines.findIndex((line, row) => row > 7 && line.startsWith('/'))
+    const actualSuggestionRow = actualLines.findIndex((line, row) => row > 7 && line.includes('❯ /'))
+    const expectedSuggestionRow = expectedLines.findIndex((line, row) => row > 7 && line.includes('❯ /'))
     expect({
       prompt: actualLines[candidateRow(6)],
       firstSuggestionRow: actualSuggestionRow,
-      descriptionColumn: descriptionColumn(actualLines[actualSuggestionRow] ?? ''),
-      selectedStyle: test.terminal.cellStyle(actualSuggestionRow, 0),
+      descriptionColumn: 2 + descriptionColumn((actualLines[actualSuggestionRow] ?? '').slice(2)),
+      selectedStyle: test.terminal.cellStyle(actualSuggestionRow, 2),
       cursor: test.terminal.cursor(),
     }).toEqual({
       prompt: '❯\u00a0/ ',
       firstSuggestionRow: candidateRow(expectedSuggestionRow),
-      descriptionColumn: descriptionColumn(expectedLines[expectedSuggestionRow] ?? ''),
-      selectedStyle: referenceCell(reference, expectedSuggestionRow, 0),
+      descriptionColumn: 2 + descriptionColumn((expectedLines[expectedSuggestionRow] ?? '').slice(2)),
+      selectedStyle: referenceCell(reference, expectedSuggestionRow, 2),
       cursor: candidateCursor(reference.frame.cursor),
     })
 
@@ -1699,9 +1888,9 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('matches the captured completed assistant-response geometry', async () => {
+  it.each(['2.1.227', '2.1.311'])('matches the captured completed assistant-response geometry (%s)', async version => {
     const reference = JSON.parse(readFileSync(
-      new URL('./fixtures/claude-code-2.1.227/response-complete-80x24.json', import.meta.url),
+      new URL(`./fixtures/claude-code-${version}/response-complete-80x24.json`, import.meta.url),
       'utf8',
     )) as ReferenceFrame
     const test = bench(80, 24)
@@ -2371,9 +2560,9 @@ describe('ClaudeTuiApplication', () => {
     await coloredApp.dispose()
   })
 
-  it('matches the captured structured-question panel and returns its selected label', async () => {
+  it.each(['2.1.227', '2.1.311'])('matches the captured structured-question panel and returns its selected label (%s)', async version => {
     const reference = JSON.parse(readFileSync(
-      new URL('./fixtures/claude-code-2.1.227/user-question-80x24.json', import.meta.url),
+      new URL(`./fixtures/claude-code-${version}/user-question-80x24.json`, import.meta.url),
       'utf8',
     )) as ReferenceFrame
     const test = bench(80, 24)

@@ -1,0 +1,119 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "dsh-claude-tui",
+    "version": "0.1.10",
+    "transport": "loopback-reference-api",
+    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+  },
+  "scenario": "slash-tiny",
+  "dimensions": {
+    "columns": 32,
+    "rows": 8
+  },
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 23,
+      "row": 7
+    },
+    "lines": [
+      {
+        "text": "            and leave the",
+        "runs": [
+          {
+            "from": 0,
+            "to": 25,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "            terminal",
+        "runs": [
+          {
+            "from": 0,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/model      Select a live DSH",
+        "runs": [
+          {
+            "from": 0,
+            "to": 29,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "            model for this",
+        "runs": [
+          {
+            "from": 0,
+            "to": 26,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "            session",
+        "runs": [
+          {
+            "from": 0,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/provider   Inspect or update",
+        "runs": [
+          {
+            "from": 0,
+            "to": 29,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "            DSH provider",
+        "runs": [
+          {
+            "from": 0,
+            "to": 24,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "            credentials",
+        "runs": [
+          {
+            "from": 0,
+            "to": 23,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      }
+    ]
+  }
+}

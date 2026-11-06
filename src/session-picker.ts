@@ -162,6 +162,22 @@ export class ClaudeSessionPicker implements Component, Focusable {
     const search = this.query === '' ? '⌕ Search…' : `⌕ ${displayText(this.query)}`
     const input = truncateToWidth(` ${search}`, boxInside, '…')
     const project = this.showAllProjects ? 'All projects' : basename(this.options.cwd)
+    if (this.terminal.rows < 16) {
+      const limit = Math.max(1, this.terminal.rows - 5)
+      const start = Math.max(0, this.selected - limit + 1)
+      return [
+        this.palette.selection('─'.repeat(safeWidth)),
+        ` ${this.palette.bold('Resume session')}`,
+        ` ${this.palette.dim(search)}`,
+        ...entries.slice(start, start + limit).map((entry, offset) => {
+          const selected = start + offset === this.selected
+          return `${selected && this.focused ? CURSOR_MARKER : ''}${selected ? this.palette.selection('❯') : ' '} ${displayText(entry.title)}`
+        }),
+        ...(entries.length === 0 ? [this.palette.dim(' No conversations found.')] : []),
+        this.palette.dim(' ↑↓ · Enter resume · Esc cancel'),
+        this.palette.dim(' Ctrl+A toggle projects'),
+      ].map(line => truncateToWidth(line, safeWidth, '…'))
+    }
     const lines = [
       '',
       this.palette.selection('─'.repeat(safeWidth)),
@@ -182,7 +198,9 @@ export class ClaudeSessionPicker implements Component, Focusable {
       )
     } else {
       const maxItems = Math.max(1, Math.floor((this.terminal.rows - 13) / 3) + 1)
-      entries.slice(0, maxItems).forEach((entry, index) => {
+      const start = Math.max(0, this.selected - maxItems + 1)
+      entries.slice(start, start + maxItems).forEach((entry, offset) => {
+        const index = start + offset
         const title = truncateToWidth(`${index === this.selected ? '❯' : ' '} ${displayText(entry.title)}`, safeWidth - 2, '…')
         const cursor = index === this.selected && this.focused ? CURSOR_MARKER : ''
         lines.push(`  ${cursor}${index === this.selected ? this.palette.selection(title) : this.palette.plain(title)}`)

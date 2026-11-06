@@ -25,17 +25,15 @@
 > [!NOTE]
 > This is an independent community project. It is not affiliated with, endorsed by, or sponsored by Anthropic or DeepSeek. “Claude Code” identifies the version-pinned interaction target; no Anthropic source code is included. See the [trademark and compatibility notice](./DISCLAIMER.md).
 
-## Run this adaptation
+## Install and run
 
 Version `0.1.10` uses DSH `0.2.2-rc.1` and requires Node.js **24.9+** (`>=24.9.0`). Unsupported Node versions fail before changing your DSH Home.
 
 ```bash
-corepack pnpm install --frozen-lockfile
-corepack pnpm build
-node lib/cli.js
+npx --yes --legacy-peer-deps dsh-claude-tui@0.1.10
 ```
 
-`0.1.10` is currently a local adaptation. Run from this adapted checkout; the published npm version remains `0.1.9`.
+The package includes its pinned Harness runtime; no separate global DSH installation is required.
 
 The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; the package explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Ordinary npm peer resolution was also qualified for `0.1.10`, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
 
@@ -44,8 +42,7 @@ A real model request needs credentials for the DSH provider you select. Use `/pr
 For repeat use:
 
 ```bash
-corepack pnpm run pack:artifact
-npm install --global --legacy-peer-deps ./dsh-claude-tui-0.1.10.tgz
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.10
 dshtui
 ```
 
@@ -53,7 +50,7 @@ The global install exposes both `dshtui` and the canonical `dsh-claude-tui` comm
 
 ## DSH 0.2.2-rc.1 adaptation
 
-Development version `0.1.10` pins Harness `0.2.2-rc.1` at upstream commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db` and requires Node.js **24.9+**. External runtimes must satisfy `>=0.2.2-rc.1 <0.2.3` and pass the behavioral probe. See the [adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md) and [unreleased notes](./docs/releases/v0.1.10.md). This checkout has not been published as `0.1.10`.
+Version `0.1.10` pins Harness `0.2.2-rc.1` at upstream commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db` and requires Node.js **24.9+**. External runtimes must satisfy `>=0.2.2-rc.1 <0.2.3` and pass the behavioral probe. See the [adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md) and [release notes](./docs/releases/v0.1.10.md).
 
 - Native and PTC execution use DSH's explicit executor plugins. `DSH_TOOLS_MODE=native|ptc` remains a TUI option, with `code` as a PTC alias; the launcher rejects `both` before discovery or Home writes. Direct-profile startup uses the same validation, and executor selection trims surrounding whitespace.
 - Model selection uses `agent.model.current()` and `select()`. Selections persist immediately, including choices not yet used in a request. Resume preserves them unless this invocation explicitly selects another route; a prepared step and retries retain their captured model.
@@ -125,7 +122,7 @@ See [Launcher environment compatibility](./docs/launcher-environment-compatibili
 
 ## Compatibility and verification
 
-The main interaction target is the observed Claude Code `2.1.227` TUI; the `[Image #1]` Ctrl+V composer behavior was independently observed against Claude Code `2.1.237`. The existing corpus contains **24** independently captured PTY reference frames and **22** automated visual/semantic anchors. Version `0.1.10` reuses this baseline. Current verification results and remaining limits are recorded in the [adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md).
+The original interaction baseline is the observed Claude Code `2.1.227` TUI; the `[Image #1]` Ctrl+V composer behavior was independently observed against `2.1.237`. The 24 original PTY frames remain unchanged. Version `0.1.10` adds 9 independent frames from the installed Claude Code `2.1.311`, with 4 used as automated anchors for the shell, slash menu, completed response, and structured question. The original corpus retains 21 active anchors; its slash frame is now historical. See the [UX validation and comparisons](./docs/ux-validation-0.1.10.md) and [DSH adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md) for verified scope and remaining limits.
 
 - Gates exercise true-color, xterm-compatible `80x24` and `100x30` layouts, images, command attachments, approvals, questions, plan-mode keys, managed subagents, and directory changes.
 - Installed-artifact gates exercise fresh npm installation, both command names, bundled and separate-runtime probes, local Messages/Files and MCP servers, sandboxed Node PTC, graceful exit and resume, and V0/V3-to-V4 migration with original-file preservation. These local servers do not qualify production-provider behavior.

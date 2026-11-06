@@ -8,6 +8,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import xtermHeadless from '@xterm/headless'
 import * as pty from 'node-pty'
+import { extractFrame } from './terminal-frame.mjs'
 import { startReferenceAnthropicServer } from './mock-anthropic-reference.mjs'
 
 const { Terminal } = xtermHeadless
@@ -182,17 +183,28 @@ const scenarios = [
 ]
 
 function readOptions(argv) {
-  const result = { command: DEFAULT_COMMAND, cwd: DEFAULT_CWD, output: DEFAULT_OUTPUT, scenario: undefined }
+  const result = {
+    command: DEFAULT_COMMAND, cwd: DEFAULT_CWD, output: DEFAULT_OUTPUT,
+    scenario: undefined, expectedVersion: TARGET_VERSION, isolated: false,
+  }
   for (let index = 0; index < argv.length; index += 1) {
     const name = argv[index]
     if (name === '--') continue
+    if (name === '--isolated') {
+      result.isolated = true
+      continue
+    }
     const value = argv[index + 1]
     if (name === '--command' && value !== undefined) result.command = value
     else if (name === '--cwd' && value !== undefined) result.cwd = resolve(value)
     else if (name === '--output' && value !== undefined) result.output = resolve(value)
     else if (name === '--scenario' && value !== undefined) result.scenario = value
+    else if (name === '--expected-version' && value !== undefined) result.expectedVersion = value
     else throw new Error(`unknown or incomplete option: ${name}`)
     index += 1
+  }
+  if (result.expectedVersion !== TARGET_VERSION && result.output === DEFAULT_OUTPUT) {
+    result.output = `tests/fixtures/claude-code-${result.expectedVersion}`
   }
   result.output = resolve(result.output)
   return result
@@ -212,6 +224,11 @@ function claudeArguments(scenario) {
 
 function captureEnvironment(configDir, mockBaseUrl) {
   const env = { ...process.env }
+  if (configDir !== undefined) {
+    for (const key of Object.keys(env)) {
+      if (key.startsWith('ANTHROPIC_') || key.startsWith('CLAUDE_CODE_') || key === 'CLAUDECODE') delete env[key]
+    }
+  }
   delete env.NO_COLOR
   env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = '1'
   env.DISABLE_AUTOUPDATER = '1'
@@ -227,7 +244,7 @@ function captureEnvironment(configDir, mockBaseUrl) {
 }
 
 /** Seed only local onboarding and trust facts; never copy account or session data. */
-async function isolatedConfig(cwd, seedSession) {
+async function isolatedConfig(cwd, seedSession, expectedVersion) {
   const directory = await mkdtemp(join(tmpdir(), 'dsh-claude-reference-'))
   await writeFile(join(directory, '.claude.json'), `${JSON.stringify({
     firstStartTime: new Date(0).toISOString(),
@@ -267,7 +284,7 @@ async function isolatedConfig(cwd, seedSession) {
       entrypoint: 'cli',
       cwd,
       sessionId,
-      version: TARGET_VERSION,
+      version: expectedVersion,
       gitBranch: 'main',
       slug: 'reference-picker-session',
     }
@@ -283,75 +300,6 @@ function visibleText(terminal) {
     lines.push(buffer.getLine(buffer.viewportY + row)?.translateToString(true) ?? '')
   }
   return lines.join('\n')
-}
-
-function color(cell, foreground) {
-  const rgb = foreground ? cell.isFgRGB() : cell.isBgRGB()
-  const palette = foreground ? cell.isFgPalette() : cell.isBgPalette()
-  const value = foreground ? cell.getFgColor() : cell.getBgColor()
-  if (rgb) return `#${value.toString(16).padStart(6, '0')}`
-  if (palette) return `ansi:${value}`
-  return 'default'
-}
-
-function style(cell) {
-  return {
-    fg: color(cell, true),
-    bg: color(cell, false),
-    attrs: [
-      cell.isBold() ? 'bold' : '',
-      cell.isDim() ? 'dim' : '',
-      cell.isItalic() ? 'italic' : '',
-      cell.isUnderline() ? 'underline' : '',
-      cell.isInverse() ? 'inverse' : '',
-      cell.isStrikethrough() ? 'strike' : '',
-    ].filter(Boolean),
-  }
-}
-
-function styleKey(value) {
-  return `${value.fg}|${value.bg}|${value.attrs.join(',')}`
-}
-
-function extractFrame(terminal) {
-  const buffer = terminal.buffer.active
-  const viewport = buffer.viewportY
-  const lines = []
-  for (let row = 0; row < terminal.rows; row += 1) {
-    const line = buffer.getLine(viewport + row)
-    const text = line?.translateToString(true) ?? ''
-    const runs = []
-    let active
-    for (let column = 0; column < terminal.cols; column += 1) {
-      const cell = line?.getCell(column)
-      if (cell === undefined) continue
-      const current = style(cell)
-      const key = styleKey(current)
-      if (key === 'default|default|') {
-        if (active !== undefined) {
-          runs.push(active)
-          active = undefined
-        }
-        continue
-      }
-      if (active !== undefined && active.key === key && active.to === column) {
-        active.to = column + 1
-      } else {
-        if (active !== undefined) runs.push(active)
-        active = { from: column, to: column + 1, ...current, key }
-      }
-    }
-    if (active !== undefined) runs.push(active)
-    lines.push({
-      text,
-      runs: runs.map(({ key: _key, ...run }) => run),
-    })
-  }
-  return {
-    buffer: buffer.type,
-    cursor: { column: buffer.cursorX, row: buffer.cursorY },
-    lines,
-  }
 }
 
 async function waitForScreen(terminal, pendingWrites, predicate, timeoutMs, processExited) {
@@ -394,7 +342,7 @@ async function capture(options, scenario) {
     ? undefined
     : await startReferenceAnthropicServer(scenario.mockApi)
   const configDir = scenario.isolatedConfig === true
-    ? await isolatedConfig(options.cwd, scenario.seedSession)
+    ? await isolatedConfig(options.cwd, scenario.seedSession, options.expectedVersion)
     : undefined
   const args = claudeArguments(scenario)
   const child = pty.spawn(options.command, args, {
@@ -464,7 +412,7 @@ async function capture(options, scenario) {
       formatVersion: 1,
       source: {
         product: 'Claude Code',
-        version: TARGET_VERSION,
+        version: options.expectedVersion,
         command: options.command,
         args,
         cwd: options.cwd,
@@ -497,8 +445,8 @@ const versionOutput = execFileSync(options.command, ['--version'], {
   env: captureEnvironment(),
   encoding: 'utf8',
 }).trim()
-if (!versionOutput.startsWith(TARGET_VERSION)) {
-  throw new Error(`expected Claude Code ${TARGET_VERSION}, received ${versionOutput}`)
+if (versionOutput.split(/\s/u)[0] !== options.expectedVersion) {
+  throw new Error(`expected Claude Code ${options.expectedVersion}, received ${versionOutput}`)
 }
 
 await mkdir(options.output, { recursive: true })
@@ -509,7 +457,11 @@ const selectedScenarios = scenarios.filter(scenario => (
 ))
 if (selectedScenarios.length === 0) throw new Error(`unknown scenario: ${options.scenario}`)
 for (const scenario of selectedScenarios) {
-  const result = await capture(options, scenario)
+  const effective = options.isolated ? {
+    ...scenario, isolatedConfig: true,
+    ...(scenario.name === 'not-logged-in-error' ? {} : { mockApi: scenario.mockApi ?? 'response' }),
+  } : scenario
+  const result = await capture(options, effective)
   const filename = `${scenario.name}-${scenario.columns}x${scenario.rows}.json`
   await writeFile(resolve(options.output, filename), `${JSON.stringify(result, undefined, 2)}\n`, 'utf8')
   process.stdout.write(`captured ${filename}\n`)

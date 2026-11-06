@@ -47,6 +47,21 @@ function rowContaining(lines: string[], text: string): number {
 const cwd = '/Users/kiedis/Coding/examples/deepseek-harness'
 
 describe('ClaudeSessionPicker', () => {
+  it.each([[80, 24], [42, 12], [32, 8]])('scrolls the selected Session into view at %ix%i', async (columns, rows) => {
+    const terminal = new HeadlessTerminal(columns, rows)
+    const picker = new ClaudeSessionPicker(terminal, createPalette(false), { cwd, now: () => 10_000 })
+    const result = picker.run(Array.from({ length: 12 }, (_, index) => ({
+      id: `session-${index}`, cwd, title: `Conversation ${index}`, createdAt: index,
+    })))
+    for (let i = 0; i < 10; i++) terminal.send('\u001b[B')
+    await terminal.settle()
+    expect(terminal.text()).toContain('❯ Conversation 10')
+    expect(terminal.lines()[terminal.cursor().row]).toContain('Conversation 10')
+    expect(terminal.text()).toContain('Esc')
+    terminal.send('\r')
+    await expect(result).resolves.toBe('session-10')
+  })
+
   it('matches the independently captured empty-picker geometry and palette', async () => {
     const frame = reference('session-picker-empty')
     const terminal = new HeadlessTerminal(80, 24)

@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
   mkdtempSync,
   mkdirSync,
@@ -406,11 +407,17 @@ describe('dsh-claude-tui bundle', () => {
     packDirectory = realpathSync(
       mkdtempSync(join(tmpdir(), 'dsh-claude-tui-pack-')),
     )
-    execFileSync('corepack', ['pnpm', 'run', 'pack:artifact', '--pack-destination', packDirectory], {
-      cwd: repositoryRoot,
-      stdio: 'pipe',
-      maxBuffer: 32 * 1024 * 1024,
-    })
+    const suppliedArtifact = process.env.DSH_CLAUDE_TUI_TEST_ARTIFACT
+    if (suppliedArtifact === undefined) {
+      execFileSync('corepack', ['pnpm', 'run', 'pack:artifact', '--pack-destination', packDirectory], {
+        cwd: repositoryRoot,
+        stdio: 'pipe',
+        maxBuffer: 32 * 1024 * 1024,
+      })
+    } else {
+      // Qualify the exact release/registry bytes instead of silently rebuilding them.
+      copyFileSync(suppliedArtifact, join(packDirectory, 'candidate.tgz'))
+    }
 
     const tarballs = readdirSync(packDirectory).filter((name) => name.endsWith('.tgz'))
     expect(tarballs).toHaveLength(1)
@@ -475,6 +482,23 @@ describe('dsh-claude-tui bundle', () => {
       'package/DISCLAIMER.md',
       'package/cordis.patch.yml',
       'package/docs/assets/terminal-preview.svg',
+      'package/docs/assets/ux-0.1.10/claude-2.1.311-slash-80x24.png',
+      'package/docs/assets/ux-0.1.10/model-short-42x12-after.json',
+      'package/docs/assets/ux-0.1.10/model-short-42x12-after.png',
+      'package/docs/assets/ux-0.1.10/model-short-42x12-before.json',
+      'package/docs/assets/ux-0.1.10/model-short-42x12-before.png',
+      'package/docs/assets/ux-0.1.10/response-complete-80x24-after.json',
+      'package/docs/assets/ux-0.1.10/response-complete-80x24-after.png',
+      'package/docs/assets/ux-0.1.10/response-complete-80x24-before.json',
+      'package/docs/assets/ux-0.1.10/response-complete-80x24-before.png',
+      'package/docs/assets/ux-0.1.10/slash-80x24-after.json',
+      'package/docs/assets/ux-0.1.10/slash-80x24-after.png',
+      'package/docs/assets/ux-0.1.10/slash-80x24-before.json',
+      'package/docs/assets/ux-0.1.10/slash-80x24-before.png',
+      'package/docs/assets/ux-0.1.10/slash-tiny-32x8-after.json',
+      'package/docs/assets/ux-0.1.10/slash-tiny-32x8-after.png',
+      'package/docs/assets/ux-0.1.10/slash-tiny-32x8-before.json',
+      'package/docs/assets/ux-0.1.10/slash-tiny-32x8-before.png',
       'package/docs/dependency-security-rc.2.md',
       'package/docs/harness-0.1.2-rc.1-adaptation.md',
       'package/docs/harness-0.1.5-rc.2-adaptation.md',
@@ -495,6 +519,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/releases/v0.1.10.md',
       'package/docs/releases/v0.1.10.zh-CN.md',
       'package/docs/visual-qualification-2.1.227.md',
+      'package/docs/ux-validation-0.1.10.md',
       'package/lib/cli.d.ts',
       'package/lib/cli.js',
       'package/lib/index.d.ts',
@@ -1197,7 +1222,7 @@ describe('dsh-claude-tui bundle', () => {
           installedExecutable,
           [
             '--session-id', 'packed-image-session',
-            '--model', 'deepseek-official/deepseek-v4-flash-vision-exp',
+            '--model', 'deepseek-official/deepseek-flash',
           ],
           workspace,
           env,

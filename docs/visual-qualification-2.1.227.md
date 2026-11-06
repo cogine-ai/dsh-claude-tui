@@ -1,5 +1,7 @@
 # Claude Code 2.1.227 visual qualification
 
+> Historical baseline. The 2026-11-05 [0.1.10 UX validation](./ux-validation-0.1.10.md) adds independent Claude Code 2.1.311 references, updates slash-menu selection, and makes short-window layouts responsive. Original reference files remain unchanged; the slash anchor now uses 2.1.311.
+
 ## Verdict
 
 The implemented main-screen slice is high-fidelity against a version-pinned real Claude Code `2.1.227` PTY. The reference corpus has 24 captured frames; 22 are active automated comparison anchors. The remaining two permission-mode frames are reference-only because DeepSeek Harness does not expose equivalent Claude permission semantics. A new Harness Session uses the captured full welcome-panel geometry from row `0`; a resumed Session uses the compact header with its explicit, user-approved top safety inset. Both mappings are tested instead of being hidden inside the reference data.

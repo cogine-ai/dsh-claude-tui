@@ -143,7 +143,10 @@ class ModelPickerDialog implements Component, Focusable {
   private loading = true
   private failure: string | undefined
 
-  constructor(private readonly palette: Palette) {}
+  constructor(
+    private readonly palette: Palette,
+    private readonly availableRows: () => number,
+  ) {}
 
   invalidate(): void {}
 
@@ -243,7 +246,27 @@ class ModelPickerDialog implements Component, Focusable {
       truncateToWidth(` ${this.palette.dim('↑/↓ select · ←/→ effort · Enter use this Agent · d also save as DSH default · Esc cancel')}`, safeWidth, '…'),
       truncateToWidth(` ${this.palette.dim('A change applies to the next DSH model request; the current request stays unchanged.')}`, safeWidth, '…'),
     )
-    return lines
+    const budget = Math.max(6, this.availableRows())
+    if (lines.length <= budget) return lines
+    const entries = catalog?.entries ?? []
+    const limit = Math.max(1, budget - 5)
+    const start = Math.max(0, this.selected - limit + 1)
+    const compact = [lines[0]!, lines[1]!]
+    if (this.loading || this.failure !== undefined || entries.length === 0) {
+      compact.push(truncateToWidth(lines[4] ?? '', safeWidth, '…'))
+    } else {
+      entries.slice(start, start + limit).forEach((entry, offset) => {
+        compact.push(this.renderEntry(entry, start + offset, safeWidth)[0]!)
+      })
+      const entry = this.entry(this.selected)
+      const effort = entry === undefined ? undefined : this.effortLabel(entry)
+      compact.push(truncateToWidth(`   ${this.palette.dim(`effort: ${effort ?? 'provider default'}`)}`, safeWidth, '…'))
+    }
+    compact.push(
+      truncateToWidth(` ${this.palette.dim('↑↓ model · Enter use · Esc cancel')}`, safeWidth, '…'),
+      truncateToWidth(` ${this.palette.dim('←→ effort · d save default')}`, safeWidth, '…'),
+    )
+    return compact
   }
 
   private renderEntry(entry: ModelPickerEntry, index: number, width: number): string[] {
@@ -346,7 +369,7 @@ export async function showModelPicker(
 ): Promise<ModelPickerResult | undefined> {
   if (signal?.aborted === true) return undefined
   return await new Promise<ModelPickerResult | undefined>((resolve) => {
-    const dialog = new ModelPickerDialog(palette)
+    const dialog = new ModelPickerDialog(palette, () => tui.terminal.rows - 2)
     let handle: OverlayHandle | undefined
     let settled = false
     let generation = 0

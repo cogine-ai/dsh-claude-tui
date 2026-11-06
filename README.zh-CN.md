@@ -24,17 +24,15 @@
 > [!NOTE]
 > 这是独立社区项目，与 Anthropic 或 DeepSeek 没有隶属、背书或赞助关系。“Claude Code”仅用于标识固定版本的交互目标；仓库不包含 Anthropic 源代码。详见[商标与兼容性声明](./DISCLAIMER.md)。
 
-## 运行本次适配
+## 安装并运行
 
 `0.1.10` 使用 DSH `0.2.2-rc.1`，需要 Node.js **24.9+**（`>=24.9.0`）。不支持的 Node 版本会在修改 DSH Home 前被拒绝。
 
 ```bash
-corepack pnpm install --frozen-lockfile
-corepack pnpm build
-node lib/cli.js
+npx --yes --legacy-peer-deps dsh-claude-tui@0.1.10
 ```
 
-`0.1.10` 目前是本地适配版，可按上方命令从本次适配工作区运行；npm 已发布版仍为 `0.1.9`。
+安装包已包含固定版本的 Harness，无需另行全局安装 DSH。
 
 `legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；安装包显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。`0.1.10` 也通过了普通 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
 
@@ -43,8 +41,7 @@ node lib/cli.js
 如果会反复使用：
 
 ```bash
-corepack pnpm run pack:artifact
-npm install --global --legacy-peer-deps ./dsh-claude-tui-0.1.10.tgz
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.10
 dshtui
 ```
 
@@ -52,7 +49,7 @@ dshtui
 
 ## 适配 DSH 0.2.2-rc.1
 
-开发版 `0.1.10` 固定 Harness `0.2.2-rc.1`，对应上游提交 `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`，需要 Node.js **24.9+**。外部运行时须满足 `>=0.2.2-rc.1 <0.2.3` 并通过行为探针。详见[适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)和[未发布说明](./docs/releases/v0.1.10.zh-CN.md)。本次工作区尚未发布 `0.1.10`。
+`0.1.10` 固定 Harness `0.2.2-rc.1`，对应上游提交 `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`，需要 Node.js **24.9+**。外部运行时须满足 `>=0.2.2-rc.1 <0.2.3` 并通过行为探针。详见[适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)和[发布说明](./docs/releases/v0.1.10.zh-CN.md)。
 
 - Native/PTC 改由上游独立执行器插件提供。TUI 保留 `DSH_TOOLS_MODE=native|ptc`，`code` 仍为 PTC 别名；启动器会在发现运行时或写入 Home 前拒绝 `both`。直接启动 profile 时也使用同一校验，执行器选择会去除首尾空白。
 - 模型选择改用 `agent.model.current()` / `select()`，立即持久化，尚未发起请求的选择也可恢复。恢复默认保留会话选择，仅显式指定模型时覆盖；已准备的步骤及重试保留已捕获的模型。
@@ -124,7 +121,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 ## 兼容与验证
 
-主要交互目标是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 Claude Code `2.1.237`。现有参考集包含 **24** 个独立捕获的 PTY 帧与 **22** 个自动视觉/语义锚点。`0.1.10` 复用这组基线；本次实际验证结果及范围见[适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)。
+原始交互基线是已观测的 Claude Code `2.1.227` TUI；`Ctrl+V` 后出现 `[Image #1]` 的输入器行为另行实测自 `2.1.237`。24 个原始 PTY 帧保持不变。`0.1.10` 新增本机 Claude Code `2.1.311` 的 9 个独立参考帧，其中 4 个用于外壳、命令菜单、完整回复和结构化问答的自动比较。旧参考集保留 21 个活动锚点，旧命令菜单帧转为历史参考。实际覆盖和限制见[体验验证与前后对比](./docs/ux-validation-0.1.10.md)及 [DSH 适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)。
 
 - 门禁包含 true-color、xterm-compatible 的 `80x24`、`100x30` 布局、图片与命令附件、审批、问题、计划模式按键、托管子代理及目录变化。
 - 安装产物门禁包含全新 npm 安装、两个命令入口、包内与独立外部运行时探针、本地 Messages/Files 与 MCP 服务、受沙箱约束的 Node PTC、安全退出与恢复，以及 V0/V3-to-V4 迁移和原件保留。本地服务不构成生产 Provider 验收。

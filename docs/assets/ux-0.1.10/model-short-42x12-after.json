@@ -1,0 +1,203 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "dsh-claude-tui",
+    "version": "0.1.10",
+    "transport": "loopback-reference-api",
+    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+  },
+  "scenario": "model-short",
+  "dimensions": {
+    "columns": 42,
+    "rows": 12
+  },
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 1,
+      "row": 5
+    },
+    "lines": [
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": " ▐▛███▜▌   DSH Claude TUI",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 7,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 7,
+            "to": 8,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 25,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "▝▜█████▛▘  deepseek-official/deepseek-fla…",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 7,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 7,
+            "to": 9,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "──────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 42,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " Select model                             ",
+        "runs": [
+          {
+            "from": 1,
+            "to": 13,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": " ❯ DeepSeek / DeepSeek-V4.1-Flash  curren…",
+        "runs": [
+          {
+            "from": 1,
+            "to": 2,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 3,
+            "to": 33,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 35,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "   DeepSeek / DeepSeek-V4-Pro             ",
+        "runs": []
+      },
+      {
+        "text": "   effort: High (adapter default)         ",
+        "runs": [
+          {
+            "from": 3,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " ↑↓ model · Enter use · Esc cancel        ",
+        "runs": [
+          {
+            "from": 1,
+            "to": 34,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " ←→ effort · d save default               ",
+        "runs": [
+          {
+            "from": 1,
+            "to": 27,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  reasoning on · transcript compact",
+        "runs": [
+          {
+            "from": 0,
+            "to": 35,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}
