@@ -756,22 +756,29 @@ describe('dsh-claude-tui bundle', () => {
     expect(audit.status, audit.stderr || audit.stdout).toBe(0)
     expect(JSON.parse(audit.stdout).metadata.vulnerabilities.total).toBe(0)
 
-    const publishedText = entries
-      .filter(entry => !entry.endsWith('.svg'))
-      .map(entry => readFileSync(join(packDirectory, entry), 'utf8'))
-      .join('\n')
     const privateKey = /-----BEGIN ([A-Z ]*PRIVATE KEY)-----[ \t]*\r?\n[\s\S]+?-----END \1-----/u
+    const token = /\b(?:(?:ghp|github_pat)_[A-Za-z0-9_]{20,}|npm_[A-Za-z0-9]{20,})\b/u
+    const modelKey = /\bsk-[A-Za-z0-9_-]{20,}\b/u
     const control = generateKeyPairSync('ec', {
       namedCurve: 'prime256v1',
       publicKeyEncoding: { type: 'spki', format: 'pem' },
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     })
     expect(control.privateKey).toMatch(privateKey)
+    for (const prefix of ['ghp_', 'github_pat_', 'npm_']) {
+      expect(`${prefix}${'A'.repeat(36)}`).toMatch(token)
+    }
+    expect('npm_config_build_from_source').not.toMatch(token)
+    expect(`sk-${'A'.repeat(36)}`).toMatch(modelKey)
     // Immutable crypto parsers legitimately contain marker literals; an actual
     // PEM block is a secret, and the generated control proves it is detected.
-    expect(publishedText).not.toMatch(privateKey)
-    expect(publishedText).not.toMatch(/\b(?:ghp|github_pat|npm)_[A-Za-z0-9_]{20,}\b/u)
-    expect(publishedText).not.toMatch(/\bsk-[A-Za-z0-9_-]{20,}\b/u)
+    const secretFiles: string[] = []
+    for (const entry of entries.filter(entry => !entry.endsWith('.svg'))) {
+      const content = readFileSync(join(packDirectory, entry), 'utf8')
+      if (privateKey.test(content) || token.test(content) || modelKey.test(content)) secretFiles.push(entry)
+    }
+    // Report paths only; assertion output must never dump a suspected secret.
+    expect(secretFiles).toEqual([])
   }, 30_000)
 
   it('uses patched native image, Office ZIP, and URI parsers from the installed TUI', async () => {
