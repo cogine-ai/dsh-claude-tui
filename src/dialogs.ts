@@ -64,6 +64,7 @@ class ApprovalDialog implements Component, Focusable {
     private readonly request: ApprovalRequest,
     private readonly presentation: ApprovalPresentation,
     private readonly palette: Palette,
+    private readonly availableRows: () => number,
   ) {}
 
   invalidate(): void {}
@@ -91,6 +92,16 @@ class ApprovalDialog implements Component, Focusable {
   render(width: number): string[] {
     const safeWidth = Math.max(1, width)
     const details = approvalDetails(this.request, this.presentation)
+    if (this.availableRows() < 12) {
+      return [
+        truncateToWidth(` ${this.palette.bold(approvalHeading(this.request.toolName))}`, safeWidth, '…'),
+        detailRow(details.primary, safeWidth, this.palette.plain),
+        truncateToWidth(' Do you want to proceed?', safeWidth, '…'),
+        this.optionRow('allow', '1.', 'Yes', safeWidth),
+        this.optionRow('reject', '3.', 'No', safeWidth),
+        truncateToWidth(` ${this.palette.dim('Esc cancel · 1/3 choose')}`, safeWidth, '…'),
+      ]
+    }
     return [
       this.palette.selection('─'.repeat(safeWidth)),
       truncateToWidth(` ${this.palette.bold(this.palette.selection(approvalHeading(this.request.toolName)))}`, safeWidth, '…'),
@@ -125,7 +136,7 @@ async function showApproval(
 ): Promise<ApprovalChoice | undefined> {
   if (request.signal?.aborted === true) return undefined
   return await new Promise<ApprovalChoice | undefined>((resolve) => {
-    const dialog = new ApprovalDialog(request, presentation, palette)
+    const dialog = new ApprovalDialog(request, presentation, palette, () => tui.terminal.rows - 2)
     let handle: OverlayHandle | undefined
     let settled = false
     const settle = (value: ApprovalChoice | undefined): void => {
@@ -266,6 +277,7 @@ class SingleQuestionDialog implements Component, Focusable {
   constructor(
     private readonly question: AskUserQuestionItem,
     private readonly palette: Palette,
+    private readonly availableRows: () => number,
   ) {}
 
   invalidate(): void {}
@@ -317,6 +329,22 @@ class SingleQuestionDialog implements Component, Focusable {
     const chatIndex = customIndex + 1
     lines.push(this.optionRow(chatIndex, `${chatIndex + 1}.`, 'Chat about this', safeWidth))
     lines.push('', this.palette.dim('Enter to select · ↑/↓ to navigate · Esc to cancel'))
+    const budget = Math.max(4, this.availableRows())
+    if (lines.length > budget) {
+      const choices = [
+        ...options.map(option => displayText(option.label)),
+        'Type something.',
+        'Chat about this',
+      ]
+      const limit = Math.max(1, budget - 2)
+      const start = Math.max(0, this.selectedIndex - limit + 1)
+      return [
+        truncateToWidth(this.palette.bold(displayText(this.question.question)), safeWidth, '…'),
+        ...choices.slice(start, start + limit).map((label, offset) =>
+          this.optionRow(start + offset, `${start + offset + 1}.`, label, safeWidth)),
+        truncateToWidth(this.palette.dim('↑↓ · Enter select · Esc cancel'), safeWidth, '…'),
+      ]
+    }
     return lines.map(line => truncateToWidth(line, safeWidth, '…'))
   }
 
@@ -347,7 +375,7 @@ async function showSingleQuestion(
 ): Promise<SingleQuestionChoice | undefined> {
   if (signal?.aborted === true) return undefined
   return await new Promise<SingleQuestionChoice | undefined>((resolve) => {
-    const dialog = new SingleQuestionDialog(question, palette)
+    const dialog = new SingleQuestionDialog(question, palette, () => tui.terminal.rows - 4)
     let handle: OverlayHandle | undefined
     let settled = false
     const settle = (value: SingleQuestionChoice | undefined): void => {
@@ -447,7 +475,11 @@ class MultiSelectDialog implements Component, Focusable {
   onSubmit?: (labels: string[]) => void
   onCancel?: () => void
 
-  constructor(private readonly options: MultiSelectOptions, private readonly palette: Palette) {}
+  constructor(
+    private readonly options: MultiSelectOptions,
+    private readonly palette: Palette,
+    private readonly availableRows: () => number,
+  ) {}
 
   invalidate(): void {}
 
@@ -480,11 +512,28 @@ class MultiSelectDialog implements Component, Focusable {
     }
     this.options.options.forEach((option, index) => {
       const checked = this.selected.has(index) ? '[x]' : '[ ]'
-      const row = `${checked} ${option.label}`
+      const marker = index === this.selectedIndex && !this.palette.color ? '❯ ' : ''
+      const row = `${marker}${checked} ${option.label}`
       lines.push(index === this.selectedIndex ? this.palette.reverse(row) : row)
       if (option.description !== undefined) lines.push(`    ${this.palette.dim(option.description)}`)
     })
     lines.push('', this.palette.dim('Space toggle · Enter submit · Esc cancel'))
+    const budget = Math.max(4, this.availableRows())
+    if (lines.length > budget) {
+      const limit = Math.max(1, budget - 3)
+      const start = Math.max(0, this.selectedIndex - limit + 1)
+      return [
+        truncateToWidth(this.palette.bold(this.options.title), safeWidth, '…'),
+        ...this.options.options.slice(start, start + limit).map((option, offset) => {
+          const index = start + offset
+          const marker = index === this.selectedIndex && !this.palette.color ? '❯ ' : ''
+          const row = `${marker}${this.selected.has(index) ? '[x]' : '[ ]'} ${option.label}`
+          return truncateToWidth(index === this.selectedIndex ? this.palette.reverse(row) : row, safeWidth, '…')
+        }),
+        this.palette.dim('Space toggle · Enter submit'),
+        this.palette.dim('Esc cancel'),
+      ].map(line => truncateToWidth(line, safeWidth, '…'))
+    }
     return lines.map(line => truncateToWidth(line, safeWidth, '…'))
   }
 }
@@ -493,7 +542,7 @@ class MultiSelectDialog implements Component, Focusable {
 async function showMultiSelect(tui: TUI, palette: Palette, options: MultiSelectOptions): Promise<string[] | undefined> {
   if (options.signal?.aborted === true) return undefined
   return await new Promise<string[] | undefined>((resolve) => {
-    const dialog = new MultiSelectDialog(options, palette)
+    const dialog = new MultiSelectDialog(options, palette, () => Math.floor((tui.terminal.rows - 2) * 0.75))
     let handle: OverlayHandle | undefined
     let settled = false
     const settle = (value: string[] | undefined): void => {

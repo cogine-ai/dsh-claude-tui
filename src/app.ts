@@ -223,7 +223,8 @@ export class ClaudeTuiApplication {
               },
             }),
       }
-    }, this.palette)
+    }, this.palette, () => Math.max(1, this.runtime.terminal.rows
+      - this.promptEditor.render(this.runtime.terminal.columns).length - 2))
     const runtimeDetails = welcomeRuntime(this.runtime.runtimeSnapshot)
     this.tui.addChild(new HeaderComponent({
       title: safeTitle,
@@ -243,7 +244,9 @@ export class ClaudeTuiApplication {
         )
       },
       ...(runtimeDetails === undefined ? {} : { runtime: runtimeDetails }),
-      expanded: () => this.runtime.welcomeExpanded === true && this.runtime.terminal.rows >= 24,
+      expanded: () => this.runtime.welcomeExpanded === true
+        && this.runtime.terminal.rows >= 24
+        && !this.transcript.items.some(item => item.kind === 'user'),
     }, this.palette))
     this.tui.addChild(new Spacer(2))
     this.tui.addChild(this.transcriptView)

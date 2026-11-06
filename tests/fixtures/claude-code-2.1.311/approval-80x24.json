@@ -1,0 +1,461 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "Claude Code",
+    "version": "2.1.311",
+    "command": "claude",
+    "args": [
+      "--settings",
+      "{}",
+      "--setting-sources",
+      "",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--tools",
+      "Bash",
+      "--permission-mode",
+      "manual"
+    ],
+    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace",
+    "transport": "loopback-reference-api"
+  },
+  "scenario": "approval",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "rawSha256": "66ba6cf5ffb280cd1aad9c09b6cf2792343d0a5f45c46adc7727795fe0728075",
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 1,
+      "row": 17
+    },
+    "lines": [
+      {
+        "text": " ▝▝   ▝▝   ~/.codex/tmp/dsh-ux-2026-11-05/workspace",
+        "runs": [
+          {
+            "from": 0,
+            "to": 3,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 8,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 11,
+            "to": 51,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "❯ Run the reference command.                                                    ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 2,
+            "fg": "#999999",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 28,
+            "fg": "#ffffff",
+            "bg": "#373737",
+            "attrs": []
+          },
+          {
+            "from": 28,
+            "to": 80,
+            "fg": "default",
+            "bg": "#373737",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "⏺ Bash(touch /tmp/claude-tui-approval-reference)",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 2,
+            "to": 6,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "  ⎿  Waiting…",
+        "runs": [
+          {
+            "from": 0,
+            "to": 13,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " Bash command",
+        "runs": [
+          {
+            "from": 1,
+            "to": 13,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": " Tip: auto mode handles these prompts for you — choose \"switch to auto mode\" ",
+        "runs": [
+          {
+            "from": 1,
+            "to": 77,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": " below",
+        "runs": [
+          {
+            "from": 1,
+            "to": 6,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": " Create a temporary approval reference marker",
+        "runs": [
+          {
+            "from": 1,
+            "to": 7,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 8,
+            "to": 9,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 10,
+            "to": 19,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 20,
+            "to": 28,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 29,
+            "to": 38,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 39,
+            "to": 45,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#505050",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " touch /tmp/claude-tui-approval-reference",
+        "runs": []
+      },
+      {
+        "text": "╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#505050",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " Do you want to proceed?",
+        "runs": []
+      },
+      {
+        "text": " ❯ 1. Yes",
+        "runs": [
+          {
+            "from": 1,
+            "to": 2,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 3,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 6,
+            "to": 9,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "   2. Yes, and always allow access to /tmp from this project",
+        "runs": [
+          {
+            "from": 3,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 38,
+            "to": 42,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "   3. Yes, and switch to auto mode · auto mode handles these prompts for you",
+        "runs": [
+          {
+            "from": 3,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 34,
+            "to": 36,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 37,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 42,
+            "to": 46,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 47,
+            "to": 54,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 55,
+            "to": 60,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 61,
+            "to": 68,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 69,
+            "to": 72,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 73,
+            "to": 76,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "   4. No",
+        "runs": [
+          {
+            "from": 3,
+            "to": 5,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": " Esc to cancel · Tab to amend",
+        "runs": [
+          {
+            "from": 1,
+            "to": 4,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 5,
+            "to": 7,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 8,
+            "to": 14,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 15,
+            "to": 16,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 17,
+            "to": 20,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 23,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 24,
+            "to": 29,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

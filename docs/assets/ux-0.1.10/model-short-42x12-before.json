@@ -1,0 +1,159 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "dsh-claude-tui",
+    "version": "0.1.10",
+    "transport": "loopback-reference-api",
+    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+  },
+  "scenario": "model-short",
+  "dimensions": {
+    "columns": 42,
+    "rows": 12
+  },
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 1,
+      "row": 4
+    },
+    "lines": [
+      {
+        "text": "──────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 42,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": " Select model                             ",
+        "runs": [
+          {
+            "from": 1,
+            "to": 13,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          }
+        ]
+      },
+      {
+        "text": " Models and effort levels come from the l…",
+        "runs": [
+          {
+            "from": 1,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "                                          ",
+        "runs": []
+      },
+      {
+        "text": " ❯ DeepSeek / DeepSeek-V4.1-Flash  curren…",
+        "runs": [
+          {
+            "from": 1,
+            "to": 2,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 3,
+            "to": 33,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 35,
+            "to": 41,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "   effort: High (adapter default)         ",
+        "runs": [
+          {
+            "from": 3,
+            "to": 33,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "   DeepSeek / DeepSeek-V4-Pro             ",
+        "runs": []
+      },
+      {
+        "text": "   Stronger agentic coding, knowledge, and",
+        "runs": [
+          {
+            "from": 3,
+            "to": 42,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "difficult reasoning; suited to complex or ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 42,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "quality-critical tasks at higher cost. ·  ",
+        "runs": [
+          {
+            "from": 0,
+            "to": 42,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  reasoning on · transcript compact",
+        "runs": [
+          {
+            "from": 0,
+            "to": 35,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

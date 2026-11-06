@@ -1,0 +1,564 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "dsh-claude-tui",
+    "version": "0.1.10",
+    "transport": "loopback-reference-api",
+    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+  },
+  "scenario": "slash",
+  "dimensions": {
+    "columns": 80,
+    "rows": 24
+  },
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 3,
+      "row": 14
+    },
+    "lines": [
+      {
+        "text": "╭─── DSH Claude TUI v0.1.10 ───────────────────────────────────────────────────╮",
+        "runs": [
+          {
+            "from": 0,
+            "to": 19,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 27,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 27,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                                             │ Tips for getting started       │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 72,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                Welcome back!                │ Run /help for commands and sho…│",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 17,
+            "to": 30,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                                             │ ────────────────────────────── │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 78,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                   ▐▛███▜▌                   │ Runtime                        │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 21,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 26,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 27,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 55,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "bold"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                  ▝▜█████▛▘                  │ Harness 0.2.2-rc.1 · bundled ·…│",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 21,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 21,
+            "to": 26,
+            "fg": "#d77757",
+            "bg": "#000000",
+            "attrs": []
+          },
+          {
+            "from": 26,
+            "to": 28,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 78,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                    ▘▘ ▝▝                    │ Home ~/.dsh · shared           │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 19,
+            "to": 28,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 48,
+            "to": 68,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│                                             │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│      deepseek-official/deepseek-flash       │                                │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 7,
+            "to": 39,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "│/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/w…│                 powered by dsh │",
+        "runs": [
+          {
+            "from": 0,
+            "to": 1,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 1,
+            "to": 45,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          },
+          {
+            "from": 46,
+            "to": 47,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": [
+              "dim"
+            ]
+          },
+          {
+            "from": 63,
+            "to": 79,
+            "fg": "#ffffff",
+            "bg": "#4d6bfe",
+            "attrs": []
+          },
+          {
+            "from": 79,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "╰──────────────────────────────────────────────────────────────────────────────╯",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#d77757",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "❯ / ",
+        "runs": [
+          {
+            "from": 3,
+            "to": 4,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "inverse"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 80,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/help                         Show keyboard help and available commands",
+        "runs": [
+          {
+            "from": 0,
+            "to": 71,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/transcript                   Expand or compact tool transcript details",
+        "runs": [
+          {
+            "from": 0,
+            "to": 71,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/reasoning                    Show or hide model reasoning blocks",
+        "runs": [
+          {
+            "from": 0,
+            "to": 65,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/exit                         Flush the session and leave the terminal",
+        "runs": [
+          {
+            "from": 0,
+            "to": 70,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/model                        Select a live DSH model for this session",
+        "runs": [
+          {
+            "from": 0,
+            "to": 70,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "/provider                     Inspect or update DSH provider credentials",
+        "runs": [
+          {
+            "from": 0,
+            "to": 72,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "source": {
+    "product": "dsh-claude-tui",
+    "version": "0.1.10",
+    "transport": "loopback-reference-api",
+    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+  },
+  "scenario": "slash-tiny",
+  "dimensions": {
+    "columns": 32,
+    "rows": 8
+  },
+  "frame": {
+    "buffer": "normal",
+    "cursor": {
+      "column": 3,
+      "row": 3
+    },
+    "lines": [
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "",
+        "runs": []
+      },
+      {
+        "text": "────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 32,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "❯ / ",
+        "runs": [
+          {
+            "from": 3,
+            "to": 4,
+            "fg": "default",
+            "bg": "default",
+            "attrs": [
+              "inverse"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "────────────────────────────────",
+        "runs": [
+          {
+            "from": 0,
+            "to": 32,
+            "fg": "#888888",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "  ❯ /help",
+        "runs": [
+          {
+            "from": 2,
+            "to": 9,
+            "fg": "#b1b9f9",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "    /transcript",
+        "runs": [
+          {
+            "from": 2,
+            "to": 15,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      },
+      {
+        "text": "    /reasoning",
+        "runs": [
+          {
+            "from": 2,
+            "to": 14,
+            "fg": "#999999",
+            "bg": "default",
+            "attrs": []
+          }
+        ]
+      }
+    ]
+  }
+}

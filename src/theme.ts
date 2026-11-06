@@ -3,6 +3,7 @@ import type { EditorTheme, MarkdownTheme, SelectListTheme } from '@earendil-work
 
 /** Semantic foreground and attribute functions. */
 export interface Palette {
+  readonly color: boolean
   plain(text: string): string
   brand(text: string): string
   brandOnBlack(text: string): string
@@ -60,6 +61,7 @@ function foregroundOn(enabled: boolean, foregroundHex: string | undefined, backg
 export function createPalette(color: boolean): Palette {
   const brand = foreground(color, '#d77757')
   return {
+    color,
     plain: text => text,
     brand,
     brandOnBlack: color

@@ -231,6 +231,7 @@ export class PromptContextComponent implements Component {
   constructor(
     private readonly read: () => PromptContextValues,
     private readonly palette: Palette,
+    private readonly availableRows: () => number = () => Number.POSITIVE_INFINITY,
   ) {}
 
   invalidate(): void {}
@@ -327,17 +328,32 @@ export class PromptContextComponent implements Component {
   /** Two-column command menu observed below Claude Code's prompt divider. */
   private renderSlashMenu(menu: NonNullable<PromptContextValues['slashMenu']>, width: number): string[] {
     if (menu.items.length === 0) return [this.palette.dim('  No matching commands')]
-    const commandWidth = Math.min(30, Math.max(12, Math.floor(width * 0.4)))
+    const commandWidth = Math.min(32, Math.max(14, Math.floor(width * 0.4)))
     const descriptionWidth = Math.max(1, width - commandWidth)
     const lines: string[] = []
-    menu.items.slice(0, 6).forEach((item, index) => {
-      const command = truncateToWidth(`/${displayText(item.name)}`, commandWidth - 1, '…')
-      const description = wrapTextWithAnsi(displayText(item.description), descriptionWidth)
+    const limit = Math.max(1, Math.min(6, this.availableRows()))
+    const start = Math.max(0, menu.selected - limit + 1)
+    const visibleItems = menu.items.slice(start, start + limit)
+    const expandedRows = visibleItems.reduce((total, item) =>
+      total + Math.max(1, wrapTextWithAnsi(displayText(item.description), descriptionWidth).length), 0)
+    const compact = width < 60 || expandedRows > this.availableRows()
+    visibleItems.forEach((item, offset) => {
+      const index = start + offset
+      const selected = index === menu.selected
+      if (width < 40) {
+        const row = truncateToWidth(`${selected ? '❯ ' : '  '}/${displayText(item.name)}`, Math.max(1, width - 2), '…')
+        lines.push(`  ${selected ? this.palette.selection(row) : this.palette.dim(row)}`)
+        return
+      }
+      const command = truncateToWidth(`${selected ? '❯ ' : '  '}/${displayText(item.name)}`, commandWidth - 3, '…')
+      const description = compact
+        ? [truncateToWidth(displayText(item.description), descriptionWidth, '…')]
+        : wrapTextWithAnsi(displayText(item.description), descriptionWidth)
       const itemLines = description.length === 0 ? [''] : description
       itemLines.forEach((detail, detailIndex) => {
-        const left = detailIndex === 0 ? command.padEnd(commandWidth) : ' '.repeat(commandWidth)
-        const row = truncateToWidth(`${left}${detail}`, width, '…')
-        lines.push(index === menu.selected ? this.palette.selection(row) : this.palette.dim(row))
+        const left = detailIndex === 0 ? command.padEnd(commandWidth - 2) : ' '.repeat(commandWidth - 2)
+        const row = truncateToWidth(`${left}${detail}`, Math.max(1, width - 2), '…')
+        lines.push(`  ${selected ? this.palette.selection(row) : this.palette.dim(row)}`)
       })
     })
     return lines
@@ -346,9 +362,13 @@ export class PromptContextComponent implements Component {
   /** Single-column workspace menu observed below Claude Code's @ prompt. */
   private renderFileMenu(menu: NonNullable<PromptContextValues['fileMenu']>, width: number): string[] {
     if (menu.items.length === 0) return [this.palette.dim('  No matching files')]
-    return menu.items.slice(0, 12).map((item, index) => {
+    const limit = Math.max(1, Math.min(12, this.availableRows()))
+    const start = Math.max(0, menu.selected - limit + 1)
+    return menu.items.slice(start, start + limit).map((item, offset) => {
+      const index = start + offset
       const suffix = item.directory && !item.path.endsWith('/') ? '/' : ''
-      const row = truncateToWidth(`+ ${displayText(item.path)}${suffix}`, width, '…')
+      const marker = index === menu.selected && !this.palette.color ? '❯' : '+'
+      const row = truncateToWidth(`${marker} ${displayText(item.path)}${suffix}`, width, '…')
       return index === menu.selected ? this.palette.selection(row) : this.palette.dim(row)
     })
   }
