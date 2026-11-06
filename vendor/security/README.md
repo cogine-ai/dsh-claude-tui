@@ -98,3 +98,7 @@ through npm hoisting. Other dependencies remain external and pinned by the
 shrinkwrap. This makes the repair portable without uploading new tarballs.
 The unchanged Office repack retains its previously published commit-pinned URL.
 Root-only overrides and source-relative archive paths are not the consumer fix.
+
+## Registry-safe required graph (0.1.11)
+
+All 599 required nodes of the committed production graph, including nested version conflicts, are copied from SHA-512-verified archives into the artifact. The 78 platform optionals are exact-pinned and selected by npm. The audit record is `vendor/security/runtime-lock.json`; the package deliberately has no root npm shrinkwrap, whose registry inflation path falsely treats missing transitive dependencies as bundled. The existing manifest-only repairs and their provenance remain unchanged. Installed-artifact qualification now uses real registry metadata through a loopback server.

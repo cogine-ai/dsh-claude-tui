@@ -1,6 +1,6 @@
 /** Public bundle artifact contracts for a self-contained installed profile. */
-import { createHash } from 'node:crypto'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { createHash, generateKeyPairSync } from 'node:crypto'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 import {
   chmodSync,
@@ -403,7 +403,7 @@ describe('dsh-claude-tui bundle', () => {
   let installDirectory: string
   let installedExecutable: string
 
-  beforeAll(() => {
+  beforeAll(async () => {
     packDirectory = realpathSync(
       mkdtempSync(join(tmpdir(), 'dsh-claude-tui-pack-')),
     )
@@ -429,19 +429,69 @@ describe('dsh-claude-tui bundle', () => {
     packageDirectory = join(packDirectory, 'package')
 
     installDirectory = join(packDirectory, 'installed')
-    execFileSync('npm', [
-      'install',
-      '--no-audit',
-      '--no-fund',
-      ...usesDefaultNpmPeerResolution
-        ? []
-        : ['--legacy-peer-deps'],
-      '--cache',
-      process.env.DSH_CLAUDE_TUI_NPM_CACHE ?? join(packDirectory, 'npm-cache'),
-      '--prefix',
-      installDirectory,
-      tarballPath,
-    ], { stdio: 'pipe' })
+    const installedManifest = JSON.parse(readFileSync(join(packageDirectory, 'package.json'), 'utf8'))
+    const archive = readFileSync(tarballPath)
+    // Registry installs inflate published shrinkwraps differently from local-file
+    // installs. Exercise the public install path before trusting the artifact.
+    const registry = createServer((request, response) => {
+      const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
+      if (pathname === '/candidate.tgz') {
+        response.writeHead(200, { 'content-type': 'application/octet-stream' })
+        response.end(archive)
+      } else if (pathname === '/dsh-claude-tui') {
+        const address = registry.address()
+        if (address === null || typeof address === 'string') throw new Error('registry fixture did not bind')
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({
+          name: installedManifest.name,
+          'dist-tags': { latest: installedManifest.version },
+          versions: { [installedManifest.version]: {
+            ...installedManifest,
+            _hasShrinkwrap: existsSync(join(packageDirectory, 'npm-shrinkwrap.json')),
+            dist: {
+              tarball: `http://127.0.0.1:${address.port}/candidate.tgz`,
+              integrity: `sha512-${createHash('sha512').update(archive).digest('base64')}`,
+            },
+          } },
+        }))
+      } else {
+        response.writeHead(302, { location: `https://registry.npmjs.org${request.url}` })
+        response.end()
+      }
+    })
+    await new Promise<void>((resolveListen, reject) => {
+      registry.once('error', reject)
+      registry.listen(0, '127.0.0.1', resolveListen)
+    })
+    const address = registry.address()
+    if (address === null || typeof address === 'string') throw new Error('registry fixture did not bind')
+    try {
+      await new Promise<void>((resolveInstall, reject) => {
+        const child = spawn('npm', [
+          'install',
+          '--no-audit',
+          '--no-fund',
+          ...usesDefaultNpmPeerResolution ? [] : ['--legacy-peer-deps'],
+          '--cache', process.env.DSH_CLAUDE_TUI_NPM_CACHE ?? join(packDirectory, 'npm-cache'),
+          '--prefix', installDirectory,
+          '--registry', `http://127.0.0.1:${address.port}`,
+          `dsh-claude-tui@${installedManifest.version}`,
+        ], { stdio: 'pipe' })
+        let output = ''
+        child.stdout.on('data', chunk => { output += chunk })
+        child.stderr.on('data', chunk => { output += chunk })
+        child.once('error', reject)
+        child.once('exit', code => {
+          if (code === 0) resolveInstall()
+          else reject(new Error(`Registry artifact installation failed (${code}):\n${output}`))
+        })
+      })
+    } finally {
+      registry.closeAllConnections()
+      await new Promise<void>((resolveClose, reject) => {
+        registry.close(error => { error === undefined ? resolveClose() : reject(error) })
+      })
+    }
     installedExecutable = join(
       installDirectory,
       'node_modules/dsh-claude-tui/lib/cli.js',
@@ -467,7 +517,9 @@ describe('dsh-claude-tui bundle', () => {
   }, 30_000)
 
   it('contains only the approved publishable runtime artifact', () => {
-    const entries = execFileSync('tar', ['-tzf', tarballPath], { encoding: 'utf8' })
+    const entries = execFileSync('tar', ['-tzf', tarballPath], {
+      encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
+    })
       .trim()
       .split('\n')
       .sort()
@@ -518,6 +570,8 @@ describe('dsh-claude-tui bundle', () => {
       'package/docs/releases/v0.1.9.zh-CN.md',
       'package/docs/releases/v0.1.10.md',
       'package/docs/releases/v0.1.10.zh-CN.md',
+      'package/docs/releases/v0.1.11.md',
+      'package/docs/releases/v0.1.11.zh-CN.md',
       'package/docs/visual-qualification-2.1.227.md',
       'package/docs/ux-validation-0.1.10.md',
       'package/lib/cli.d.ts',
@@ -526,7 +580,7 @@ describe('dsh-claude-tui bundle', () => {
       'package/lib/index.js',
       'package/lib/startup.d.ts',
       'package/lib/startup.js',
-      'package/npm-shrinkwrap.json',
+      'package/vendor/security/runtime-lock.json',
       'package/package.json',
       'package/vendor/security/bundle-inventory.json',
       'package/vendor/security/README.md',
@@ -558,7 +612,7 @@ describe('dsh-claude-tui bundle', () => {
     }
     expect(manifest).toMatchObject({
       name: 'dsh-claude-tui',
-      version: '0.1.10',
+      version: '0.1.11',
       engines: { node: '>=24.9.0' },
       bin: {
         'dsh-claude-tui': 'lib/cli.js',
@@ -590,7 +644,7 @@ describe('dsh-claude-tui bundle', () => {
     expect(statSync(join(packageDirectory, 'lib/cli.js')).mode & 0o111).not.toBe(0)
 
     const shrinkwrap = JSON.parse(
-      readFileSync(join(packageDirectory, 'npm-shrinkwrap.json'), 'utf8'),
+      readFileSync(join(packageDirectory, 'vendor/security/runtime-lock.json'), 'utf8'),
     ) as {
       lockfileVersion?: number
       packages?: Record<string, {
@@ -598,8 +652,10 @@ describe('dsh-claude-tui bundle', () => {
         dependencies?: Record<string, string>
         peerDependencies?: Record<string, string>
         peerDependenciesMeta?: Record<string, { optional?: boolean }>
+        optional?: boolean
       }>
     }
+    expect(existsSync(join(packageDirectory, 'npm-shrinkwrap.json'))).toBe(false)
     expect(shrinkwrap.lockfileVersion).toBe(3)
     expect(shrinkwrap.packages?.['']?.dependencies).toEqual(manifest.dependencies)
     expect(shrinkwrap.packages?.['']?.peerDependencies).toEqual(manifest.peerDependencies)
@@ -667,10 +723,20 @@ describe('dsh-claude-tui bundle', () => {
     }))
       .toEqual([])
 
+    // Every required lock node must physically survive registry installation,
+    // including conflicting nested versions; no client shrinkwrap inflation is needed.
+    for (const [path, locked] of Object.entries(shrinkwrap.packages ?? {})) {
+      if (path === '' || locked.optional) continue
+      const installed = JSON.parse(readFileSync(join(
+        installDirectory, 'node_modules/dsh-claude-tui', path, 'package.json',
+      ), 'utf8')) as { version: string }
+      expect(installed.version, path).toBe(locked.version)
+    }
+
     const fullNpmTree = spawnSync(
       'npm',
       ['ls', '--all', '--json', '--prefix', installDirectory],
-      { encoding: 'utf8' },
+      { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
     )
     expect(fullNpmTree.status, fullNpmTree.stderr).toBe(0)
     const fullNpmProblems = (
@@ -693,7 +759,16 @@ describe('dsh-claude-tui bundle', () => {
       .filter(entry => !entry.endsWith('.svg'))
       .map(entry => readFileSync(join(packDirectory, entry), 'utf8'))
       .join('\n')
-    expect(publishedText).not.toMatch(/-----BEGIN [A-Z ]*PRIVATE KEY-----/u)
+    const privateKey = /-----BEGIN ([A-Z ]*PRIVATE KEY)-----[ \t]*\r?\n[\s\S]+?-----END \1-----/u
+    const control = generateKeyPairSync('ec', {
+      namedCurve: 'prime256v1',
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    })
+    expect(control.privateKey).toMatch(privateKey)
+    // Immutable crypto parsers legitimately contain marker literals; an actual
+    // PEM block is a secret, and the generated control proves it is detected.
+    expect(publishedText).not.toMatch(privateKey)
     expect(publishedText).not.toMatch(/\b(?:ghp|github_pat|npm)_[A-Za-z0-9_]{20,}\b/u)
     expect(publishedText).not.toMatch(/\bsk-[A-Za-z0-9_-]{20,}\b/u)
   }, 30_000)
@@ -752,7 +827,7 @@ describe('dsh-claude-tui bundle', () => {
           DSH_CLAUDE_TUI_RUNTIME: 'bundled',
         },
       })
-      expect(result).toMatchObject({ status: 0, stdout: '0.1.10\n', stderr: '' })
+      expect(result).toMatchObject({ status: 0, stdout: '0.1.11\n', stderr: '' })
       expect(existsSync(dshHome)).toBe(false)
     }
   }, 30_000)
@@ -768,7 +843,7 @@ describe('dsh-claude-tui bundle', () => {
       },
     })
 
-    expect(result).toMatchObject({ status: 0, stdout: '0.1.10\n', stderr: '' })
+    expect(result).toMatchObject({ status: 0, stdout: '0.1.11\n', stderr: '' })
     expect(existsSync(dshHome)).toBe(false)
   })
 
@@ -951,7 +1026,7 @@ describe('dsh-claude-tui bundle', () => {
       expect(first.output).toContain('Welcome back!')
       expect(first.output).toContain('Tips for getting started')
       expect(first.output).toContain('DSH Claude TUI')
-      expect(first.output).toContain('v0.1.10')
+      expect(first.output).toContain('v0.1.11')
       expect(first.output).toContain('Harness 0.2.2-rc.1 · bundled · PTC')
       expect(first.output).toContain('powered by dsh')
       expect(first.output).toContain('Run /help for commands and shortcuts')

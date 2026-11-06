@@ -26,22 +26,22 @@
 
 ## 安装并运行
 
-`0.1.10` 使用 DSH `0.2.2-rc.1`，需要 Node.js **24.9+**（`>=24.9.0`）。不支持的 Node 版本会在修改 DSH Home 前被拒绝。
+`0.1.11` 使用 DSH `0.2.2-rc.1`，需要 Node.js **24.9+**（`>=24.9.0`）。不支持的 Node 版本会在修改 DSH Home 前被拒绝。
 
 ```bash
-npx --yes --legacy-peer-deps dsh-claude-tui@0.1.10
+npx --yes --legacy-peer-deps dsh-claude-tui@0.1.11
 ```
 
 安装包已包含固定版本的 Harness，无需另行全局安装 DSH。
 
-`legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；安装包显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。`0.1.10` 也通过了普通 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
+`legacy-peer-deps` 用于避免 npm 花费大量时间求解本 TUI 不使用的上游 Web UI peer。它会跳过 peer 冲突校验；安装包显式包含必需的 TUI 服务，并固定 DSH 依赖。安装包验证会检查完整的 `npm ls --all` 依赖树，拒绝 missing、invalid 或冲突依赖。`0.1.11` 也通过了普通 npm peer 求解验证，但冷安装可能需要数分钟。该参数不改变 DSH 运行版本或 TUI 行为。
 
 真实模型请求需要所选 DSH Provider 的凭据。使用 `/provider` 查看或录入凭据，使用 `/model`（或 `Option+P` / `Alt+P`）切换 DSH 提供的模型与 effort。
 
 如果会反复使用：
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.10
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.11
 dshtui
 ```
 
@@ -49,7 +49,7 @@ dshtui
 
 ## 适配 DSH 0.2.2-rc.1
 
-`0.1.10` 固定 Harness `0.2.2-rc.1`，对应上游提交 `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`，需要 Node.js **24.9+**。外部运行时须满足 `>=0.2.2-rc.1 <0.2.3` 并通过行为探针。详见[适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)和[发布说明](./docs/releases/v0.1.10.zh-CN.md)。
+`0.1.11` 固定 Harness `0.2.2-rc.1`，对应上游提交 `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db`，需要 Node.js **24.9+**。外部运行时须满足 `>=0.2.2-rc.1 <0.2.3` 并通过行为探针。详见[适配记录](./docs/harness-0.2.2-rc.1-adaptation.md)和[发布说明](./docs/releases/v0.1.11.zh-CN.md)。
 
 - Native/PTC 改由上游独立执行器插件提供。TUI 保留 `DSH_TOOLS_MODE=native|ptc`，`code` 仍为 PTC 别名；启动器会在发现运行时或写入 Home 前拒绝 `both`。直接启动 profile 时也使用同一校验，执行器选择会去除首尾空白。
 - 模型选择改用 `agent.model.current()` / `select()`，立即持久化，尚未发起请求的选择也可恢复。恢复默认保留会话选择，仅显式指定模型时覆盖；已准备的步骤及重试保留已捕获的模型。
@@ -105,7 +105,7 @@ TUI 从 DSH 读取能力，不写死模型、effort、凭据或审批行为。Ha
 
 1. 优先复用所选 `$DSH_HOME` 已关联的兼容 DSH，或 `PATH` 中来源可验证的 `dsh`；
 2. 在不继承凭据的临时 Home 中执行兼容探针；
-3. 没有外部候选通过时，自动使用包内由 shrinkwrap 固定的 DSH `0.2.2-rc.1`。
+3. 没有外部候选通过时，自动使用包内经过完整性校验的 DSH `0.2.2-rc.1`。
 
 外部版本须满足 `>=0.2.2-rc.1 <0.2.3`、实际依赖方解析到的 MCP client/core `>=2.3.0 <3`、undici `>=8.12.2 <9`、Zod `>=4.6.6 <5`，并通过行为探针。外部依赖不满足时，自动模式退回修复后的内置运行时；显式 system 模式会说明原因。Home 可安全共享时，已有凭据、Session、设置和无关 profile 会继续可用。启动器不会覆盖不属于自己的 profile；隐式默认 Home 不安全时可退回 `~/.dsh-claude-tui` 并显示提示，显式 `DSH_HOME` 冲突则给出可操作错误，不会偷偷移动数据。
 

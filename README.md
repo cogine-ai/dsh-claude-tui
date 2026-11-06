@@ -27,22 +27,22 @@
 
 ## Install and run
 
-Version `0.1.10` uses DSH `0.2.2-rc.1` and requires Node.js **24.9+** (`>=24.9.0`). Unsupported Node versions fail before changing your DSH Home.
+Version `0.1.11` uses DSH `0.2.2-rc.1` and requires Node.js **24.9+** (`>=24.9.0`). Unsupported Node versions fail before changing your DSH Home.
 
 ```bash
-npx --yes --legacy-peer-deps dsh-claude-tui@0.1.10
+npx --yes --legacy-peer-deps dsh-claude-tui@0.1.11
 ```
 
 The package includes its pinned Harness runtime; no separate global DSH installation is required.
 
-The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; the package explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Ordinary npm peer resolution was also qualified for `0.1.10`, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
+The `legacy-peer-deps` flag avoids npm's expensive resolution of unused upstream Web UI peers. It skips peer-conflict enforcement; the package explicitly includes the required TUI services and pins its DSH dependencies. The installed-package gate checks the complete `npm ls --all` tree and rejects missing, invalid, or conflicting dependencies. Ordinary npm peer resolution was also qualified for `0.1.11`, though a cold installation can take several minutes. The flag does not change the DSH runtime version or TUI behavior.
 
 A real model request needs credentials for the DSH provider you select. Use `/provider` to inspect or enter credentials and `/model` (or `Option+P` / `Alt+P`) to switch among the models and effort levels exposed by DSH.
 
 For repeat use:
 
 ```bash
-npm install --global --legacy-peer-deps dsh-claude-tui@0.1.10
+npm install --global --legacy-peer-deps dsh-claude-tui@0.1.11
 dshtui
 ```
 
@@ -50,7 +50,7 @@ The global install exposes both `dshtui` and the canonical `dsh-claude-tui` comm
 
 ## DSH 0.2.2-rc.1 adaptation
 
-Version `0.1.10` pins Harness `0.2.2-rc.1` at upstream commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db` and requires Node.js **24.9+**. External runtimes must satisfy `>=0.2.2-rc.1 <0.2.3` and pass the behavioral probe. See the [adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md) and [release notes](./docs/releases/v0.1.10.md).
+Version `0.1.11` pins Harness `0.2.2-rc.1` at upstream commit `66491b05e3f05ad35bcdd4f6cd7ed26041d9e3db` and requires Node.js **24.9+**. External runtimes must satisfy `>=0.2.2-rc.1 <0.2.3` and pass the behavioral probe. See the [adaptation record](./docs/harness-0.2.2-rc.1-adaptation.md) and [release notes](./docs/releases/v0.1.11.md).
 
 - Native and PTC execution use DSH's explicit executor plugins. `DSH_TOOLS_MODE=native|ptc` remains a TUI option, with `code` as a PTC alias; the launcher rejects `both` before discovery or Home writes. Direct-profile startup uses the same validation, and executor selection trims surrounding whitespace.
 - Model selection uses `agent.model.current()` and `select()`. Selections persist immediately, including choices not yet used in a request. Resume preserves them unless this invocation explicitly selects another route; a prepared step and retries retain their captured model.
@@ -106,7 +106,7 @@ The default launcher removes the need to choose an installation strategy up fron
 
 1. Reuse a compatible DSH already associated with the selected `$DSH_HOME`, or a verifiable `dsh` on `PATH`.
 2. Probe it in an isolated, credential-free temporary Home.
-3. Fall back to the bundled, shrinkwrap-pinned DSH `0.2.2-rc.1` when no external runtime qualifies.
+3. Fall back to the bundled, integrity-verified DSH `0.2.2-rc.1` when no external runtime qualifies.
 
 Compatibility requires the version range `>=0.2.2-rc.1 <0.2.3`, owner-resolved MCP client/core `>=2.3.0 <3`, undici `>=8.12.2 <9`, Zod `>=4.6.6 <5`, and a successful behavioral probe. Automatic mode falls back to the repaired bundled runtime when an external dependency graph does not qualify; explicit system mode reports the reason. When a Home can be shared safely, existing credentials, Sessions, settings, and unrelated profiles remain available. The launcher does not overwrite an unowned profile. An unsafe implicit default can fall back to `~/.dsh-claude-tui` with a visible notice; an explicit `DSH_HOME` conflict fails with an actionable error instead of silently moving data.
 
