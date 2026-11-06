@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
   mkdtempSync,
   mkdirSync,
@@ -406,11 +407,17 @@ describe('dsh-claude-tui bundle', () => {
     packDirectory = realpathSync(
       mkdtempSync(join(tmpdir(), 'dsh-claude-tui-pack-')),
     )
-    execFileSync('corepack', ['pnpm', 'run', 'pack:artifact', '--pack-destination', packDirectory], {
-      cwd: repositoryRoot,
-      stdio: 'pipe',
-      maxBuffer: 32 * 1024 * 1024,
-    })
+    const suppliedArtifact = process.env.DSH_CLAUDE_TUI_TEST_ARTIFACT
+    if (suppliedArtifact === undefined) {
+      execFileSync('corepack', ['pnpm', 'run', 'pack:artifact', '--pack-destination', packDirectory], {
+        cwd: repositoryRoot,
+        stdio: 'pipe',
+        maxBuffer: 32 * 1024 * 1024,
+      })
+    } else {
+      // Qualify the exact release/registry bytes instead of silently rebuilding them.
+      copyFileSync(suppliedArtifact, join(packDirectory, 'candidate.tgz'))
+    }
 
     const tarballs = readdirSync(packDirectory).filter((name) => name.endsWith('.tgz'))
     expect(tarballs).toHaveLength(1)
