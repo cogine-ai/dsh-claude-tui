@@ -67,7 +67,9 @@ shrinkwrap is published: registry inflation of the previous partial bundle
 incorrectly treated missing transitive dependencies as bundled. Installed-artifact
 qualification now exercises actual registry metadata through a loopback server.
 The existing manifest-only repairs and their provenance remain unchanged.
-The unchanged Office repack retains its previously published commit-pinned URL.
+The Office archive retains its previously published commit-pinned source URL in
+the audit record. Its bundled dependency declaration uses the exact recorded
+version so npm can validate the installed node.
 Root-only overrides and source-relative archive paths are not the consumer fix.
 """
 

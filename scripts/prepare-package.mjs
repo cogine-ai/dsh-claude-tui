@@ -13,7 +13,11 @@ const provenance = JSON.parse(readFileSync(join(root, 'vendor/security/provenanc
 const specs = JSON.parse(readFileSync(join(root, 'scripts/security-repacks.json'), 'utf8'))
 const dshClosure = JSON.parse(readFileSync(join(root, 'scripts/dsh-bundle.json'), 'utf8'))
 const lock = JSON.parse(readFileSync(join(root, 'npm-shrinkwrap.json'), 'utf8'))
-manifest.dependencies = lock.packages[''].dependencies
+// Bundled packages use their recorded versions. A URL spec (the Office repair)
+// cannot be validated against an already-bundled node by npm ls; its archive
+// source and integrity remain recorded in the audit lock and provenance.
+manifest.dependencies = Object.fromEntries(Object.keys(lock.packages[''].dependencies)
+  .map(name => [name, lock.packages[`node_modules/${name}`].version]))
 manifest.bundleDependencies = Object.keys(manifest.dependencies)
 manifest.optionalDependencies = Object.fromEntries(Object.entries(lock.packages)
   .filter(([path, entry]) => path.startsWith('node_modules/')
@@ -89,6 +93,7 @@ writeFileSync(join(destination, 'vendor/security/bundle-inventory.json'), `${JSO
 // Never expose this partial-platform lock as npm's root shrinkwrap: registry
 // inflation treats transitive nodes of bundled dependencies as already present.
 // Every required node is physically bundled; platform optionals stay exact-pinned.
+lock.packages[''].dependencies = manifest.dependencies
 lock.packages[''].bundleDependencies = manifest.bundleDependencies
 lock.packages[''].optionalDependencies = manifest.optionalDependencies
 for (const item of closure) lock.packages[item.path].inBundle = true
