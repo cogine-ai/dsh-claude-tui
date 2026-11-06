@@ -23,7 +23,7 @@
 
 完整检查执行时设置 `DSH_CLAUDE_TUI_INSTALL_MODE=default`、`DSH_CLAUDE_TUI_SYSTEM_CLIPBOARD_TEST=1` 及保留的 `DSH_CLAUDE_TUI_NPM_CACHE`。普通 CI 不会自动开启系统剪贴板测试。
 
-原始运行日志保存在本机 `/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/`：`full-check-final.log`、`min-node-ux.log`、`dsh-final-reviewed.log`。下面图片均由真实 PTY 的 ANSI 单元格数据重建，不是设计建议图或原生 Terminal 截屏。重建统一使用深色背景、Menlo/PingFang TC 字体回退；单元格位置和颜色来自捕获数据，字体栅格、emoji 外观及默认背景不作为跨终端一致性承诺。每张 DSH 图片旁有同名 JSON 可复核。
+原始运行日志保留在本机验证目录，不随安装包发布：`full-check-final.log`、`min-node-ux.log`、`dsh-final-reviewed.log`。下面图片均由真实 PTY 的 ANSI 单元格数据重建，不是设计建议图或原生 Terminal 截屏。重建统一使用深色背景、Menlo/PingFang TC 字体回退；单元格位置和颜色来自捕获数据，字体栅格、emoji 外观及默认背景不作为跨终端一致性承诺。每张 DSH 图片旁有同名 JSON 可复核。发布前已在不含用户名的 `/tmp/dsh-ux-0.1.10` 工作区重采前后证据；旧侧由 PR #26 的原代码构建，新侧包含本轮修复，原始帧和 PNG 同步更新。
 
 ## 发现与已完成修复
 
