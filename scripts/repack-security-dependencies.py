@@ -56,11 +56,17 @@ modes, gzip `mtime=0`, and a normalized gzip OS header. The download URLs and in
 changing them requires review of the original source and patch.
 
 The workspace uses these verified local archives through pnpm overrides.
-The npm artifact embeds all 324 integrity-verified DSH packages, including the
-60 repaired owners, with standard `bundleDependencies`. Bundling the complete
-DSH closure prevents external parents from loading original vulnerable owners
-through npm hoisting. Other dependencies remain external and pinned by the
-shrinkwrap. This makes the repair portable without uploading new tarballs.
+The npm artifact embeds all 599 required package nodes, including 324 DSH
+packages and 15 conflicting nested versions, with standard `bundleDependencies`.
+All archives are SHA-512 verified. This prevents external parents from loading
+original vulnerable owners through npm hoisting. The 78 platform optionals
+remain exact-pinned and selected by npm.
+
+The dependency audit record is `vendor/security/runtime-lock.json`. No root npm
+shrinkwrap is published: registry inflation of the previous partial bundle
+incorrectly treated missing transitive dependencies as bundled. Installed-artifact
+qualification now exercises actual registry metadata through a loopback server.
+The existing manifest-only repairs and their provenance remain unchanged.
 The unchanged Office repack retains its previously published commit-pinned URL.
 Root-only overrides and source-relative archive paths are not the consumer fix.
 """
