@@ -1,7 +1,7 @@
 /** Capture fixed-size Claude Code PTY frames as independent visual reference data. */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { chmodSync, existsSync } from 'node:fs'
+import { chmodSync, existsSync, realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -203,6 +203,7 @@ function readOptions(argv) {
     else throw new Error(`unknown or incomplete option: ${name}`)
     index += 1
   }
+  result.cwd = realpathSync(result.cwd)
   if (result.expectedVersion !== TARGET_VERSION && result.output === DEFAULT_OUTPUT) {
     result.output = `tests/fixtures/claude-code-${result.expectedVersion}`
   }

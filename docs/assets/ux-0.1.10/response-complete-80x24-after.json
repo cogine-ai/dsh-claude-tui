@@ -4,7 +4,7 @@
     "product": "dsh-claude-tui",
     "version": "0.1.10",
     "transport": "loopback-reference-api",
-    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+    "cwd": "/tmp/dsh-ux-0.1.10"
   },
   "scenario": "response-complete",
   "dimensions": {
@@ -91,7 +91,7 @@
         ]
       },
       {
-        "text": "  ▘▘ ▝▝    /Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace  powered by dsh ",
+        "text": "  ▘▘ ▝▝    /private/tmp/dsh-ux-0.1.10                            powered by dsh ",
         "runs": [
           {
             "from": 0,
@@ -102,7 +102,7 @@
           },
           {
             "from": 11,
-            "to": 63,
+            "to": 37,
             "fg": "#999999",
             "bg": "default",
             "attrs": []

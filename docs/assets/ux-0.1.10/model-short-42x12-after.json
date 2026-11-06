@@ -4,7 +4,7 @@
     "product": "dsh-claude-tui",
     "version": "0.1.10",
     "transport": "loopback-reference-api",
-    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace"
+    "cwd": "/tmp/dsh-ux-0.1.10"
   },
   "scenario": "model-short",
   "dimensions": {

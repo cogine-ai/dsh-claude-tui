@@ -17,7 +17,7 @@
       "--permission-mode",
       "manual"
     ],
-    "cwd": "/Users/kiedis/.codex/tmp/dsh-ux-2026-11-05/workspace",
+    "cwd": "/private/tmp/dsh-ux-0.1.10",
     "transport": "loopback-reference-api"
   },
   "scenario": "file-mention",
@@ -25,7 +25,7 @@
     "columns": 80,
     "rows": 24
   },
-  "rawSha256": "c7119519ee420cc005476e8a0017e387c3446d8b28424aa713c0144dfe72202c",
+  "rawSha256": "11a89a834a345c11d8e96e6d85838be4de83a9c400a90c3e88663538f0d8019b",
   "frame": {
     "buffer": "normal",
     "cursor": {
@@ -146,7 +146,7 @@
         ]
       },
       {
-        "text": " ▝▝   ▝▝   ~/.codex/tmp/dsh-ux-2026-11-05/workspace",
+        "text": " ▝▝   ▝▝   /private/tmp/dsh-ux-0.1.10",
         "runs": [
           {
             "from": 0,
@@ -164,7 +164,7 @@
           },
           {
             "from": 11,
-            "to": 51,
+            "to": 37,
             "fg": "#999999",
             "bg": "default",
             "attrs": []

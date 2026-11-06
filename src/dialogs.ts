@@ -520,10 +520,14 @@ class MultiSelectDialog implements Component, Focusable {
     lines.push('', this.palette.dim('Space toggle · Enter submit · Esc cancel'))
     const budget = Math.max(4, this.availableRows())
     if (lines.length > budget) {
-      const limit = Math.max(1, budget - 3)
+      const detail = budget >= 5 && this.options.detail !== undefined && this.options.detail !== ''
+        ? [truncateToWidth(this.palette.dim(this.options.detail), safeWidth, '…')]
+        : []
+      const limit = Math.max(1, budget - 3 - detail.length)
       const start = Math.max(0, this.selectedIndex - limit + 1)
       return [
         truncateToWidth(this.palette.bold(this.options.title), safeWidth, '…'),
+        ...detail,
         ...this.options.options.slice(start, start + limit).map((option, offset) => {
           const index = start + offset
           const marker = index === this.selectedIndex && !this.palette.color ? '❯ ' : ''
