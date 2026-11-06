@@ -28,8 +28,10 @@ const closure = Object.entries(lock.packages)
   .map(([path, entry]) => {
     const name = path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length)
     const dsh = dshClosure.find(spec => spec.name === name && spec.version === entry.version)
-    return { path, name, version: entry.version,
-      url: dsh?.url ?? entry.resolved, integrity: dsh?.integrity ?? entry.integrity }
+    const url = dsh?.url ?? entry.resolved
+    const integrity = dsh?.integrity ?? entry.integrity
+    if (!url || !integrity) throw new Error(`Lock node lacks resolved/integrity: ${path}`)
+    return { path, name, version: entry.version, url, integrity }
   }).sort((a, b) => a.path.split('/node_modules/').length - b.path.split('/node_modules/').length)
 rmSync(destination, { recursive: true, force: true })
 mkdirSync(destination)
