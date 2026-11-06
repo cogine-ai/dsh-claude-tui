@@ -100,4 +100,19 @@ delete manifest.devDependencies
 delete manifest.publishConfig.directory
 delete manifest.publishConfig.linkDirectory
 writeFileSync(join(destination, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+// npm reapplies upstream `files` allowlists to bundled packages, omitting some
+// root changelogs that older npm versions included. Inventory the published
+// members, but fail closed if packing would discard any other upstream file.
+const [{ files }] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--ignore-scripts', '--json', destination], {
+  encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
+}))
+const packed = new Set(files.map(file => file.path))
+for (const path of Object.keys(inventory)) {
+  if (packed.has(path)) continue
+  if (!closure.some(item => path === `${item.path}/CHANGELOG.md`)) {
+    throw new Error(`npm packing omitted upstream file: ${path}`)
+  }
+  delete inventory[path]
+}
+writeFileSync(join(destination, 'vendor/security/bundle-inventory.json'), `${JSON.stringify(inventory, null, 2)}\n`)
 console.log(`Staged ${closure.length} required package nodes (${dshClosure.length} DSH packages) with ${specs.length} manifest-only repairs; ${Object.keys(manifest.optionalDependencies).length} exact platform optionals`)
