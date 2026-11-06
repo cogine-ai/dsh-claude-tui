@@ -1,6 +1,6 @@
 {
   "name": "dsh-claude-tui",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Unofficial, high-fidelity Claude Code-style TUI for DeepSeek Harness, verified against real PTY captures",
   "keywords": [
     "deepseek",
@@ -42,14 +42,14 @@
     "lib/**/*.d.ts",
     "docs/**/*",
     "!docs/upstream/**",
-    "npm-shrinkwrap.json",
     "cordis.patch.yml",
     "README*.md",
     "CONTRIBUTING*.md",
     "DISCLAIMER.md",
     "LICENSE",
     "vendor/security/README.md",
-    "vendor/security/provenance.json"
+    "vendor/security/provenance.json",
+    "vendor/security/runtime-lock.json"
   ],
   "license": "MIT",
   "publishConfig": {

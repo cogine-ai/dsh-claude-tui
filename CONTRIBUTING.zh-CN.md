@@ -120,3 +120,5 @@ DSH_HOME=/tmp/dsh-claude-tui-dev DSH_CLAUDE_TUI_RUNTIME=bundled node lib/cli.js
 本地修正后的重复验证可用 `DSH_CLAUDE_TUI_NPM_CACHE` 指定保留的 npm 缓存；记录时须与默认全新缓存安装验证区分。
 
 本地安装包使用 `corepack pnpm run pack:artifact` 构建：先验证并暂存完整 DSH 依赖链，再用 npm 打包。不支持直接从源码目录打包。通过 `python3 scripts/repack-security-dependencies.py --check` 复验依赖修补；`--npm-cache PATH` 可复用原始压缩包，仍校验完整性。使用 `corepack pnpm lock:npm` 更新可移植的生产依赖锁。
+
+发布制品实际携带记录依赖图中的每个必需节点，包括有版本冲突的嵌套节点；平台可选包按精确版本声明。源码 `npm-shrinkwrap.json` 提供构建记录，制品中保存为 `vendor/security/runtime-lock.json`，不放在安装包根目录。安装包测试通过本地 registry 提供真实 tarball，覆盖 npm 发布语义，而非仅验证本地文件安装。

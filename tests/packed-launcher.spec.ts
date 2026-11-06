@@ -46,7 +46,8 @@ describe('packed dsh-claude-tui launcher', () => {
   let packageDirectory: string
   let executable: string
 
-  // Cold retrieval and packing of the verified DSH closure can exceed 30 seconds on CI.
+  // The complete 599-node graph took 156 seconds to stage/pack on Node 24.9 CI.
+  // This budget covers preparation only; launcher assertions retain their limits.
   beforeAll(() => {
     temporaryDirectory = mkdtempSync(join(tmpdir(), 'dsh-claude-tui-launcher-'))
     execFileSync('corepack', ['pnpm', 'run', 'pack:artifact', '--pack-destination', temporaryDirectory], {
@@ -94,7 +95,7 @@ if (process.env.DSH_FAKE_EXIT_CODE !== undefined) {
 }
 setInterval(() => {}, 1_000)
 `)
-  }, 120_000)
+  }, 300_000)
 
   afterAll(() => {
     rmSync(temporaryDirectory, { recursive: true, force: true })
